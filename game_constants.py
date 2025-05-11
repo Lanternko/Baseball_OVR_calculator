@@ -1,6 +1,6 @@
 # game_constants.py
 
-# 聯盟百分位基準值
+# 聯盟百分位基準值 (不變)
 LEAGUE_BENCHMARKS = {
     'xBA': {'pr1': 0.200, 'pr50': 0.250, 'pr99': 0.330},
     'xSLG': {'pr1': 0.310, 'pr50': 0.400, 'pr99': 0.640},
@@ -8,126 +8,134 @@ LEAGUE_BENCHMARKS = {
 }
 ATTRIBUTE_MAPPING_POINTS = {'pr1': 40, 'pr50': 70, 'pr99': 99}
 
-# 模擬參數
+# 模擬參數 (不變)
 NUM_PA_PER_SEASON_ARCHETYPE = 600
-NUM_PA_PER_SEASON_JUDGE = 704
-NUM_PA_PER_SEASON_GOLDSCHMIDT = 654
-NUM_PA_PER_SEASON_OHTANI = 731
-NUM_PA_PER_SEASON_ARCIA = 602
-NUM_PA_PER_SEASON_FREEMAN = 730 # Freddie Freeman 2023 PA
 
-NUM_SEASONS_FOR_EVALUATION = 100
-NUM_SEASONS_FOR_FINAL_RUN = 1000
-NUM_ITERATIONS_FOR_OPTIMIZATION = 200
-
-# 誤差計算權重 (全局)
-ERROR_WEIGHTS = {
-    "BA": 1.5, "OBP": 1.8, "SLG": 1.5, "HR": 2.0, # Increased HR weight
-    "BB": 0.8,
-    "K": 0.8
+# --- 最佳化流程參數 (三階段) ---
+# 階段一
+NUM_ITERATIONS_STAGE_ONE = 1500 # 可酌情調整
+NUM_SEASONS_PER_EVAL_STAGE_ONE = 15 # 可酌情調整
+TOP_N_CANDIDATES_FROM_STAGE_ONE = 100 # 可酌情調整
+ERROR_WEIGHTS_STAGE_ONE = {
+    "BA": 1.0, "OBP": 1.2, "SLG": 1.0, "HR": 1.5, "OPS": 0.8,
+    "BB": 0.1, "K": 0.1 # 早期階段對BB/K容忍度較高
 }
-DEVIATION_PENALTY_WEIGHT = 0.05
-ATTRIBUTE_SEARCH_RANGE_DELTA = 25
+DEVIATION_PENALTY_WEIGHT_STAGE_ONE = 0.005 # 早期階段錨點懲罰較輕
 
-# --- Non-Linear Model Parameters ---
-ATTR_EFFECT_MIDPOINT = 70.0 # General midpoint for attribute scaling
+# 階段二
+NUM_ITERATIONS_PER_CANDIDATE_STAGE_TWO = 100 # 每個候選區域的迭代次數
+NUM_SEASONS_PER_EVAL_STAGE_TWO = 40
+TOP_M_CANDIDATES_FROM_STAGE_TWO = 15
+ERROR_WEIGHTS_STAGE_TWO = {
+    "BA": 1.5, "OBP": 1.8, "SLG": 1.5, "HR": 2.0,
+    "BB": 0.5, "K": 0.5 # 稍微加重 BB/K
+}
+DEVIATION_PENALTY_WEIGHT_STAGE_TWO = 0.05 # 錨點懲罰加重
 
-# Strikeout Rate (K%) Parameters
-AVG_K_RATE_AT_MIDPOINT = 0.220
-MIN_K_RATE = 0.145
-MAX_K_RATE = 0.29
-K_RATE_EYE_WEIGHT = 0.50
-K_RATE_HIT_WEIGHT = 0.50
-K_EYE_EFFECT_MIDPOINT = ATTR_EFFECT_MIDPOINT
-K_EYE_EFFECT_SCALE = 70.0
-K_HIT_EFFECT_MIDPOINT = ATTR_EFFECT_MIDPOINT
-K_HIT_EFFECT_SCALE = 70.0
+# 階段三 (最終驗證，權重可沿用階段二或特調)
+NUM_SEASONS_PER_EVAL_STAGE_THREE = 200 # 或更高
+ERROR_WEIGHTS_STAGE_THREE = ERROR_WEIGHTS_STAGE_TWO.copy()
+# 針對特定問題調整，例如 Judge, Ohtani 的 K%
+# if player_name in ["Aaron Judge", "Shohei Ohtani"]:
+#     ERROR_WEIGHTS_STAGE_THREE["K"] = 1.0
+DEVIATION_PENALTY_WEIGHT_STAGE_THREE = 0.075 # 最終錨點懲罰
 
-# Walk Rate (BB%) Parameters
-AVG_BB_RATE_AT_MIDPOINT = 0.085
-MIN_BB_RATE = 0.065
-MAX_BB_RATE = 0.18
-BB_EYE_EFFECT_MIDPOINT = ATTR_EFFECT_MIDPOINT
-BB_EYE_EFFECT_SCALE = 70.0
+# 誤差計算權重
+ERROR_WEIGHTS_STAGE_ONE = {
+    "BA": 1.5, "OBP": 1.8, "SLG": 1.5, "HR": 2.0, "OPS": 1.0,
+    "BB": 0.2, "K": 0.2
+}
+DEVIATION_PENALTY_WEIGHT_STAGE_ONE = 0.01
 
-# --- NEW Home Run Model Parameters ---
-# S-Curve for Base HR Rate from POW (HR per PA)
-# Format: [(POW_value, HR_Rate_per_PA), ...]
-# These points will be used for linear interpolation.
+ERROR_WEIGHTS_STAGE_TWO = {
+    "BA": 1.5, "OBP": 1.8, "SLG": 1.5, "HR": 2.0,
+    "BB": 0.8, "K": 0.8
+}
+DEVIATION_PENALTY_WEIGHT_STAGE_TWO = 0.075
+
+ERROR_WEIGHTS = ERROR_WEIGHTS_STAGE_TWO.copy()
+DEVIATION_PENALTY_WEIGHT = DEVIATION_PENALTY_WEIGHT_STAGE_TWO
+
+ATTRIBUTE_SEARCH_RANGE_DELTA = 30
+
+# --- S-Curve Anchor Definitions & 其他模型參數 ---
+ATTR_EFFECT_MIDPOINT = 70.0
+SOFT_CAP_ATTRIBUTE_VALUE = 150.0
+
+# S-Curve for Base HR Rate from POW (HR per PA) - 保持上一版校準
 HR_S_CURVE_POW_ANCHORS = [
-    (0, 0.0005),  # Very low HR rate for POW 0
-    (30, 0.003),  # Slightly more for low POW
-    (40, 0.0067), # Target for PR1 (4 HR / 600 PA)
-    (60, 0.020),  # Approaching midpoint
-    (70, 0.0333), # Target for PR50 (20 HR / 600 PA) - Midpoint of the curve
-    (85, 0.050),  # Steep part of the curve
-    (99, 0.0667), # Target for PR99 (40 HR / 600 PA)
-    (115, 0.085), # Diminishing returns start
-    (130, 0.100), # Target for extreme POW (60 HR / 600 PA)
-    (150, 0.115)  # Near practical max, still slight increase
+    (0, 0.0005), (30, 0.003), (40, 0.0067), (60, 0.020),
+    (70, 0.0333), (85, 0.045),
+    (99, 0.0580), (115, 0.072),(130, 0.0870),
+    (140, 0.098), (SOFT_CAP_ATTRIBUTE_VALUE, 0.110)
 ]
-ABSOLUTE_MAX_HR_RATE_CAP = 0.18 # An absolute ceiling for P(HR) after modifiers
+ABSOLUTE_MAX_HR_RATE_CAP = 0.20
 
-# Modifiers for Base HR Rate
-# EYE Modifier on HR (e.g., better EYE helps select better pitches to drive)
+# S-Curve for BABIP from HIT (直接影響 BA)
+# *** 變更點：進一步提升高 HIT 區間的 BABIP，並確保曲線在高值區仍有增長 ***
+BABIP_S_CURVE_HIT_ANCHORS = [
+    (0, 0.215),   # 略微提高低 HIT 區的下限 (原 0.210)
+    (30, 0.245),  # (原 0.240)
+    (40, 0.270),  # 提高 PR1 對應的 BABIP (原 0.265)
+    (60, 0.295),  # (原 0.290)
+    (70, 0.305),  # 略微提高中點 (原 0.300)
+    (85, 0.330),  # (原 0.325)
+    (99, 0.350),  # 明顯提高 HIT 99 的 BABIP (原 0.340)，目標 BA .320+
+    (110, 0.365), # (原 0.355)
+    (120, 0.375), # (原 0.365)
+    (130, 0.385), # (原 0.375) Freeman HIT 118，目標 BA .331
+    (140, 0.395), # (原 0.385)
+    (SOFT_CAP_ATTRIBUTE_VALUE, 0.405) # 提高軟上限 (原 0.395)
+]
+MIN_BABIP_RATE_CAP = 0.190 # (原 0.180)
+MAX_BABIP_RATE_CAP = 0.450 # 提高硬上限 (原 0.430)
+
+# S-Curve for BB_rate from EYE - 保持上一版校準
+BB_S_CURVE_EYE_ANCHORS = [
+    (0, 0.030), (30, 0.045), (40, 0.062), (60, 0.075),
+    (70, 0.085), (85, 0.105), (99, 0.125),
+    (115, 0.145), (130, 0.160), (140, 0.170),
+    (SOFT_CAP_ATTRIBUTE_VALUE, 0.180)
+]
+MIN_BB_RATE_CAP = 0.020
+MAX_BB_RATE_CAP = 0.250
+
+# S-Curve for K_rate's EYE component - 保持上一版校準 (K% 問題可能需要更綜合的調整)
+K_EYE_EFFECTIVENESS_S_CURVE_ANCHORS = [
+    (0, 0.8), (30, 0.5), (40, 0.3), (60, 0.1),
+    (70, 0.0), (85, -0.20), (99, -0.40),
+    (115, -0.55),(130, -0.70),(140, -0.75),
+    (SOFT_CAP_ATTRIBUTE_VALUE, -0.80)
+]
+K_RATE_HIT_WEIGHT = 0.50
+K_RATE_EYE_WEIGHT = 1.0 - K_RATE_HIT_WEIGHT
+K_HIT_EFFECT_MIDPOINT = ATTR_EFFECT_MIDPOINT
+K_HIT_EFFECT_SCALE = 55.0
+AVG_K_RATE_AT_MIDPOINT = 0.220
+MIN_K_RATE_CAP = 0.080
+MAX_K_RATE_CAP = 0.350
+
+
+# Modifiers for Base HR Rate - 保持不變，以隔離 BA/SLG 的調整效果
 HR_EYE_MODIFIER_MIDPOINT = ATTR_EFFECT_MIDPOINT
-HR_EYE_MODIFIER_SCALE = 30.0  # How sensitive the modifier is to EYE attribute
-HR_EYE_MODIFIER_MAX_IMPACT = 0.15 # Max +/- percentage impact (e.g., 0.15 means +/- 15%)
+HR_EYE_MODIFIER_SCALE = 40.0
+HR_EYE_MODIFIER_MAX_IMPACT = 0.12
 
-# HIT Modifier on HR (e.g., better HIT makes better contact quality for power to translate)
 HR_HIT_MODIFIER_MIDPOINT = ATTR_EFFECT_MIDPOINT
-HR_HIT_MODIFIER_SCALE = 30.0
-HR_HIT_MODIFIER_MAX_IMPACT = 0.20 # HIT might have a slightly larger impact on HR quality
+HR_HIT_MODIFIER_SCALE = 40.0
+HR_HIT_MODIFIER_MAX_IMPACT = 0.18
 
-# --- OLD Home Run Rate (HR% per PA) Parameters (Commented out, to be replaced) ---
-# AVG_HR_RATE_AT_MIDPOINT = 0.033
-# MIN_HR_RATE = 0.005
-# MAX_HR_RATE = 0.080
-# HR_POW_EFFECT_MIDPOINT = ATTR_EFFECT_MIDPOINT
-# HR_POW_EFFECT_SCALE = 70.0
-
-# --- Ball In Play (BIP) Outcomes Parameters ---
-# BABIP (Batting Average on Balls In Play)
-AVG_BABIP_AT_MIDPOINT = 0.300
-MIN_BABIP_RATE = 0.245
-MAX_BABIP_RATE = 0.345
-BABIP_HIT_EFFECT_MIDPOINT = ATTR_EFFECT_MIDPOINT
-BABIP_HIT_EFFECT_SCALE = 45.0
-
-# Extra-Base Hit (2B) Ratio from Hits on Balls In Play (P(2B | Hit_BIP_not_HR))
-# This will now apply to hits that are not HRs (calculated by the new HR model)
-AVG_2B_PER_HIT_BIP_NOT_HR_AT_MIDPOINT = 0.28 # Slightly higher as HRs are removed from the pool
-MIN_2B_PER_HIT_BIP_NOT_HR = 0.18
-MAX_2B_PER_HIT_BIP_NOT_HR = 0.38
+# Ball In Play (BIP) Outcomes Parameters (2B)
+# *** 變更點：進一步調整二壘安打分配參數，以期在 BA 提升後，SLG 也能跟上 ***
+AVG_2B_PER_HIT_BIP_NOT_HR_AT_MIDPOINT = 0.31 # 再次提高中點值 (原 0.30)
+MIN_2B_PER_HIT_BIP_NOT_HR = 0.22             # 再次提高下限 (原 0.20)
+MAX_2B_PER_HIT_BIP_NOT_HR = 0.42             # 再次提高上限 (原 0.40)
 EXTRABASE_POW_EFFECT_MIDPOINT = ATTR_EFFECT_MIDPOINT
-EXTRABASE_POW_EFFECT_SCALE = 48.0
+EXTRABASE_POW_EFFECT_SCALE = 48.0 # (原 50.0) 略微增加POW在高值區的敏感度
 EXTRABASE_HIT_EFFECT_MIDPOINT = ATTR_EFFECT_MIDPOINT
-EXTRABASE_HIT_EFFECT_SCALE = 48.0
-EXTRABASE_POW_WEIGHT = 0.60 # POW has a bit more say in 2B vs 1B
-EXTRABASE_HIT_WEIGHT = 0.40
+EXTRABASE_HIT_EFFECT_SCALE = 48.0 # (原 50.0) 略微增加HIT在高值區的敏感度
+EXTRABASE_POW_WEIGHT = 0.50 # (原 0.55) 將權重稍微向 HIT 傾斜，或保持均衡
+EXTRABASE_HIT_WEIGHT = 0.50 # (原 0.45)
 
 # League Average HBP Rate
 LEAGUE_AVG_HBP_RATE = 0.010
-
-
-# --- PLACEHOLDERS for Future Advanced Model (ECR & PXBHC) ---
-# Effective Contact Rate (ECR) - Placeholder Parameters
-AVG_ECR_RATE_AT_MIDPOINT = 0.75 # Placeholder: % of non-K, non-BB, non-HBP that are "effective contact"
-MIN_ECR_RATE = 0.60
-MAX_ECR_RATE = 0.90
-ECR_EYE_WEIGHT = 0.60       # EYE is more important for making contact
-ECR_HIT_WEIGHT = 0.40       # HIT helps solidify contact
-ECR_EYE_MIDPOINT = ATTR_EFFECT_MIDPOINT
-ECR_EYE_SCALE = 30.0
-ECR_HIT_MIDPOINT = ATTR_EFFECT_MIDPOINT
-ECR_HIT_SCALE = 35.0
-
-# Potential Extra-Base Hit Contact Rate (PXBHC_of_ECR) - Placeholder Parameters
-# % of "Effective Contacts" that have potential to be XBH (good launch angle/exit velo)
-AVG_PXBHC_RATE_AT_MIDPOINT = 0.40 # Placeholder
-MIN_PXBHC_RATE = 0.20
-MAX_PXBHC_RATE = 0.65
-PXBHC_HIT_MIDPOINT = ATTR_EFFECT_MIDPOINT # HIT is primary driver here
-PXBHC_HIT_SCALE = 25.0
-# PXBHC_POW_WEIGHT = 0.3 # POW might slightly influence this too (harder hit = more XBH potential)
-# PXBHC_HIT_WEIGHT = 0.7
