@@ -1,17 +1,16 @@
-// probability-model.js - 概率計算模型（修正版）
+// probability-model.js - 概率計算模型（強化極端值版）
 
 // 輔助函數：S-curve 插值
 function interpolateSCurve(value, anchors) {
     if (!anchors || !anchors.length) return 0.0;
-    const cappedValue = Math.min(value, SOFT_CAP_ATTRIBUTE_VALUE * 1.1);
-    if (cappedValue <= anchors[0][0]) return anchors[0][1];
-    if (cappedValue >= anchors[anchors.length - 1][0]) return anchors[anchors.length - 1][1];
+    if (value <= anchors[0][0]) return anchors[0][1];
+    if (value >= anchors[anchors.length - 1][0]) return anchors[anchors.length - 1][1];
     
     for (let i = 0; i < anchors.length - 1; i++) {
         const [x1, y1] = anchors[i];
         const [x2, y2] = anchors[i + 1];
-        if (x1 <= cappedValue && cappedValue < x2) {
-            return (x2 - x1) ? y1 + (y2 - y1) * (cappedValue - x1) / (x2 - x1) : y1;
+        if (x1 <= value && value < x2) {
+            return (x2 - x1) ? y1 + (y2 - y1) * (value - x1) / (x2 - x1) : y1;
         }
     }
     return anchors[anchors.length - 1][1];
@@ -92,16 +91,27 @@ function getPAEventProbabilitiesNormal(POW, HIT, EYE, playerHBPRate = LEAGUE_AVG
     return {HR: pHR, '2B': p2B, '1B': p1B, BB: pBB, HBP: pHBP, K: pK, IPO: pIPO};
 }
 
-// 🔥 極端值的概率計算（僅在屬性值 >= 200 時使用）
+// 🔥 極端值的概率計算（大幅強化）
 function getPAEventProbabilitiesExtreme(POW, HIT, EYE, playerHBPRate = LEAGUE_AVG_HBP_RATE) {
     console.log(`🔥 極端值計算: POW=${POW}, HIT=${HIT}, EYE=${EYE}`);
     
-    // 使用極端值 S-curves
-    const pHR = interpolateSCurve(POW, HR_S_CURVE_POW_ANCHORS_EXTREME);
-    const babip = interpolateSCurve(HIT, BABIP_S_CURVE_HIT_ANCHORS_EXTREME);
-    const pBB = interpolateSCurve(EYE, BB_S_CURVE_EYE_ANCHORS_EXTREME);
+    // 🔥 強化：使用更激進的極端值 S-curves
+    let pHR = interpolateSCurve(POW, HR_S_CURVE_POW_ANCHORS_EXTREME);
+    let babip = interpolateSCurve(HIT, BABIP_S_CURVE_HIT_ANCHORS_EXTREME);
+    let pBB = interpolateSCurve(EYE, BB_S_CURVE_EYE_ANCHORS_EXTREME);
     
-    // 三振率計算
+    // 🔥 強化：極端值時的額外加成
+    if (POW >= 400) {
+        pHR = Math.min(0.99, pHR * 1.2); // 400+ POW 時額外 20% 加成
+    }
+    if (HIT >= 400) {
+        babip = Math.min(0.995, babip * 1.1); // 400+ HIT 時額外 10% 加成
+    }
+    if (EYE >= 400) {
+        pBB = Math.min(0.98, pBB * 1.1); // 400+ EYE 時額外 10% 加成
+    }
+    
+    // 三振率計算 - 極端值時大幅改善
     const eyeKEffect = interpolateSCurve(EYE, K_EYE_EFFECTIVENESS_S_CURVE_ANCHORS_EXTREME);
     const hitKEffect = scaleAttributeToEffectiveness(HIT, K_HIT_EFFECT_MIDPOINT, 55.0, false);
     let kRate = getRateFromEffectiveness(
@@ -109,9 +119,12 @@ function getPAEventProbabilitiesExtreme(POW, HIT, EYE, playerHBPRate = LEAGUE_AV
         K_RATE_EYE_WEIGHT * eyeKEffect + K_RATE_HIT_WEIGHT * hitKEffect
     );
     
-    // 極端值時大幅降低三振率
+    // 🔥 強化：極端值時三振率幾乎歸零
     if (HIT >= 300 || EYE >= 300) {
-        kRate = Math.max(0.005, kRate * 0.1);
+        kRate = Math.max(0.001, kRate * 0.05); // 只有 5% 的原三振率
+    }
+    if (HIT >= 450 && EYE >= 450) {
+        kRate = 0.001; // 幾乎不三振
     }
     
     // HBP 極端值時稍微提高
@@ -120,22 +133,35 @@ function getPAEventProbabilitiesExtreme(POW, HIT, EYE, playerHBPRate = LEAGUE_AV
         pHBP = Math.min(0.050, LEAGUE_AVG_HBP_RATE * 3);
     }
     
-    // 確保概率合理分配
+    // 🔥 強化：確保極端值時能達到理論極限
     const basicSum = pHR + pBB + pHBP + kRate;
+    
     if (basicSum >= 1.0) {
-        const scale = 0.98 / basicSum;
-        const scaledHR = pHR * scale;
-        const scaledBB = pBB * scale;
-        const scaledK = kRate * scale;
-        const remainingProb = 1.0 - scaledHR - scaledBB - pHBP - scaledK;
+        // 極端值時優先保證核心表現
+        const totalAvailable = 0.999; // 保留一點給其他事件
+        
+        // 按重要性分配概率
+        if (POW >= 450) pHR = Math.min(0.97, pHR); // 97% 全壘打率
+        if (EYE >= 450) pBB = Math.min(0.95, pBB);  // 95% 保送率
+        
+        // 重新分配
+        const newSum = pHR + pBB + pHBP + kRate;
+        if (newSum > totalAvailable) {
+            const scale = totalAvailable / newSum;
+            pHR *= scale;
+            pBB *= scale;
+            kRate *= scale;
+        }
+        
+        const remainingProb = 1.0 - pHR - pBB - pHBP - kRate;
         
         return {
-            HR: scaledHR,
-            '2B': remainingProb * 0.4,
-            '1B': remainingProb * 0.6,
-            BB: scaledBB,
+            HR: pHR,
+            '2B': remainingProb * 0.8, // 極端值時大部分是長打
+            '1B': remainingProb * 0.2,
+            BB: pBB,
             HBP: pHBP,
-            K: scaledK,
+            K: kRate,
             IPO: 0.001
         };
     }
@@ -145,10 +171,11 @@ function getPAEventProbabilitiesExtreme(POW, HIT, EYE, playerHBPRate = LEAGUE_AV
     const pHitFromBIP = remainingBIP * babip;
     const pIPO = remainingBIP * (1.0 - babip);
     
-    // 極端值時提高長打比例
-    let extrabaseRatio = 0.3;
-    if (POW >= 300) extrabaseRatio = Math.min(0.7, 0.3 + (POW - 300) / 1000);
-    if (HIT >= 300) extrabaseRatio = Math.min(0.8, extrabaseRatio + (HIT - 300) / 2000);
+    // 🔥 強化：極端值時大幅提高長打比例
+    let extrabaseRatio = 0.3; // 基準比例
+    if (POW >= 300) extrabaseRatio = Math.min(0.85, 0.3 + (POW - 300) / 400);
+    if (HIT >= 300) extrabaseRatio = Math.min(0.90, extrabaseRatio + (HIT - 300) / 500);
+    if (POW >= 450) extrabaseRatio = 0.95; // 450+ POW 時 95% 是長打
     
     const p2B = pHitFromBIP * extrabaseRatio;
     const p1B = pHitFromBIP * (1 - extrabaseRatio);
@@ -163,7 +190,7 @@ function getPAEventProbabilitiesExtreme(POW, HIT, EYE, playerHBPRate = LEAGUE_AV
         IPO: pIPO
     };
     
-    console.log(`極端值結果:`, result);
+    console.log(`🔥 強化極端值結果:`, result);
     return result;
 }
 
@@ -173,7 +200,7 @@ function getPAEventProbabilities(POW, HIT, EYE, playerHBPRate = LEAGUE_AVG_HBP_R
     const isExtreme = POW >= EXTREME_VALUE_THRESHOLD || HIT >= EXTREME_VALUE_THRESHOLD || EYE >= EXTREME_VALUE_THRESHOLD;
     
     if (isExtreme) {
-        console.log(`🔥 檢測到極端屬性，使用極端值計算: POW=${POW}, HIT=${HIT}, EYE=${EYE}`);
+        console.log(`🔥 檢測到極端屬性，使用強化極端值計算: POW=${POW}, HIT=${HIT}, EYE=${EYE}`);
         return getPAEventProbabilitiesExtreme(POW, HIT, EYE, playerHBPRate);
     }
     
