@@ -470,104 +470,111 @@
             };
         }
 
+        // 🔥 極端值修正：新的 S-Curve 錨點
+        const BABIP_S_CURVE_HIT_ANCHORS_EXTREME = [
+            [0, 0.215], [30, 0.245], [40, 0.270], [60, 0.295],
+            [70, 0.305], [85, 0.330], [99, 0.350], [110, 0.380],
+            [150, 0.450], [200, 0.550], [300, 0.750], [400, 0.900], [500, 0.980]
+        ];
+
+        const HR_S_CURVE_POW_ANCHORS_EXTREME = [
+            [0, 0.0005], [30, 0.003], [40, 0.0067], [60, 0.020],
+            [70, 0.0333], [85, 0.045], [99, 0.0580], [115, 0.072],
+            [130, 0.0870], [140, 0.098], [150, 0.110],
+            [200, 0.200], [300, 0.400], [400, 0.700], [500, 0.990]
+        ];
+
+        const BB_S_CURVE_EYE_ANCHORS_EXTREME = [
+            [0, 0.030], [30, 0.045], [40, 0.062], [60, 0.075],
+            [70, 0.085], [85, 0.105], [99, 0.125], [115, 0.145],
+            [130, 0.160], [140, 0.170], [150, 0.180],
+            [200, 0.300], [300, 0.500], [400, 0.750], [500, 0.950]
+        ];
+
         // 修改後的概率計算函數，支援極端屬性值
         function calculateProbabilitiesExtreme(pow, hit, eye) {
-            // 對於極端屬性值的特殊處理
-            if (pow >= 400 || hit >= 400 || eye >= 400) {
+            // 檢測是否為極端值（降低門檻到200）
+            if (pow >= 200 || hit >= 200 || eye >= 200) {
                 // 使用改進的極端值概率計算
                 return calculateProbabilitiesExtremeCore(pow, hit, eye);
             }
             
             // 正常情況使用原有邏輯
-            return calculateProbabilities(pow, hit, eye);
+            return getPAEventProbabilities(pow, hit, eye);
         }
 
         function calculateProbabilitiesExtremeCore(pow, hit, eye) {
-            // 基礎概率計算，支援極端值
-            const powCapped = Math.min(pow, 500);
-            const hitCapped = Math.min(hit, 500);
-            const eyeCapped = Math.min(eye, 500);
+            console.log(`🔥 極端值計算: POW=${pow}, HIT=${hit}, EYE=${eye}`);
             
-            // 全壘打率 - 支援極端值
-            let pHR;
-            if (powCapped >= 500) {
-                pHR = 0.99; // 理論極限：99%全壘打率
-            } else if (powCapped >= 300) {
-                // 300-500 的高端映射
-                pHR = 0.1 + (powCapped - 300) / 200 * 0.89; // 0.1 到 0.99
-            } else {
-                // 使用原有的 S-curve 插值
-                pHR = interpolateSCurve(powCapped, HR_S_CURVE_POW_ANCHORS);
-            }
+            // 使用新的極端值 S-curves
+            const pHR = interpolateSCurve(pow, HR_S_CURVE_POW_ANCHORS_EXTREME);
+            const babip = interpolateSCurve(hit, BABIP_S_CURVE_HIT_ANCHORS_EXTREME);
+            const pBB = interpolateSCurve(eye, BB_S_CURVE_EYE_ANCHORS_EXTREME);
             
-            // BABIP - 支援極端值
-            let babip;
-            if (hitCapped >= 500) {
-                babip = 0.95; // 理論極限BABIP
-            } else if (hitCapped >= 300) {
-                babip = 0.4 + (hitCapped - 300) / 200 * 0.55; // 0.4 到 0.95
-            } else {
-                babip = interpolateSCurve(hitCapped, BABIP_S_CURVE_HIT_ANCHORS);
-            }
-            
-            // 保送率 - 支援極端值
-            let pBB;
-            if (eyeCapped >= 500) {
-                pBB = 0.95; // 理論極限保送率
-            } else if (eyeCapped >= 300) {
-                pBB = 0.2 + (eyeCapped - 300) / 200 * 0.75; // 0.2 到 0.95
-            } else {
-                pBB = interpolateSCurve(eyeCapped, BB_S_CURVE_EYE_ANCHORS);
-            }
-            
-            // 三振率 - 支援極端值
-            let kRateEffectiveness;
-            if (eyeCapped >= 500) {
-                kRateEffectiveness = -0.95; // 理論極限：幾乎不三振
-            } else if (eyeCapped >= 300) {
-                kRateEffectiveness = -0.5 + (eyeCapped - 300) / 200 * -0.45; // -0.5 到 -0.95
-            } else {
-                kRateEffectiveness = interpolateSCurve(eyeCapped, K_EYE_EFFECTIVENESS_S_CURVE_ANCHORS);
-            }
-            
-            const hitEffectiveness = scaleAttributeToEffectiveness(hitCapped, K_HIT_EFFECT_MIDPOINT, 55.0, false);
-            const kRate = getRateFromEffectiveness(
+            // 三振率計算（使用原有邏輯但加強極端值響應）
+            const eyeKEffect = interpolateSCurve(eye, K_EYE_EFFECTIVENESS_S_CURVE_ANCHORS);
+            const hitKEffect = scaleAttributeToEffectiveness(hit, K_HIT_EFFECT_MIDPOINT, 55.0, false);
+            let kRate = getRateFromEffectiveness(
                 AVG_K_RATE_AT_MIDPOINT, MIN_K_RATE_CAP, MAX_K_RATE_CAP,
-                K_RATE_EYE_WEIGHT * kRateEffectiveness + K_RATE_HIT_WEIGHT * hitEffectiveness
+                K_RATE_EYE_WEIGHT * eyeKEffect + K_RATE_HIT_WEIGHT * hitKEffect
             );
             
-            // 計算其他結果的概率
-            const pContact = Math.max(0.01, 1.0 - kRate);
-            const pBIP = pContact * (1.0 - pBB);
-            const pHRGivenBIP = Math.min(0.99, pHR / Math.max(0.01, pBIP));
-            const pHitGivenBIPNotHR = Math.min(0.98, babip);
+            // 極端值時大幅降低三振率
+            if (hit >= 300 || eye >= 300) {
+                kRate = Math.max(0.01, kRate * 0.2);
+            }
             
-            // 二壘安打比例
-            const powEffectiveness = scaleAttributeToEffectiveness(powCapped, EXTRABASE_POW_EFFECT_MIDPOINT, EXTRABASE_POW_EFFECT_SCALE);
-            const hitEffectivenessForExtrabase = scaleAttributeToEffectiveness(hitCapped, EXTRABASE_HIT_EFFECT_MIDPOINT, EXTRABASE_HIT_EFFECT_SCALE);
-            const extrabaseEffectiveness = EXTRABASE_POW_WEIGHT * powEffectiveness + EXTRABASE_HIT_WEIGHT * hitEffectivenessForExtrabase;
-            const p2BPerHitBIPNotHR = getRateFromEffectiveness(
-                AVG_2B_PER_HIT_BIP_NOT_HR_AT_MIDPOINT, MIN_2B_PER_HIT_BIP_NOT_HR, MAX_2B_PER_HIT_BIP_NOT_HR, extrabaseEffectiveness
-            );
-            
-            // 最終概率計算
-            const finalPHR = pBIP * pHRGivenBIP;
-            const pHitBIPNotHR = pBIP * (1 - pHRGivenBIP) * pHitGivenBIPNotHR;
-            const p2B = pHitBIPNotHR * p2BPerHitBIPNotHR;
-            const p1B = pHitBIPNotHR * (1 - p2BPerHitBIPNotHR);
             const pHBP = LEAGUE_AVG_HBP_RATE;
-            const pK = kRate;
-            const pIPO = Math.max(0.001, 1.0 - finalPHR - p2B - p1B - pBB - pHBP - pK);
             
-            return {
-                HR: finalPHR,
+            console.log(`基礎概率: HR=${pHR.toFixed(3)}, BABIP=${babip.toFixed(3)}, BB=${pBB.toFixed(3)}, K=${kRate.toFixed(3)}`);
+            
+            // 檢查基礎概率是否合理
+            const basicSum = pHR + pBB + pHBP + kRate;
+            if (basicSum >= 1.0) {
+                // 按比例縮放
+                const scale = 0.95 / basicSum;
+                const scaledHR = pHR * scale;
+                const scaledBB = pBB * scale;
+                const scaledK = kRate * scale;
+                const remainingProb = 1.0 - scaledHR - scaledBB - pHBP - scaledK;
+                
+                return {
+                    HR: scaledHR,
+                    '2B': remainingProb * 0.3,
+                    '1B': remainingProb * 0.7,
+                    BB: scaledBB,
+                    HBP: pHBP,
+                    K: scaledK,
+                    IPO: 0.001
+                };
+            }
+            
+            // 計算剩餘 BIP 事件
+            const remainingBIP = 1.0 - pHR - pBB - pHBP - kRate;
+            const pHitFromBIP = remainingBIP * babip;
+            const pIPO = remainingBIP * (1.0 - babip);
+            
+            // 分配一二壘安打
+            const extrabaseEffect = (pow + hit) / 1000; // 簡化的長打效果
+            const p2BRatio = Math.min(0.8, 0.3 + extrabaseEffect);
+            const p2B = pHitFromBIP * p2BRatio;
+            const p1B = pHitFromBIP * (1 - p2BRatio);
+            
+            const result = {
+                HR: pHR,
                 '2B': p2B,
                 '1B': p1B,
                 BB: pBB,
                 HBP: pHBP,
-                K: pK,
+                K: kRate,
                 IPO: pIPO
             };
+            
+            console.log(`最終結果:`, result);
+            const totalProb = Object.values(result).reduce((a,b) => a+b, 0);
+            console.log(`概率總和: ${totalProb.toFixed(4)}`);
+            
+            return result;
         }
 
         // 修改模擬函數支援極端值檢測
@@ -646,6 +653,9 @@
                 status: (baError < 0.1 && slgError < 0.5 && obpError < 0.1) ? "✅ 極限值處理成功" : "❌ 需要進一步調整"
             });
         }
+
+        // 在頁面載入後自動測試（可選）
+        // window.addEventListener('load', testExtremeValueHandling);
 
         // 在頁面載入後自動測試（可選）
         // window.addEventListener('load', testExtremeValueHandling);
