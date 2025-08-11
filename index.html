@@ -397,6 +397,10 @@
         const LEAGUE_AVG_HBP_RATE = 0.010;
         const NUM_SIMULATIONS = 100; // 降低模擬次數提升效能
 
+        // =============== 極端數據處理修補程式 ===============
+        // 這個程式碼可以直接加入到您現有的 index.html 中，取代原有的 calculatePlayerGameAttributes 函數
+
+        // 修改後的 calculatePlayerGameAttributes 函數，支援極端值處理
         function calculatePlayerGameAttributes(xBA, xSLG, xwOBA) {
             const pr1_map = ATTRIBUTE_MAPPING_POINTS['pr1'];
             const pr50_map = ATTRIBUTE_MAPPING_POINTS['pr50'];
@@ -404,8 +408,36 @@
             const delta_50_1 = pr50_map - pr1_map;
             const delta_99_50 = pr99_map - pr50_map;
             
-            function getAttributeScore(metricVal, pr1Benchmark, pr50Benchmark, pr99Benchmark) {
+            // 🔥 改進的極端值處理函數
+            function getAttributeScoreExtreme(metricVal, pr1Benchmark, pr50Benchmark, pr99Benchmark, statType) {
                 let score = 0;
+                
+                // 理論極限值的特殊處理
+                const isExtremeValue = (
+                    (statType === 'BA' && metricVal >= 0.99) ||
+                    (statType === 'SLG' && metricVal >= 3.8) ||
+                    (statType === 'OBA' && metricVal >= 0.99)
+                );
+                
+                if (isExtremeValue) {
+                    // 理論極限值：BA=1, SLG=4, OBA=1 都映射到相同的極高屬性值
+                    if (statType === 'BA' && metricVal >= 1.0) return 500;
+                    if (statType === 'SLG' && metricVal >= 4.0) return 500;
+                    if (statType === 'OBA' && metricVal >= 1.0) return 500;
+                    
+                    // 接近極限值的處理
+                    if (statType === 'BA') {
+                        return 300 + (metricVal - 0.99) / 0.01 * 200; // 0.99-1.0 映射到 300-500
+                    }
+                    if (statType === 'SLG') {
+                        return 300 + (metricVal - 3.8) / 0.2 * 200; // 3.8-4.0 映射到 300-500
+                    }
+                    if (statType === 'OBA') {
+                        return 300 + (metricVal - 0.99) / 0.01 * 200; // 0.99-1.0 映射到 300-500
+                    }
+                }
+                
+                // 正常範圍的處理
                 if (metricVal <= pr1Benchmark) {
                     score = pr1_map;
                 } else if (metricVal <= pr50Benchmark) {
@@ -413,19 +445,210 @@
                 } else if (metricVal <= pr99Benchmark) {
                     score = pr50_map + delta_99_50 * (metricVal - pr50Benchmark) / (pr99Benchmark - pr50Benchmark);
                 } else {
+                    // 超出 pr99 但未到極限的線性擴展
                     const slope_pr50_pr99 = delta_99_50 / (pr99Benchmark - pr50Benchmark);
-                    score = pr99_map + slope_pr50_pr99 * (metricVal - pr99Benchmark);
+                    const basicExtension = pr99_map + slope_pr50_pr99 * (metricVal - pr99Benchmark);
+                    
+                    // 對於超高值給予額外加成
+                    const overPr99Factor = (metricVal - pr99Benchmark) / (pr99Benchmark - pr50Benchmark);
+                    const extraBonus = Math.min(overPr99Factor * 50, 200); // 最多額外+200
+                    
+                    score = basicExtension + extraBonus;
                 }
-                return Math.max(0, score);
+                
+                return Math.max(0, Math.min(500, score)); // 允許最高到500
             }
             
+            const powScore = getAttributeScoreExtreme(xSLG, LEAGUE_BENCHMARKS['xSLG']['pr1'], LEAGUE_BENCHMARKS['xSLG']['pr50'], LEAGUE_BENCHMARKS['xSLG']['pr99'], 'SLG');
+            const hitScore = getAttributeScoreExtreme(xBA, LEAGUE_BENCHMARKS['xBA']['pr1'], LEAGUE_BENCHMARKS['xBA']['pr50'], LEAGUE_BENCHMARKS['xBA']['pr99'], 'BA');
+            const eyeScore = getAttributeScoreExtreme(xwOBA, LEAGUE_BENCHMARKS['xwOBA']['pr1'], LEAGUE_BENCHMARKS['xwOBA']['pr50'], LEAGUE_BENCHMARKS['xwOBA']['pr99'], 'OBA');
+            
             return {
-                POW: getAttributeScore(xSLG, LEAGUE_BENCHMARKS['xSLG']['pr1'], LEAGUE_BENCHMARKS['xSLG']['pr50'], LEAGUE_BENCHMARKS['xSLG']['pr99']),
-                HIT: getAttributeScore(xBA, LEAGUE_BENCHMARKS['xBA']['pr1'], LEAGUE_BENCHMARKS['xBA']['pr50'], LEAGUE_BENCHMARKS['xBA']['pr99']),
-                EYE: getAttributeScore(xwOBA, LEAGUE_BENCHMARKS['xwOBA']['pr1'], LEAGUE_BENCHMARKS['xwOBA']['pr50'], LEAGUE_BENCHMARKS['xwOBA']['pr99'])
+                POW: Math.round(powScore),
+                HIT: Math.round(hitScore),
+                EYE: Math.round(eyeScore)
             };
         }
 
+        // 修改後的概率計算函數，支援極端屬性值
+        function calculateProbabilitiesExtreme(pow, hit, eye) {
+            // 對於極端屬性值的特殊處理
+            if (pow >= 400 || hit >= 400 || eye >= 400) {
+                // 使用改進的極端值概率計算
+                return calculateProbabilitiesExtremeCore(pow, hit, eye);
+            }
+            
+            // 正常情況使用原有邏輯
+            return calculateProbabilities(pow, hit, eye);
+        }
+
+        function calculateProbabilitiesExtremeCore(pow, hit, eye) {
+            // 基礎概率計算，支援極端值
+            const powCapped = Math.min(pow, 500);
+            const hitCapped = Math.min(hit, 500);
+            const eyeCapped = Math.min(eye, 500);
+            
+            // 全壘打率 - 支援極端值
+            let pHR;
+            if (powCapped >= 500) {
+                pHR = 0.99; // 理論極限：99%全壘打率
+            } else if (powCapped >= 300) {
+                // 300-500 的高端映射
+                pHR = 0.1 + (powCapped - 300) / 200 * 0.89; // 0.1 到 0.99
+            } else {
+                // 使用原有的 S-curve 插值
+                pHR = interpolateSCurve(powCapped, HR_S_CURVE_POW_ANCHORS);
+            }
+            
+            // BABIP - 支援極端值
+            let babip;
+            if (hitCapped >= 500) {
+                babip = 0.95; // 理論極限BABIP
+            } else if (hitCapped >= 300) {
+                babip = 0.4 + (hitCapped - 300) / 200 * 0.55; // 0.4 到 0.95
+            } else {
+                babip = interpolateSCurve(hitCapped, BABIP_S_CURVE_HIT_ANCHORS);
+            }
+            
+            // 保送率 - 支援極端值
+            let pBB;
+            if (eyeCapped >= 500) {
+                pBB = 0.95; // 理論極限保送率
+            } else if (eyeCapped >= 300) {
+                pBB = 0.2 + (eyeCapped - 300) / 200 * 0.75; // 0.2 到 0.95
+            } else {
+                pBB = interpolateSCurve(eyeCapped, BB_S_CURVE_EYE_ANCHORS);
+            }
+            
+            // 三振率 - 支援極端值
+            let kRateEffectiveness;
+            if (eyeCapped >= 500) {
+                kRateEffectiveness = -0.95; // 理論極限：幾乎不三振
+            } else if (eyeCapped >= 300) {
+                kRateEffectiveness = -0.5 + (eyeCapped - 300) / 200 * -0.45; // -0.5 到 -0.95
+            } else {
+                kRateEffectiveness = interpolateSCurve(eyeCapped, K_EYE_EFFECTIVENESS_S_CURVE_ANCHORS);
+            }
+            
+            const hitEffectiveness = scaleAttributeToEffectiveness(hitCapped, K_HIT_EFFECT_MIDPOINT, 55.0, false);
+            const kRate = getRateFromEffectiveness(
+                AVG_K_RATE_AT_MIDPOINT, MIN_K_RATE_CAP, MAX_K_RATE_CAP,
+                K_RATE_EYE_WEIGHT * kRateEffectiveness + K_RATE_HIT_WEIGHT * hitEffectiveness
+            );
+            
+            // 計算其他結果的概率
+            const pContact = Math.max(0.01, 1.0 - kRate);
+            const pBIP = pContact * (1.0 - pBB);
+            const pHRGivenBIP = Math.min(0.99, pHR / Math.max(0.01, pBIP));
+            const pHitGivenBIPNotHR = Math.min(0.98, babip);
+            
+            // 二壘安打比例
+            const powEffectiveness = scaleAttributeToEffectiveness(powCapped, EXTRABASE_POW_EFFECT_MIDPOINT, EXTRABASE_POW_EFFECT_SCALE);
+            const hitEffectivenessForExtrabase = scaleAttributeToEffectiveness(hitCapped, EXTRABASE_HIT_EFFECT_MIDPOINT, EXTRABASE_HIT_EFFECT_SCALE);
+            const extrabaseEffectiveness = EXTRABASE_POW_WEIGHT * powEffectiveness + EXTRABASE_HIT_WEIGHT * hitEffectivenessForExtrabase;
+            const p2BPerHitBIPNotHR = getRateFromEffectiveness(
+                AVG_2B_PER_HIT_BIP_NOT_HR_AT_MIDPOINT, MIN_2B_PER_HIT_BIP_NOT_HR, MAX_2B_PER_HIT_BIP_NOT_HR, extrabaseEffectiveness
+            );
+            
+            // 最終概率計算
+            const finalPHR = pBIP * pHRGivenBIP;
+            const pHitBIPNotHR = pBIP * (1 - pHRGivenBIP) * pHitGivenBIPNotHR;
+            const p2B = pHitBIPNotHR * p2BPerHitBIPNotHR;
+            const p1B = pHitBIPNotHR * (1 - p2BPerHitBIPNotHR);
+            const pHBP = LEAGUE_AVG_HBP_RATE;
+            const pK = kRate;
+            const pIPO = Math.max(0.001, 1.0 - finalPHR - p2B - p1B - pBB - pHBP - pK);
+            
+            return {
+                HR: finalPHR,
+                '2B': p2B,
+                '1B': p1B,
+                BB: pBB,
+                HBP: pHBP,
+                K: pK,
+                IPO: pIPO
+            };
+        }
+
+        // 修改模擬函數支援極端值檢測
+        function simulatePlayerStats(pow, hit, eye, numSeasons = 100, paPerSeason = 600) {
+            // 檢測是否為極端值
+            const isExtremeCase = pow >= 300 || hit >= 300 || eye >= 300;
+            
+            if (isExtremeCase) {
+                console.log(`🔥 檢測到極端屬性值: POW=${pow}, HIT=${hit}, EYE=${eye}`);
+            }
+            
+            // 使用改進的概率計算
+            const probs = isExtremeCase ? 
+                calculateProbabilitiesExtremeCore(pow, hit, eye) : 
+                calculateProbabilities(pow, hit, eye);
+            
+            let totalStats = {
+                HR: 0, '2B': 0, '1B': 0, BB: 0, HBP: 0, K: 0, IPO: 0,
+                H: 0, AB: 0, PA: 0, OUT: 0
+            };
+            
+            for (let season = 0; season < numSeasons; season++) {
+                const seasonResult = simulateSeason(paPerSeason, probs);
+                Object.keys(totalStats).forEach(key => {
+                    totalStats[key] += seasonResult[key] || 0;
+                });
+            }
+            
+            // 計算平均數據
+            const avgStats = calculateSimStats({
+                HR: totalStats.HR / numSeasons,
+                '2B': totalStats['2B'] / numSeasons,
+                '1B': totalStats['1B'] / numSeasons,
+                BB: totalStats.BB / numSeasons,
+                HBP: totalStats.HBP / numSeasons,
+                K: totalStats.K / numSeasons,
+                IPO: totalStats.IPO / numSeasons,
+                H: totalStats.H / numSeasons,
+                AB: totalStats.AB / numSeasons,
+                PA: totalStats.PA / numSeasons
+            });
+            
+            if (isExtremeCase) {
+                console.log(`🎯 極端值模擬結果: BA=${avgStats.BA.toFixed(3)}, SLG=${avgStats.SLG.toFixed(3)}, OBP=${avgStats.OBP.toFixed(3)}`);
+            }
+            
+            return avgStats;
+        }
+
+        // 測試極端值的輔助函數
+        function testExtremeValueHandling() {
+            console.log("🧪 開始極端值處理測試...");
+            
+            // 測試理論極限
+            const extremeAttribs = calculatePlayerGameAttributes(1.0, 4.0, 1.0);
+            console.log("理論極限轉換結果:", extremeAttribs);
+            
+            // 測試反向模擬
+            const extremeStats = simulatePlayerStats(extremeAttribs.POW, extremeAttribs.HIT, extremeAttribs.EYE, 50, 600);
+            console.log("極限三圍模擬結果:", {
+                BA: extremeStats.BA.toFixed(3),
+                SLG: extremeStats.SLG.toFixed(3),
+                OBP: extremeStats.OBP.toFixed(3),
+                HR: extremeStats.HR_count
+            });
+            
+            // 檢查是否達到理論極限
+            const baError = Math.abs(extremeStats.BA - 1.0);
+            const slgError = Math.abs(extremeStats.SLG - 4.0);
+            const obpError = Math.abs(extremeStats.OBP - 1.0);
+            
+            console.log("誤差分析:", {
+                BA_error: baError.toFixed(3),
+                SLG_error: slgError.toFixed(3),
+                OBP_error: obpError.toFixed(3),
+                status: (baError < 0.1 && slgError < 0.5 && obpError < 0.1) ? "✅ 極限值處理成功" : "❌ 需要進一步調整"
+            });
+        }
+
+        // 在頁面載入後自動測試（可選）
+        // window.addEventListener('load', testExtremeValueHandling);
         function interpolateSCurve(value, anchors) {
             if (!anchors || !anchors.length) return 0.0;
             const cappedValue = Math.min(value, SOFT_CAP_ATTRIBUTE_VALUE * 1.1);
@@ -752,8 +975,8 @@
                 return;
             }
             
-            if (pow > 505 || hit > 342 || eye > 250) {
-                alert('三圍不得超過150！');
+            if (pow > 500 || hit > 500 || eye > 500) {
+                alert('三圍不得超過500！');
                 return;
             }
             
