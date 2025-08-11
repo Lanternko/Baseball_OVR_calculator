@@ -1,4 +1,4 @@
-// main.js - 主程式邏輯
+// main.js - 主程式邏輯（修正版）
 
 // 計算三圍和 OVR（從數據輸入）
 function calculateAttributes() {
@@ -72,6 +72,37 @@ function calculateStats() {
 
 // 🧪 測試函數群組
 
+// 測試正常範圍精確度
+function testNormalRange() {
+    console.log("🧪 測試正常範圍精確度 (100,100,100)...");
+    
+    const normalStats = simulatePlayerStats(100, 100, 100, 100, 600);
+    const normalOVR = calculateBatterOVR(100, 100, 100);
+    
+    const testResults = document.getElementById('testResults');
+    if (testResults) {
+        testResults.style.display = 'block';
+        testResults.innerHTML = `
+🎯 正常範圍測試結果:
+
+🔧 輸入三圍: POW=100, HIT=100, EYE=100
+
+📈 模擬表現:
+   打擊率: ${normalStats.BA.toFixed(3)} (期望: ~0.320)
+   長打率: ${normalStats.SLG.toFixed(3)} (期望: ~0.590)
+   上壘率: ${normalStats.OBP.toFixed(3)} (期望: ~0.400)
+   OPS: ${normalStats.OPS.toFixed(3)} (期望: ~0.990)
+   全壘打: ${normalStats.HR_count} / 600 PA (期望: ~40)
+   三振率: ${(normalStats.K_rate*100).toFixed(1)}% (期望: ~15%)
+   保送率: ${(normalStats.BB_rate*100).toFixed(1)}% (期望: ~12%)
+   
+⭐ 綜合評價: OVR ${normalOVR.ovr}
+
+💡 這應該接近原型球員 PR99 的水準
+`;
+    }
+}
+
 // 測試理論極限值
 function testExtremeValues() {
     console.log("🧪 測試理論極限值 (BA=1.0, SLG=4.0, OBA=1.0)...");
@@ -81,8 +112,9 @@ function testExtremeValues() {
     const extremeOVR = calculateBatterOVR(extremeAttribs.POW, extremeAttribs.HIT, extremeAttribs.EYE);
     
     const testResults = document.getElementById('testResults');
-    testResults.style.display = 'block';
-    testResults.innerHTML = `
+    if (testResults) {
+        testResults.style.display = 'block';
+        testResults.innerHTML = `
 🎯 理論極限值測試結果:
 
 📊 輸入數據: BA=1.000, SLG=4.000, OBA=1.000
@@ -106,48 +138,17 @@ function testExtremeValues() {
    SLG 誤差: ${Math.abs(extremeStats.SLG - 4.0).toFixed(3)}
    OBP 誤差: ${Math.abs(extremeStats.OBP - 1.0).toFixed(3)}
 `;
+    }
 }
 
-// 測試高端值
-function testHighValues() {
-    console.log("🧪 測試高端值 (300, 300, 300)...");
-    
-    const highStats = simulatePlayerStats(300, 300, 300, 50, 600);
-    const highOVR = calculateBatterOVR(300, 300, 300);
-    
-    const testResults = document.getElementById('testResults');
-    testResults.style.display = 'block';
-    testResults.innerHTML = `
-🚀 高端值測試結果:
-
-🔧 輸入三圍: POW=300, HIT=300, EYE=300
-
-📈 模擬表現:
-   打擊率: ${highStats.BA.toFixed(3)}
-   長打率: ${highStats.SLG.toFixed(3)}
-   上壘率: ${highStats.OBP.toFixed(3)}
-   OPS: ${highStats.OPS.toFixed(3)}
-   全壘打: ${highStats.HR_count} / 600 PA (${(highStats.HR_count/600*100).toFixed(1)}%)
-   三振率: ${(highStats.K_rate*100).toFixed(1)}%
-   保送率: ${(highStats.BB_rate*100).toFixed(1)}%
-   
-⭐ 綜合評價: OVR ${highOVR.ovr}
-
-💡 期望表現:
-   應該達到明星級別的統計數據
-   BA > 0.700, SLG > 3.000, OBP > 0.700
-`;
-}
-
-// 測試當前系統上限
+// 測試當前系統各級別
 function testCurrentSystem() {
-    console.log("🧪 測試當前系統各個上限...");
+    console.log("🧪 測試當前系統各個級別...");
     
-    // 測試不同級別的三圍
     const testCases = [
         {name: "正常優秀 (99,99,99)", pow: 99, hit: 99, eye: 99},
-        {name: "超級明星 (150,150,150)", pow: 150, hit: 150, eye: 150},
-        {name: "極端值 (200,200,200)", pow: 200, hit: 200, eye: 200},
+        {name: "正常頂尖 (130,130,130)", pow: 130, hit: 130, eye: 130},
+        {name: "極端入門 (200,200,200)", pow: 200, hit: 200, eye: 200},
         {name: "理論上限 (500,500,500)", pow: 500, hit: 500, eye: 500}
     ];
     
@@ -163,82 +164,65 @@ function testCurrentSystem() {
     });
     
     const testResults = document.getElementById('testResults');
-    testResults.style.display = 'block';
-    testResults.innerHTML = resultsText;
+    if (testResults) {
+        testResults.style.display = 'block';
+        testResults.innerHTML = resultsText;
+    }
 }
 
 // 頁面載入完成後的初始化
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 棒球能力值計算器已載入（分離版本）');
+    console.log('🚀 棒球能力值計算器 v2.1 已載入（模塊化 & 修正版）');
     
     // 設置輸入驗證
     ['xBA', 'xSLG', 'xwOBA'].forEach(id => {
         const input = document.getElementById(id);
-        input.addEventListener('input', function() {
-            const value = parseFloat(this.value);
-            const maxVal = id === 'xSLG' ? 4 : 1;
-            if (value < 0 || value > maxVal) {
-                this.style.borderColor = '#ff6b6b';
-            } else {
-                this.style.borderColor = '#4ecdc4';
-            }
-        });
+        if (input) {
+            input.addEventListener('input', function() {
+                const value = parseFloat(this.value);
+                const maxVal = id === 'xSLG' ? 4 : 1;
+                if (value < 0 || value > maxVal) {
+                    this.style.borderColor = '#ff6b6b';
+                } else {
+                    this.style.borderColor = '#4ecdc4';
+                }
+            });
+        }
     });
     
     ['inputPOW', 'inputHIT', 'inputEYE'].forEach(id => {
         const input = document.getElementById(id);
-        input.addEventListener('input', function() {
-            const value = parseFloat(this.value);
-            if (value < 0 || value > 500) {
+        if (input) {
+            input.addEventListener('input', function() {
+                const value = parseFloat(this.value);
+                if (value < 0 || value > 500) {
+                    this.style.borderColor = '#ff6b6b';
+                } else if (value >= 200) {
+                    this.style.borderColor = '#ff9500'; // 橙色表示極端值
+                } else {
+                    this.style.borderColor = '#4ecdc4';
+                }
+            });
+        }
+    });
+    
+    const paInput = document.getElementById('inputPA');
+    if (paInput) {
+        paInput.addEventListener('input', function() {
+            const value = parseInt(this.value);
+            if (value < 1 || value > 1000) {
                 this.style.borderColor = '#ff6b6b';
-            } else if (value > 200) {
-                this.style.borderColor = '#ff9500'; // 橙色表示極端值
             } else {
                 this.style.borderColor = '#4ecdc4';
             }
         });
-    });
+    }
     
-    const paInput = document.getElementById('inputPA');
-    paInput.addEventListener('input', function() {
-        const value = parseInt(this.value);
-        if (value < 1 || value > 1000) {
-            this.style.borderColor = '#ff6b6b';
-        } else {
-            this.style.borderColor = '#4ecdc4';
-        }
-    });
-    
-    // 自動運行一次系統測試（可選）
-    // testCurrentSystem();
+    // 自動運行一次正常範圍測試（驗證修正效果）
+    // testNormalRange();
 });
 
-// 測試極端值處理的完整函數
-function testExtremeValueHandling() {
-    console.log("🧪 開始極端值處理完整測試...");
-    
-    // 測試理論極限
-    const extremeAttribs = calculatePlayerGameAttributes(1.0, 4.0, 1.0);
-    console.log("理論極限轉換結果:", extremeAttribs);
-    
-    // 測試反向模擬
-    const extremeStats = simulatePlayerStats(extremeAttribs.POW, extremeAttribs.HIT, extremeAttribs.EYE, 50, 600);
-    console.log("極限三圍模擬結果:", {
-        BA: extremeStats.BA.toFixed(3),
-        SLG: extremeStats.SLG.toFixed(3),
-        OBP: extremeStats.OBP.toFixed(3),
-        HR: extremeStats.HR_count
-    });
-    
-    // 檢查是否達到理論極限
-    const baError = Math.abs(extremeStats.BA - 1.0);
-    const slgError = Math.abs(extremeStats.SLG - 4.0);
-    const obpError = Math.abs(extremeStats.OBP - 1.0);
-    
-    console.log("誤差分析:", {
-        BA_error: baError.toFixed(3),
-        SLG_error: slgError.toFixed(3),
-        OBP_error: obpError.toFixed(3),
-        status: (baError < 0.1 && slgError < 0.5 && obpError < 0.1) ? "✅ 極限值處理成功" : "❌ 需要進一步調整"
-    });
-}
+// 窗口全局函數，供測試使用
+window.testNormalRange = testNormalRange;
+window.testExtremeValues = testExtremeValues;
+window.testCurrentSystem = testCurrentSystem;

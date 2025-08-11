@@ -66,13 +66,6 @@ function calculateSimStats(simResults) {
 
 // 運行多個賽季的模擬
 function simulatePlayerStats(pow, hit, eye, numSeasons = NUM_SIMULATIONS, paPerSeason = 600) {
-    // 檢測是否為極端值
-    const isExtremeCase = pow >= EXTREME_VALUE_THRESHOLD || hit >= EXTREME_VALUE_THRESHOLD || eye >= EXTREME_VALUE_THRESHOLD;
-    
-    if (isExtremeCase) {
-        console.log(`🔥 檢測到極端屬性值: POW=${pow}, HIT=${hit}, EYE=${eye}`);
-    }
-    
     // 獲取事件概率
     const probs = getPAEventProbabilities(pow, hit, eye);
     
@@ -101,10 +94,6 @@ function simulatePlayerStats(pow, hit, eye, numSeasons = NUM_SIMULATIONS, paPerS
         AB: totalStats.AB / numSeasons,
         PA: totalStats.PA / numSeasons
     });
-    
-    if (isExtremeCase) {
-        console.log(`🎯 極端值模擬結果: BA=${avgStats.BA.toFixed(3)}, SLG=${avgStats.SLG.toFixed(3)}, OBP=${avgStats.OBP.toFixed(3)}`);
-    }
     
     return avgStats;
 }

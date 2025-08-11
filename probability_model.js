@@ -1,4 +1,4 @@
-// probability-model.js - 概率計算模型
+// probability-model.js - 概率計算模型（修正版）
 
 // 輔助函數：S-curve 插值
 function interpolateSCurve(value, anchors) {
@@ -32,7 +32,7 @@ function getRateFromEffectiveness(baseRateAtMidpoint, minRate, maxRate, effectiv
         : baseRateAtMidpoint + effectivenessFactor * (baseRateAtMidpoint - minRate);
 }
 
-// 正常範圍的概率計算
+// 🔥 正常範圍的概率計算（完全保持原版邏輯）
 function getPAEventProbabilitiesNormal(POW, HIT, EYE, playerHBPRate = LEAGUE_AVG_HBP_RATE) {
     // 計算 K%, BB%, HBP%
     const eyeKEffect = interpolateSCurve(EYE, K_EYE_EFFECTIVENESS_S_CURVE_ANCHORS);
@@ -92,7 +92,7 @@ function getPAEventProbabilitiesNormal(POW, HIT, EYE, playerHBPRate = LEAGUE_AVG
     return {HR: pHR, '2B': p2B, '1B': p1B, BB: pBB, HBP: pHBP, K: pK, IPO: pIPO};
 }
 
-// 🔥 極端值的概率計算
+// 🔥 極端值的概率計算（僅在屬性值 >= 200 時使用）
 function getPAEventProbabilitiesExtreme(POW, HIT, EYE, playerHBPRate = LEAGUE_AVG_HBP_RATE) {
     console.log(`🔥 極端值計算: POW=${POW}, HIT=${HIT}, EYE=${EYE}`);
     
@@ -111,18 +111,19 @@ function getPAEventProbabilitiesExtreme(POW, HIT, EYE, playerHBPRate = LEAGUE_AV
     
     // 極端值時大幅降低三振率
     if (HIT >= 300 || EYE >= 300) {
-        kRate = Math.max(0.01, kRate * 0.2);
+        kRate = Math.max(0.005, kRate * 0.1);
     }
     
-    const pHBP = LEAGUE_AVG_HBP_RATE;
+    // HBP 極端值時稍微提高
+    let pHBP = LEAGUE_AVG_HBP_RATE;
+    if (EYE >= 350) {
+        pHBP = Math.min(0.050, LEAGUE_AVG_HBP_RATE * 3);
+    }
     
-    console.log(`基礎概率: HR=${pHR.toFixed(3)}, BABIP=${babip.toFixed(3)}, BB=${pBB.toFixed(3)}, K=${kRate.toFixed(3)}`);
-    
-    // 檢查基礎概率是否合理
+    // 確保概率合理分配
     const basicSum = pHR + pBB + pHBP + kRate;
     if (basicSum >= 1.0) {
-        // 按比例縮放
-        const scale = 0.95 / basicSum;
+        const scale = 0.98 / basicSum;
         const scaledHR = pHR * scale;
         const scaledBB = pBB * scale;
         const scaledK = kRate * scale;
@@ -130,8 +131,8 @@ function getPAEventProbabilitiesExtreme(POW, HIT, EYE, playerHBPRate = LEAGUE_AV
         
         return {
             HR: scaledHR,
-            '2B': remainingProb * 0.3,
-            '1B': remainingProb * 0.7,
+            '2B': remainingProb * 0.4,
+            '1B': remainingProb * 0.6,
             BB: scaledBB,
             HBP: pHBP,
             K: scaledK,
@@ -144,14 +145,13 @@ function getPAEventProbabilitiesExtreme(POW, HIT, EYE, playerHBPRate = LEAGUE_AV
     const pHitFromBIP = remainingBIP * babip;
     const pIPO = remainingBIP * (1.0 - babip);
     
-    // 分配一二壘安打 - 極端值時提高二壘安打比例
-    let extrabaseEffect = (POW + HIT) / 1000;
-    if (POW >= 300) {
-        extrabaseEffect = Math.min(0.8, extrabaseEffect * 2);
-    }
-    const p2BRatio = Math.min(0.8, 0.3 + extrabaseEffect);
-    const p2B = pHitFromBIP * p2BRatio;
-    const p1B = pHitFromBIP * (1 - p2BRatio);
+    // 極端值時提高長打比例
+    let extrabaseRatio = 0.3;
+    if (POW >= 300) extrabaseRatio = Math.min(0.7, 0.3 + (POW - 300) / 1000);
+    if (HIT >= 300) extrabaseRatio = Math.min(0.8, extrabaseRatio + (HIT - 300) / 2000);
+    
+    const p2B = pHitFromBIP * extrabaseRatio;
+    const p1B = pHitFromBIP * (1 - extrabaseRatio);
     
     const result = {
         HR: pHR,
@@ -163,16 +163,13 @@ function getPAEventProbabilitiesExtreme(POW, HIT, EYE, playerHBPRate = LEAGUE_AV
         IPO: pIPO
     };
     
-    console.log(`最終結果:`, result);
-    const totalProb = Object.values(result).reduce((a,b) => a+b, 0);
-    console.log(`概率總和: ${totalProb.toFixed(4)}`);
-    
+    console.log(`極端值結果:`, result);
     return result;
 }
 
-// 主要的概率計算函數（自動選擇正常或極端值計算）
+// 🔥 主要的概率計算函數（智能判斷使用哪種計算方式）
 function getPAEventProbabilities(POW, HIT, EYE, playerHBPRate = LEAGUE_AVG_HBP_RATE) {
-    // 檢測是否為極端值
+    // 只有當任一屬性值 >= 200 時才使用極端值計算
     const isExtreme = POW >= EXTREME_VALUE_THRESHOLD || HIT >= EXTREME_VALUE_THRESHOLD || EYE >= EXTREME_VALUE_THRESHOLD;
     
     if (isExtreme) {
@@ -180,6 +177,6 @@ function getPAEventProbabilities(POW, HIT, EYE, playerHBPRate = LEAGUE_AVG_HBP_R
         return getPAEventProbabilitiesExtreme(POW, HIT, EYE, playerHBPRate);
     }
     
-    // 正常值使用標準計算
+    // 正常值使用原版精確計算
     return getPAEventProbabilitiesNormal(POW, HIT, EYE, playerHBPRate);
 }

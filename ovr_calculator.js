@@ -1,4 +1,4 @@
-// ovr-calculator.js - OVR 計算器
+// ovr_calculator.js - OVR 計算器
 
 // 數據轉三圍的計算函數（支援極端值）
 function calculatePlayerGameAttributes(xBA, xSLG, xwOBA) {
