@@ -173,6 +173,15 @@
             margin-top: 10px;
         }
         
+        .ovr-breakdown {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+        
         .icon {
             font-size: 1.2em;
         }
@@ -220,7 +229,7 @@
                 
                 <div class="input-group">
                     <label for="xSLG">預期長打率 (xSLG)</label>
-                    <input type="number" id="xSLG" step="0.001" placeholder="例如: 0.450" min="0" max="1">
+                    <input type="number" id="xSLG" step="0.001" placeholder="例如: 0.450" min="0" max="4">
                     <div class="help-text">通常在 0.300 - 0.700 之間</div>
                 </div>
                 
@@ -251,6 +260,7 @@
                     <div class="ovr-display">
                         <div class="ovr-number" id="ovrFromStats">-</div>
                         <div class="ovr-label">Overall Rating (OVR)</div>
+                        <div class="ovr-breakdown" id="ovrBreakdownStats"></div>
                     </div>
                 </div>
             </div>
@@ -323,6 +333,7 @@
                     <div class="ovr-display">
                         <div class="ovr-number" id="ovrFromAttributes">-</div>
                         <div class="ovr-label">Overall Rating (OVR)</div>
+                        <div class="ovr-breakdown" id="ovrBreakdownAttributes"></div>
                     </div>
                 </div>
             </div>
@@ -330,7 +341,7 @@
     </div>
 
     <script>
-        // 常數定義 (從你的 game_constants.py 轉換)
+        // 常數定義
         const LEAGUE_BENCHMARKS = {
             'xBA': {'pr1': 0.200, 'pr50': 0.250, 'pr99': 0.330},
             'xSLG': {'pr1': 0.310, 'pr50': 0.400, 'pr99': 0.640},
@@ -341,11 +352,10 @@
         const SOFT_CAP_ATTRIBUTE_VALUE = 150.0;
         const ATTR_EFFECT_MIDPOINT = 70.0;
         
-        // S-Curve 錨點
         const HR_S_CURVE_POW_ANCHORS = [
             [0, 0.0005], [30, 0.003], [40, 0.0067], [60, 0.020],
             [70, 0.0333], [85, 0.045], [99, 0.0580], [115, 0.072],
-            [130, 0.0870], [140, 0.098], [150, 0.110]
+            [125, 0.080], [130, 0.0870], [140, 0.098], [150, 0.110]
         ];
         
         const BABIP_S_CURVE_HIT_ANCHORS = [
@@ -366,7 +376,6 @@
             [130, -0.70], [140, -0.75], [150, -0.80]
         ];
         
-        // 常數參數
         const AVG_K_RATE_AT_MIDPOINT = 0.220;
         const MIN_K_RATE_CAP = 0.080;
         const MAX_K_RATE_CAP = 0.350;
@@ -386,8 +395,8 @@
         const EXTRABASE_HIT_WEIGHT = 0.50;
         
         const LEAGUE_AVG_HBP_RATE = 0.010;
-        
-        // 數據轉三圍的函數（移除99的限制）
+        const NUM_SIMULATIONS = 100; // 降低模擬次數提升效能
+
         function calculatePlayerGameAttributes(xBA, xSLG, xwOBA) {
             const pr1_map = ATTRIBUTE_MAPPING_POINTS['pr1'];
             const pr50_map = ATTRIBUTE_MAPPING_POINTS['pr50'];
@@ -400,63 +409,38 @@
                 if (metricVal <= pr1Benchmark) {
                     score = pr1_map;
                 } else if (metricVal <= pr50Benchmark) {
-                    if ((pr50Benchmark - pr1Benchmark) === 0) {
-                        score = pr50_map;
-                    } else {
-                        score = pr1_map + delta_50_1 * (metricVal - pr1Benchmark) / (pr50Benchmark - pr1Benchmark);
-                    }
+                    score = pr1_map + delta_50_1 * (metricVal - pr1Benchmark) / (pr50Benchmark - pr1Benchmark);
                 } else if (metricVal <= pr99Benchmark) {
-                    if ((pr99Benchmark - pr50Benchmark) === 0) {
-                        score = pr99_map;
-                    } else {
-                        score = pr50_map + delta_99_50 * (metricVal - pr50Benchmark) / (pr99Benchmark - pr50Benchmark);
-                    }
+                    score = pr50_map + delta_99_50 * (metricVal - pr50Benchmark) / (pr99Benchmark - pr50Benchmark);
                 } else {
-                    // 允許超越PR99！這裡不設上限
-                    if ((pr99Benchmark - pr50Benchmark) === 0) {
-                        score = pr99_map;
-                    } else {
-                        const slope_pr50_pr99 = delta_99_50 / (pr99Benchmark - pr50Benchmark);
-                        score = pr99_map + slope_pr50_pr99 * (metricVal - pr99Benchmark);
-                    }
+                    const slope_pr50_pr99 = delta_99_50 / (pr99Benchmark - pr50Benchmark);
+                    score = pr99_map + slope_pr50_pr99 * (metricVal - pr99Benchmark);
                 }
-                // 只設最低限，不設上限，讓頂尖球員可以突破99
                 return Math.max(0, score);
             }
             
-            const hitAttribute = getAttributeScore(xBA, LEAGUE_BENCHMARKS['xBA']['pr1'], LEAGUE_BENCHMARKS['xBA']['pr50'], LEAGUE_BENCHMARKS['xBA']['pr99']);
-            const powAttribute = getAttributeScore(xSLG, LEAGUE_BENCHMARKS['xSLG']['pr1'], LEAGUE_BENCHMARKS['xSLG']['pr50'], LEAGUE_BENCHMARKS['xSLG']['pr99']);
-            const eyeAttribute = getAttributeScore(xwOBA, LEAGUE_BENCHMARKS['xwOBA']['pr1'], LEAGUE_BENCHMARKS['xwOBA']['pr50'], LEAGUE_BENCHMARKS['xwOBA']['pr99']);
-            
-            return {POW: powAttribute, HIT: hitAttribute, EYE: eyeAttribute};
+            return {
+                POW: getAttributeScore(xSLG, LEAGUE_BENCHMARKS['xSLG']['pr1'], LEAGUE_BENCHMARKS['xSLG']['pr50'], LEAGUE_BENCHMARKS['xSLG']['pr99']),
+                HIT: getAttributeScore(xBA, LEAGUE_BENCHMARKS['xBA']['pr1'], LEAGUE_BENCHMARKS['xBA']['pr50'], LEAGUE_BENCHMARKS['xBA']['pr99']),
+                EYE: getAttributeScore(xwOBA, LEAGUE_BENCHMARKS['xwOBA']['pr1'], LEAGUE_BENCHMARKS['xwOBA']['pr50'], LEAGUE_BENCHMARKS['xwOBA']['pr99'])
+            };
         }
-        
-        // S-curve 插值函數
+
         function interpolateSCurve(value, anchors) {
-            if (!anchors || anchors.length === 0) return 0.0;
-            
+            if (!anchors || !anchors.length) return 0.0;
             const cappedValue = Math.min(value, SOFT_CAP_ATTRIBUTE_VALUE * 1.1);
-            
-            if (cappedValue <= anchors[0][0]) {
-                return anchors[0][1];
-            }
-            if (cappedValue >= anchors[anchors.length - 1][0]) {
-                return anchors[anchors.length - 1][1];
-            }
-            
+            if (cappedValue <= anchors[0][0]) return anchors[0][1];
+            if (cappedValue >= anchors[anchors.length - 1][0]) return anchors[anchors.length - 1][1];
             for (let i = 0; i < anchors.length - 1; i++) {
                 const [x1, y1] = anchors[i];
                 const [x2, y2] = anchors[i + 1];
                 if (x1 <= cappedValue && cappedValue < x2) {
-                    if ((x2 - x1) === 0) return y1;
-                    return y1 + (y2 - y1) * (cappedValue - x1) / (x2 - x1);
+                    return (x2 - x1) ? y1 + (y2 - y1) * (cappedValue - x1) / (x2 - x1) : y1;
                 }
             }
-            
             return anchors[anchors.length - 1][1];
         }
         
-        // 屬性效能縮放函數
         function scaleAttributeToEffectiveness(attributeValue, midpoint, scale, effectIsPositive = true) {
             if (scale === 0) return 0.0;
             const normalizedValue = (attributeValue - midpoint) / scale;
@@ -464,131 +448,64 @@
             return effectIsPositive ? tanhVal : -tanhVal;
         }
         
-        // 從效能獲取比率
         function getRateFromEffectiveness(baseRateAtMidpoint, minRate, maxRate, effectivenessFactor) {
-            if (effectivenessFactor >= 0) {
-                return baseRateAtMidpoint + effectivenessFactor * (maxRate - baseRateAtMidpoint);
-            } else {
-                return baseRateAtMidpoint + effectivenessFactor * (baseRateAtMidpoint - minRate);
-            }
+            return effectivenessFactor >= 0 ? baseRateAtMidpoint + effectivenessFactor * (maxRate - baseRateAtMidpoint) :
+                baseRateAtMidpoint + effectivenessFactor * (baseRateAtMidpoint - minRate);
         }
         
-        // 計算 HR 率
-        function calculateHRRateFromPowSCurve(POW) {
-            return interpolateSCurve(POW, HR_S_CURVE_POW_ANCHORS);
-        }
-        
-        // 計算 BABIP
-        function calculateBABIPFromHitSCurve(HIT) {
-            const babip = interpolateSCurve(HIT, BABIP_S_CURVE_HIT_ANCHORS);
-            return Math.max(0.190, Math.min(0.450, babip));
-        }
-        
-        // 計算 BB 率
-        function calculateBBRateFromEyeSCurve(EYE) {
-            const bbRate = interpolateSCurve(EYE, BB_S_CURVE_EYE_ANCHORS);
-            return Math.max(0.020, Math.min(0.250, bbRate));
-        }
-        
-        // 計算 K 率
+        function calculateHRRateFromPowSCurve(POW) { return interpolateSCurve(POW, HR_S_CURVE_POW_ANCHORS); }
+        function calculateBABIPFromHitSCurve(HIT) { return Math.max(0.190, Math.min(0.450, interpolateSCurve(HIT, BABIP_S_CURVE_HIT_ANCHORS))); }
+        function calculateBBRateFromEyeSCurve(EYE) { return Math.max(0.020, Math.min(0.250, interpolateSCurve(EYE, BB_S_CURVE_EYE_ANCHORS))); }
         function calculateKRateCombined(EYE, HIT) {
             const eyeKEffectiveness = interpolateSCurve(EYE, K_EYE_EFFECTIVENESS_S_CURVE_ANCHORS);
             const hitKEffectiveness = scaleAttributeToEffectiveness(HIT, K_HIT_EFFECT_MIDPOINT, K_HIT_EFFECT_SCALE, false);
-            
-            const combinedKEffectiveness = (K_RATE_EYE_WEIGHT * eyeKEffectiveness + K_RATE_HIT_WEIGHT * hitKEffectiveness);
-            
-            const kRate = getRateFromEffectiveness(AVG_K_RATE_AT_MIDPOINT, MIN_K_RATE_CAP, MAX_K_RATE_CAP, combinedKEffectiveness);
-            return Math.max(MIN_K_RATE_CAP, Math.min(MAX_K_RATE_CAP, kRate));
+            const combinedKEffectiveness = K_RATE_EYE_WEIGHT * eyeKEffectiveness + K_RATE_HIT_WEIGHT * hitKEffectiveness;
+            return Math.max(MIN_K_RATE_CAP, Math.min(MAX_K_RATE_CAP, getRateFromEffectiveness(AVG_K_RATE_AT_MIDPOINT, MIN_K_RATE_CAP, MAX_K_RATE_CAP, combinedKEffectiveness)));
         }
         
-        // 計算 PA 事件機率
         function getPAEventProbabilities(POW, HIT, EYE, playerHBPRate = LEAGUE_AVG_HBP_RATE) {
-            // 計算基本比率
             const pK = calculateKRateCombined(EYE, HIT);
             const pBB = calculateBBRateFromEyeSCurve(EYE);
             const pHBP = Math.max(0.0, Math.min(0.05, playerHBPRate));
-            
-            // 計算 HR 率
             let pHR = calculateHRRateFromPowSCurve(POW);
-            
-            // EYE 和 HIT 對 HR 的修正
             const eyeEffHRMod = scaleAttributeToEffectiveness(EYE, 70.0, 40.0, true);
             const eyeModifier = 1.0 + (eyeEffHRMod * 0.12);
-            
             const hitEffHRMod = scaleAttributeToEffectiveness(HIT, 70.0, 40.0, true);
             const hitModifier = 1.0 + (hitEffHRMod * 0.18);
-            
-            pHR = pHR * eyeModifier * hitModifier;
-            pHR = Math.max(0.0, Math.min(pHR, 0.20));
-            
-            // 計算剩餘 BIP 機率
+            pHR = Math.max(0.0, Math.min(pHR * eyeModifier * hitModifier, 0.20));
             const probSumNonBIPPlusHR = pK + pBB + pHBP + pHR;
-            
             let p1B, p2B, pIPO;
-            
             if (probSumNonBIPPlusHR >= 1.0) {
                 const scaleDown = 1.0 / probSumNonBIPPlusHR;
-                const scaledPK = pK * scaleDown;
-                const scaledPBB = pBB * scaleDown;
-                const scaledPHBP = pHBP * scaleDown;
-                pHR = Math.max(0, 1.0 - (scaledPK + scaledPBB + scaledPHBP));
-                
-                p1B = 0.0;
-                p2B = 0.0;
-                pIPO = 0.0;
+                pHR = Math.max(0, 1.0 - (pK * scaleDown + pBB * scaleDown + pHBP * scaleDown));
+                p1B = p2B = pIPO = 0.0;
             } else {
                 const pBIPForOtherOutcomes = 1.0 - probSumNonBIPPlusHR;
                 const pHitGivenBIPRemaining = calculateBABIPFromHitSCurve(HIT);
-                
                 const pTotalHitsOnRemainingBIP = pBIPForOtherOutcomes * pHitGivenBIPRemaining;
                 pIPO = Math.max(0, pBIPForOtherOutcomes * (1.0 - pHitGivenBIPRemaining));
-                
                 if (pTotalHitsOnRemainingBIP > 0) {
                     const powEffXBH = scaleAttributeToEffectiveness(POW, EXTRABASE_POW_EFFECT_MIDPOINT, EXTRABASE_POW_EFFECT_SCALE, true);
                     const hitEffXBH = scaleAttributeToEffectiveness(HIT, EXTRABASE_HIT_EFFECT_MIDPOINT, EXTRABASE_HIT_EFFECT_SCALE, true);
                     const combinedEffXBH = EXTRABASE_POW_WEIGHT * powEffXBH + EXTRABASE_HIT_WEIGHT * hitEffXBH;
-                    
-                    const p2BGivenHitBIPNotHR = getRateFromEffectiveness(
-                        AVG_2B_PER_HIT_BIP_NOT_HR_AT_MIDPOINT,
-                        MIN_2B_PER_HIT_BIP_NOT_HR,
-                        MAX_2B_PER_HIT_BIP_NOT_HR,
-                        combinedEffXBH
-                    );
-                    
+                    const p2BGivenHitBIPNotHR = getRateFromEffectiveness(AVG_2B_PER_HIT_BIP_NOT_HR_AT_MIDPOINT, MIN_2B_PER_HIT_BIP_NOT_HR, MAX_2B_PER_HIT_BIP_NOT_HR, combinedEffXBH);
                     p2B = Math.max(0, pTotalHitsOnRemainingBIP * p2BGivenHitBIPNotHR);
                     p1B = Math.max(0, pTotalHitsOnRemainingBIP * (1.0 - p2BGivenHitBIPNotHR));
                 } else {
-                    p1B = 0.0;
-                    p2B = 0.0;
+                    p1B = p2B = 0.0;
                 }
             }
-            
-            return {
-                HR: pHR,
-                '2B': p2B,
-                '1B': p1B,
-                BB: pBB,
-                HBP: pHBP,
-                K: pK,
-                IPO: pIPO
-            };
+            return {HR: pHR, '2B': p2B, '1B': p1B, BB: pBB, HBP: pHBP, K: pK, IPO: pIPO};
         }
         
-        // 模擬一個賽季
         function simulateSeason(numPA, probabilities) {
-            const outcomes = {
-                HR: 0, '2B': 0, '1B': 0, BB: 0, HBP: 0, K: 0, IPO: 0,
-                H: 0, AB: 0, PA: 0, OUT: 0
-            };
-            
+            const outcomes = {HR: 0, '2B': 0, '1B': 0, BB: 0, HBP: 0, K: 0, IPO: 0, H: 0, AB: 0, PA: 0, OUT: 0};
             const eventOrder = ['HR', '2B', '1B', 'BB', 'HBP', 'K', 'IPO'];
-            
             for (let i = 0; i < numPA; i++) {
                 outcomes.PA += 1;
                 const randVal = Math.random();
                 let cumulativeProb = 0.0;
-                let chosenEvent = 'IPO'; // 預設值
-                
+                let chosenEvent = 'IPO';
                 for (const eventType of eventOrder) {
                     const prob = probabilities[eventType] || 0;
                     cumulativeProb += prob;
@@ -597,9 +514,7 @@
                         break;
                     }
                 }
-                
                 outcomes[chosenEvent] += 1;
-                
                 if (['HR', '2B', '1B'].includes(chosenEvent)) {
                     outcomes.H += 1;
                     outcomes.AB += 1;
@@ -608,11 +523,9 @@
                     outcomes.AB += 1;
                 }
             }
-            
             return outcomes;
         }
         
-        // 計算統計數據
         function calculateSimStats(simResults) {
             const stats = {};
             const ab = simResults.AB || 0;
@@ -621,79 +534,180 @@
             const hbp = simResults.HBP || 0;
             const pa = simResults.PA || 0;
             const k = simResults.K || 0;
-            
             stats.BA = ab > 0 ? h / ab : 0;
             stats.OBP = pa > 0 ? (h + bb + hbp) / pa : 0;
-            
             const tb = (simResults['1B'] || 0) * 1 + (simResults['2B'] || 0) * 2 + (simResults.HR || 0) * 4;
             stats.SLG = ab > 0 ? tb / ab : 0;
             stats.OPS = stats.OBP + stats.SLG;
             stats.K_rate = pa > 0 ? k / pa : 0;
             stats.BB_rate = pa > 0 ? bb / pa : 0;
-            
             stats.HR_count = simResults.HR || 0;
             stats.BB_count = bb;
             stats.K_count = k;
             stats.H_count = h;
             stats.AB_count = ab;
             stats.PA_count = pa;
-            
             return stats;
         }
         
-        // 基於三圍和 xwOBA 的 OVR 計算
-        function calculateBatterOVR(pow, hit, eye, xwOBA = null) {
-            // 如果有 xwOBA，優先使用它作為基準
-            if (xwOBA !== null) {
-                // 基於 xwOBA 的 OVR 計算
-                // 聯盟平均 xwOBA ≈ 0.320，對應 OVR 70
-                // xwOBA 0.250 → OVR 50, xwOBA 0.400 → OVR 90, xwOBA 0.450+ → OVR 100+
-                
-                let baseOVR;
-                if (xwOBA <= 0.250) {
-                    baseOVR = 40 + (xwOBA - 0.200) / (0.250 - 0.200) * 10; // 40-50
-                } else if (xwOBA <= 0.320) {
-                    baseOVR = 50 + (xwOBA - 0.250) / (0.320 - 0.250) * 20; // 50-70
-                } else if (xwOBA <= 0.400) {
-                    baseOVR = 70 + (xwOBA - 0.320) / (0.400 - 0.320) * 20; // 70-90
-                } else if (xwOBA <= 0.450) {
-                    baseOVR = 90 + (xwOBA - 0.400) / (0.450 - 0.400) * 10; // 90-100
-                } else {
-                    // 超級球員區間，xwOBA > 0.450
-                    baseOVR = 100 + (xwOBA - 0.450) / 0.050 * 15; // 100+
-                }
-                
-                // 根據三圍的極端程度進行微調
-                const avgAttribute = (pow + hit + eye) / 3;
-                if (avgAttribute > 100) {
-                    baseOVR += (avgAttribute - 100) * 0.2; // 三圍超過100時額外加成
-                }
-                
-                return Math.round(Math.max(40, baseOVR));
+        // 修正的 OVR 計算函數（移除硬上限，降低精英門檻）
+        function calculateBatterOVR(pow, hit, eye) {
+            // 算術平均作為基礎
+            const arithmeticMean = (pow + hit + eye) / 3;
+            
+            // 幾何平均 (反映整體實力，避免短板效應)
+            const geometricMean = Math.pow(pow * hit * eye, 1/3);
+            
+            // 基礎 OVR：算術平均為主，幾何平均為輔
+            let baseOVR = arithmeticMean * 0.8 + geometricMean * 0.2;
+            
+            // === 更敏感的精英球員加成系統 ===
+            let eliteBonus = 0;
+            
+            // 1. 降低精英門檻：從 75 開始溫和加成
+            if (arithmeticMean > 75) {
+                const earlyEliteFactor = Math.min((arithmeticMean - 75) / 10, 1.0); // 75-85的進度
+                eliteBonus += earlyEliteFactor * earlyEliteFactor * 1.5; // 最多+1.5分
             }
             
-            // 如果沒有 xwOBA，使用三圍計算
-            // 將三圍轉換為等效的 xwOBA，然後計算 OVR
-            const weightedAvg = (pow * 0.35 + hit * 0.35 + eye * 0.30);
-            
-            // 三圍到 xwOBA 的映射
-            let estimatedXwOBA;
-            if (weightedAvg <= 40) {
-                estimatedXwOBA = 0.200 + (weightedAvg - 30) / 10 * 0.050; // 0.200-0.250
-            } else if (weightedAvg <= 70) {
-                estimatedXwOBA = 0.250 + (weightedAvg - 40) / 30 * 0.070; // 0.250-0.320
-            } else if (weightedAvg <= 99) {
-                estimatedXwOBA = 0.320 + (weightedAvg - 70) / 29 * 0.080; // 0.320-0.400
-            } else {
-                // 超過99的超級球員
-                estimatedXwOBA = 0.400 + (weightedAvg - 99) / 20 * 0.100; // 0.400+
+            // 2. 中段精英加成（85-99區間）
+            if (arithmeticMean > 85) {
+                const midEliteFactor = Math.min((arithmeticMean - 85) / 14, 1.0); // 85-99的進度
+                eliteBonus += midEliteFactor * midEliteFactor * 3.5; // 最多+3.5分
             }
             
-            // 遞歸調用，使用估算的 xwOBA
-            return calculateBatterOVR(pow, hit, eye, estimatedXwOBA);
+            // 3. 超級精英加成（99+區間，對數增長）
+            if (arithmeticMean > 99) {
+                const superEliteFactor = arithmeticMean - 99;
+                // 對數增長，但保留無上限特性
+                eliteBonus += Math.log(1 + superEliteFactor) * 3.0;
+            }
+            
+            // 4. 個別屬性突破獎勵（恢復適中強度）
+            let breakthroughBonus = 0;
+            [pow, hit, eye].forEach(attr => {
+                if (attr > 90) { // 降低門檻從95到90
+                    breakthroughBonus += (attr - 90) * 0.06;
+                }
+                if (attr > 105) {
+                    breakthroughBonus += (attr - 105) * 0.10;
+                }
+                if (attr > 120) { // 超人級別
+                    breakthroughBonus += (attr - 120) * 0.15;
+                }
+            });
+            eliteBonus += breakthroughBonus;
+            
+            // 5. 全面優秀獎勵（基於相關係數理論）
+            // 當三圍都超過某個門檻時，由於正相關性，實際稀有度更高
+            const allAboveThresholds = [
+                {threshold: 80, bonus: 0.8},  // 三圍都>80
+                {threshold: 85, bonus: 1.2},  // 三圍都>85
+                {threshold: 90, bonus: 1.8},  // 三圍都>90
+                {threshold: 95, bonus: 2.5},  // 三圍都>95
+                {threshold: 100, bonus: 3.5}, // 三圍都>100
+                {threshold: 110, bonus: 5.0}  // 三圍都>110
+            ];
+            
+            allAboveThresholds.forEach(({threshold, bonus}) => {
+                if (pow > threshold && hit > threshold && eye > threshold) {
+                    const excessAvg = (pow + hit + eye) / 3 - threshold;
+                    eliteBonus += bonus + excessAvg * 0.1; // 基礎獎勵+超出部分
+                }
+            });
+            
+            // 6. 均衡度調整
+            const maxAttribute = Math.max(pow, hit, eye);
+            const minAttribute = Math.min(pow, hit, eye);
+            const balanceRatio = minAttribute / maxAttribute;
+            
+            // 均衡獎勵（更敏感）
+            if (balanceRatio > 0.7 && arithmeticMean > 75) { // 降低門檻
+                const balanceBonus = (balanceRatio - 0.7) * (arithmeticMean - 75) * 0.05;
+                eliteBonus += balanceBonus;
+            }
+            
+            // 7. 極端專精補償
+            const hasExtremeTalent = maxAttribute > 95;
+            if (hasExtremeTalent && balanceRatio < 0.6) {
+                const specializationBonus = (maxAttribute - 95) * 0.08 * (1 - balanceRatio);
+                eliteBonus += specializationBonus;
+            }
+            
+            // 8. 相關性調整（輕微）
+            const correlationFactor = 0.75;
+            const correlationAdjustment = correlationFactor * eliteBonus * 0.12; // 進一步降低
+            eliteBonus -= correlationAdjustment;
+            
+            // 9. 實戰表現權重（溫和）
+            let performanceWeight = 1.0;
+            const estimatedOPS = (pow * 0.006 + hit * 0.004 + eye * 0.005) + 0.2;
+            
+            if (estimatedOPS > 1.200) { // 神級 OPS
+                performanceWeight += (estimatedOPS - 1.200) * 1.0;
+            } else if (estimatedOPS > 1.000) { // 傳奇級 OPS
+                performanceWeight += (estimatedOPS - 1.000) * 0.6;
+            } else if (estimatedOPS > 0.900) { // 頂尖 OPS
+                performanceWeight += (estimatedOPS - 0.900) * 0.4;
+            } else if (estimatedOPS > 0.800) { // 優秀 OPS
+                performanceWeight += (estimatedOPS - 0.800) * 0.2;
+            }
+            
+            eliteBonus *= performanceWeight;
+            
+            // === 移除硬上限，僅保留軟上限壓縮 ===
+            
+            // 最終 OVR 計算
+            let finalOVR = baseOVR + eliteBonus;
+            
+            // 多層軟上限，逐漸壓縮但不封頂
+            if (finalOVR > 140) {
+                finalOVR = 140 + (finalOVR - 140) * 0.2; // 140+ 區間大幅壓縮
+            } else if (finalOVR > 120) {
+                finalOVR = 120 + (finalOVR - 120) * 0.4; // 120-140 區間中度壓縮
+            } else if (finalOVR > 110) {
+                finalOVR = 110 + (finalOVR - 110) * 0.7; // 110-120 區間輕度壓縮
+            }
+            
+            // 理論上不設上限，但實際上會因為軟上限而很難超過某個值
+            finalOVR = Math.max(1, finalOVR);
+            
+            return {
+                ovr: Math.round(finalOVR),
+                breakdown: {
+                    arithmeticMean: arithmeticMean.toFixed(1),
+                    geometricMean: geometricMean.toFixed(1),
+                    baseOVR: baseOVR.toFixed(1),
+                    eliteBonus: eliteBonus.toFixed(1),
+                    balanceRatio: balanceRatio.toFixed(2),
+                    performanceWeight: performanceWeight.toFixed(2),
+                    estimatedOPS: estimatedOPS.toFixed(3),
+                    finalBeforeCap: (baseOVR + eliteBonus).toFixed(1),
+                    hasAllAbove80: (pow > 80 && hit > 80 && eye > 80) ? "✓" : "✗",
+                    hasAllAbove90: (pow > 90 && hit > 90 && eye > 90) ? "✓" : "✗"
+                }
+            };
         }
         
-        // 數據轉三圍的主函數
+        function displayOVRBreakdown(breakdown, targetElement) {
+            if (!targetElement) return;
+            
+            const html = `
+                <strong>OVR 計算詳情：</strong><br>
+                算術平均：${breakdown.arithmeticMean}<br>
+                基礎 OVR：${breakdown.baseOVR}<br>
+                精英加成：+${breakdown.eliteBonus} (無硬上限)<br>
+                加成前：${breakdown.finalBeforeCap}<br>
+                均衡度：${breakdown.balanceRatio}<br>
+                表現權重：${breakdown.performanceWeight}x<br>
+                預估 OPS：${breakdown.estimatedOPS}<br>
+                全面80+：${breakdown.hasAllAbove80}<br>
+                全面90+：${breakdown.hasAllAbove90}
+            `;
+            
+            targetElement.innerHTML = html;
+        }
+        
         function calculateAttributes() {
             const xBA = parseFloat(document.getElementById('xBA').value);
             const xSLG = parseFloat(document.getElementById('xSLG').value);
@@ -704,24 +718,24 @@
                 return;
             }
             
-            if (xBA < 0 || xBA > 1 || xSLG < 0 || xSLG > 1 || xwOBA < 0 || xwOBA > 1) {
+            if (xBA < 0 || xBA > 1 || xSLG < 0 || xSLG > 4 || xwOBA < 0 || xwOBA > 1) {
                 alert('請確保所有數據都在 0-1 之間！');
                 return;
             }
             
             const attributes = calculatePlayerGameAttributes(xBA, xSLG, xwOBA);
-            const ovr = calculateBatterOVR(attributes.POW, attributes.HIT, attributes.EYE, xwOBA);
+            const ovrResult = calculateBatterOVR(attributes.POW, attributes.HIT, attributes.EYE);
             
-            // 顯示結果
             document.getElementById('powResult').textContent = attributes.POW.toFixed(1);
             document.getElementById('hitResult').textContent = attributes.HIT.toFixed(1);
             document.getElementById('eyeResult').textContent = attributes.EYE.toFixed(1);
-            document.getElementById('ovrFromStats').textContent = ovr;
+            document.getElementById('ovrFromStats').textContent = ovrResult.ovr;
+            
+            displayOVRBreakdown(ovrResult.breakdown, document.getElementById('ovrBreakdownStats'));
             
             document.getElementById('attributeResults').style.display = 'block';
         }
         
-        // 三圍轉數據的主函數
         function calculateStats() {
             const pow = parseFloat(document.getElementById('inputPOW').value);
             const hit = parseFloat(document.getElementById('inputHIT').value);
@@ -738,19 +752,17 @@
                 return;
             }
             
-            // 計算事件機率
+            if (pow > 505 || hit > 342 || eye > 250) {
+                alert('三圍不得超過150！');
+                return;
+            }
+            
             const eventProbs = getPAEventProbabilities(pow, hit, eye);
             
-            // 進行多次模擬取平均值
-            const numSimulations = 100;
-            let totalStats = {
-                BA: 0, OBP: 0, SLG: 0, OPS: 0, K_rate: 0, BB_rate: 0, HR_count: 0
-            };
-            
-            for (let i = 0; i < numSimulations; i++) {
+            let totalStats = {BA: 0, OBP: 0, SLG: 0, OPS: 0, K_rate: 0, BB_rate: 0, HR_count: 0};
+            for (let i = 0; i < NUM_SIMULATIONS; i++) {
                 const seasonResults = simulateSeason(pa, eventProbs);
                 const stats = calculateSimStats(seasonResults);
-                
                 totalStats.BA += stats.BA;
                 totalStats.OBP += stats.OBP;
                 totalStats.SLG += stats.SLG;
@@ -760,15 +772,12 @@
                 totalStats.HR_count += stats.HR_count;
             }
             
-            // 計算平均值
             for (let key in totalStats) {
-                totalStats[key] /= numSimulations;
+                totalStats[key] /= NUM_SIMULATIONS;
             }
             
-            // 使用三圍計算 OVR（沒有 xwOBA）
-            const ovr = calculateBatterOVR(pow, hit, eye, null);
+            const ovrResult = calculateBatterOVR(pow, hit, eye);
             
-            // 顯示結果
             document.getElementById('baResult').textContent = totalStats.BA.toFixed(3);
             document.getElementById('obpResult').textContent = totalStats.OBP.toFixed(3);
             document.getElementById('slgResult').textContent = totalStats.SLG.toFixed(3);
@@ -776,35 +785,18 @@
             document.getElementById('hrResult').textContent = Math.round(totalStats.HR_count);
             document.getElementById('bbRateResult').textContent = (totalStats.BB_rate * 100).toFixed(1) + '%';
             document.getElementById('kRateResult').textContent = (totalStats.K_rate * 100).toFixed(1) + '%';
-            document.getElementById('ovrFromAttributes').textContent = ovr;
+            document.getElementById('ovrFromAttributes').textContent = ovrResult.ovr;
+            
+            displayOVRBreakdown(ovrResult.breakdown, document.getElementById('ovrBreakdownAttributes'));
             
             document.getElementById('statsResults').style.display = 'block';
         }
         
-        // 頁面載入時的初始化
         document.addEventListener('DOMContentLoaded', function() {
-            // 添加一些示例數據提示
-            const examples = {
-                // 大谷翔平 2024 的數據作為示例
-                xBA: 0.314,
-                xSLG: 0.660,
-                xwOBA: 0.431,
-                POW: 93,
-                HIT: 91,
-                EYE: 93,
-                PA: 731
-            };
-            
-            // 可以在這裡添加更多的初始化邏輯
             console.log('棒球能力值計算器已載入');
-        });
-        
-        // 輸入框的即時驗證
-        function setupInputValidation() {
-            const statsInputs = ['xBA', 'xSLG', 'xwOBA'];
-            const attributeInputs = ['inputPOW', 'inputHIT', 'inputEYE'];
             
-            statsInputs.forEach(id => {
+            // 設置輸入驗證
+            ['xBA', 'xSLG', 'xwOBA'].forEach(id => {
                 const input = document.getElementById(id);
                 input.addEventListener('input', function() {
                     const value = parseFloat(this.value);
@@ -816,7 +808,7 @@
                 });
             });
             
-            attributeInputs.forEach(id => {
+            ['inputPOW', 'inputHIT', 'inputEYE'].forEach(id => {
                 const input = document.getElementById(id);
                 input.addEventListener('input', function() {
                     const value = parseFloat(this.value);
@@ -837,10 +829,7 @@
                     this.style.borderColor = '#4ecdc4';
                 }
             });
-        }
-        
-        // 頁面載入完成後設置驗證
-        document.addEventListener('DOMContentLoaded', setupInputValidation);
+        });
     </script>
 </body>
 </html>
