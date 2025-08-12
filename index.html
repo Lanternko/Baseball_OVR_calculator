@@ -22,6 +22,12 @@
                 </h2>
                 
                 <div class="input-group">
+                    <label for="playerName">球員名稱 (可選)</label>
+                    <input type="text" id="playerName" placeholder="例如: Aaron Judge" maxlength="20">
+                    <div class="help-text">自定義球員名稱，留空則顯示"球員"</div>
+                </div>
+                
+                <div class="input-group">
                     <label for="xBA">預期打擊率 (xBA)</label>
                     <input type="number" id="xBA" step="0.001" placeholder="例如: 0.280" min="0" max="1">
                     <div class="help-text">通常在 0.200 - 0.350 之間</div>
@@ -57,11 +63,7 @@
                         <span class="result-value" id="eyeResult">-</span>
                     </div>
                     
-                    <div class="ovr-display">
-                        <div class="ovr-number" id="ovrFromStats">-</div>
-                        <div class="ovr-label">Overall Rating (OVR)</div>
-                        <div class="ovr-breakdown" id="ovrBreakdownStats"></div>
-                    </div>
+                    <div id="playerCardFromStats"></div>
                 </div>
             </div>
             
@@ -71,6 +73,12 @@
                     <span class="icon">⚙️</span>
                     三圍 → 預測數據
                 </h2>
+                
+                <div class="input-group">
+                    <label for="playerNameAttributes">球員名稱 (可選)</label>
+                    <input type="text" id="playerNameAttributes" placeholder="例如: 自訂球員" maxlength="20">
+                    <div class="help-text">自定義球員名稱，留空則顯示"球員"</div>
+                </div>
                 
                 <div class="input-group">
                     <label for="inputHIT">HIT (Hit Tool)</label>
@@ -130,11 +138,7 @@
                         <span class="result-value" id="kRateResult">-</span>
                     </div>
                     
-                    <div class="ovr-display">
-                        <div class="ovr-number" id="ovrFromAttributes">-</div>
-                        <div class="ovr-label">Overall Rating (OVR)</div>
-                        <div class="ovr-breakdown" id="ovrBreakdownAttributes"></div>
-                    </div>
+                    <div id="playerCardFromAttributes"></div>
                 </div>
             </div>
         </div>
@@ -145,6 +149,231 @@
     <script src="probability_model.js"></script>
     <script src="simulation_engine.js"></script>
     <script src="ovr_calculator.js"></script>
-    <script src="main.js"></script>
+    <script>
+        // 球員卡創建函數
+        function getRarityClass(ovr) {
+            if (ovr >= 130) return 'rarity-godlike';
+            if (ovr >= 110) return 'rarity-mythic';
+            if (ovr >= 95) return 'rarity-legendary';
+            if (ovr >= 80) return 'rarity-epic';
+            if (ovr >= 60) return 'rarity-rare';
+            return 'rarity-common';
+        }
+
+        function getRarityLabel(ovr) {
+            if (ovr >= 130) return '神級球員';
+            if (ovr >= 110) return '神話球員';
+            if (ovr >= 95) return '傳奇球員';
+            if (ovr >= 80) return '史詩球員';
+            if (ovr >= 60) return '稀有球員';
+            return '普通球員';
+        }
+
+        function createPlayerCard(playerName, pow, hit, eye, ovr, containerId) {
+            const rarityClass = getRarityClass(ovr);
+            const rarityLabel = getRarityLabel(ovr);
+            const displayName = playerName || '球員';
+
+            const cardHTML = `
+                <div class="player-card ${rarityClass}">
+                    <div class="card-background"></div>
+                    <div class="card-shine"></div>
+                    
+                    <div class="card-header">
+                        <div class="rarity-label">${rarityLabel}</div>
+                        <div class="player-name">${displayName}</div>
+                    </div>
+
+                    <div class="ovr-section">
+                        <div class="ovr-number">${ovr}</div>
+                        <div class="ovr-label">Overall</div>
+                    </div>
+
+                    <div class="attributes-section">
+                        <div class="attribute-bar">
+                            <span class="attr-label">POW</span>
+                            <div class="attr-bar-container">
+                                <div class="attr-bar-fill pow-bar" style="width: ${Math.min(pow / 150 * 100, 100)}%"></div>
+                            </div>
+                            <span class="attr-value">${Math.round(pow)}</span>
+                        </div>
+                        
+                        <div class="attribute-bar">
+                            <span class="attr-label">HIT</span>
+                            <div class="attr-bar-container">
+                                <div class="attr-bar-fill hit-bar" style="width: ${Math.min(hit / 150 * 100, 100)}%"></div>
+                            </div>
+                            <span class="attr-value">${Math.round(hit)}</span>
+                        </div>
+                        
+                        <div class="attribute-bar">
+                            <span class="attr-label">EYE</span>
+                            <div class="attr-bar-container">
+                                <div class="attr-bar-fill eye-bar" style="width: ${Math.min(eye / 150 * 100, 100)}%"></div>
+                            </div>
+                            <span class="attr-value">${Math.round(eye)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const container = document.getElementById(containerId);
+            if (container) {
+                container.innerHTML = cardHTML;
+            }
+        }
+
+        // 計算三圍和 OVR（從數據輸入）
+        function calculateAttributes() {
+            const xBA = parseFloat(document.getElementById('xBA').value);
+            const xSLG = parseFloat(document.getElementById('xSLG').value);
+            const xwOBA = parseFloat(document.getElementById('xwOBA').value);
+            const playerName = document.getElementById('playerName').value.trim();
+            
+            console.log('原始輸入:', { xBA, xSLG, xwOBA, playerName });
+            
+            const safeXBA = isNaN(xBA) ? 0 : Math.max(0, xBA);
+            const safeXSLG = isNaN(xSLG) ? 0 : Math.max(0, xSLG);
+            const safeXwOBA = isNaN(xwOBA) ? 0 : Math.max(0, xwOBA);
+            
+            console.log('安全輸入:', { safeXBA, safeXSLG, safeXwOBA });
+            
+            if (safeXBA > 1 || safeXSLG > 4 || safeXwOBA > 1) {
+                alert('請確保數據在合理範圍內！BA/OBP ≤ 1.0, SLG ≤ 4.0');
+                return;
+            }
+            
+            const attributes = calculatePlayerGameAttributes(safeXBA, safeXSLG, safeXwOBA);
+            console.log('轉換結果:', attributes);
+            
+            const ovrResult = calculateBatterOVR(attributes.POW, attributes.HIT, attributes.EYE);
+            console.log('OVR結果:', ovrResult);
+            
+            document.getElementById('powResult').textContent = attributes.POW.toFixed(1);
+            document.getElementById('hitResult').textContent = attributes.HIT.toFixed(1);
+            document.getElementById('eyeResult').textContent = attributes.EYE.toFixed(1);
+            
+            createPlayerCard(playerName, attributes.POW, attributes.HIT, attributes.EYE, ovrResult.ovr, 'playerCardFromStats');
+            
+            document.getElementById('attributeResults').style.display = 'block';
+        }
+
+        // 計算預測數據和 OVR（從三圍輸入）
+        function calculateStats() {
+            const pow = parseFloat(document.getElementById('inputPOW').value);
+            const hit = parseFloat(document.getElementById('inputHIT').value);
+            const eye = parseFloat(document.getElementById('inputEYE').value);
+            const pa = parseInt(document.getElementById('inputPA').value);
+            const playerName = document.getElementById('playerNameAttributes').value.trim();
+            
+            console.log('三圍輸入:', { pow, hit, eye, pa, playerName });
+            
+            const safePOW = isNaN(pow) ? 70 : Math.max(0, pow);
+            const safeHIT = isNaN(hit) ? 70 : Math.max(0, hit);
+            const safeEYE = isNaN(eye) ? 70 : Math.max(0, eye);
+            const safePA = isNaN(pa) ? 600 : Math.max(1, pa);
+            
+            if (safePOW > 500 || safeHIT > 500 || safeEYE > 500) {
+                alert('三圍不得超過500！');
+                return;
+            }
+            
+            const stats = simulatePlayerStats(safePOW, safeHIT, safeEYE, NUM_SIMULATIONS, safePA);
+            const ovrResult = calculateBatterOVR(safePOW, safeHIT, safeEYE);
+            
+            document.getElementById('baResult').textContent = stats.BA.toFixed(3);
+            document.getElementById('obpResult').textContent = stats.OBP.toFixed(3);
+            document.getElementById('slgResult').textContent = stats.SLG.toFixed(3);
+            document.getElementById('opsResult').textContent = stats.OPS.toFixed(3);
+            document.getElementById('hrResult').textContent = Math.round(stats.HR_count);
+            document.getElementById('bbRateResult').textContent = (stats.BB_rate * 100).toFixed(1) + '%';
+            document.getElementById('kRateResult').textContent = (stats.K_rate * 100).toFixed(1) + '%';
+            
+            createPlayerCard(playerName, safePOW, safeHIT, safeEYE, ovrResult.ovr, 'playerCardFromAttributes');
+            
+            document.getElementById('statsResults').style.display = 'block';
+        }
+
+        // 設定預設值
+        function setDefaultValues() {
+            const inputs = [
+                {id: 'xBA', defaultVal: 0.280},
+                {id: 'xSLG', defaultVal: 0.450}, 
+                {id: 'xwOBA', defaultVal: 0.350},
+                {id: 'inputPOW', defaultVal: 85},
+                {id: 'inputHIT', defaultVal: 75},
+                {id: 'inputEYE', defaultVal: 80},
+                {id: 'inputPA', defaultVal: 600}
+            ];
+            
+            inputs.forEach(input => {
+                const element = document.getElementById(input.id);
+                if (element && element.value === '') {
+                    element.value = input.defaultVal;
+                }
+            });
+        }
+
+        // 頁面載入完成後的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 棒球能力值計算器 v2.3 已載入（球員卡整合版）');
+            
+            setDefaultValues();
+            
+            ['xBA', 'xSLG', 'xwOBA'].forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.step = '0.001';
+                    input.min = '0';
+                    
+                    input.addEventListener('input', function() {
+                        const value = parseFloat(this.value);
+                        const maxVal = id === 'xSLG' ? 4 : 1;
+                        
+                        if (isNaN(value) || value < 0 || value > maxVal) {
+                            this.style.borderColor = '#ff6b6b';
+                        } else {
+                            this.style.borderColor = '#4ecdc4';
+                        }
+                    });
+                }
+            });
+            
+            ['inputPOW', 'inputHIT', 'inputEYE'].forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.min = '0';
+                    input.addEventListener('input', function() {
+                        const value = parseFloat(this.value);
+                        if (isNaN(value) || value < 0 || value > 500) {
+                            this.style.borderColor = '#ff6b6b';
+                        } else if (value >= 200) {
+                            this.style.borderColor = '#ff9500';
+                        } else {
+                            this.style.borderColor = '#4ecdc4';
+                        }
+                    });
+                }
+            });
+        });
+
+        // 測試函數
+        function testExtremeValues() {
+            console.log("🧪 測試極端值轉換...");
+            
+            const extremeCases = [
+                {xBA: 0, xSLG: 0, xwOBA: 0},
+                {xBA: 0.001, xSLG: 0.004, xwOBA: 0.031},
+                {xBA: 1.0, xSLG: 4.0, xwOBA: 1.0}
+            ];
+            
+            extremeCases.forEach((testCase, i) => {
+                const attrs = calculatePlayerGameAttributes(testCase.xBA, testCase.xSLG, testCase.xwOBA);
+                console.log(`案例 ${i+1}:`, testCase, '→', attrs);
+            });
+        }
+
+        window.testExtremeValues = testExtremeValues;
+    </script>
 </body>
 </html>
