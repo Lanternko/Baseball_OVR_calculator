@@ -1,92 +1,114 @@
-// ovr-calculator.js - 修正版完整 OVR 計算器
+// ovr-calculator.js - 混合轉換版 OVR 計算器
 
-// 🔥 平滑轉換函數（修正版）
-function getAttributeScoreSmooth(metricVal, pr1Benchmark, pr50Benchmark, pr99Benchmark, statType) {
-    const pr1_map = 40;
-    const pr50_map = 70; 
-    const pr99_map = 99;
+// 🔥 混合轉換函數：PR1 以下對數平滑，PR1 以上保持原版
+function getAttributeScoreHybrid(metricVal, pr1Benchmark, pr50Benchmark, pr99Benchmark, statType) {
+    const pr1_map = ATTRIBUTE_MAPPING_POINTS['pr1']; // 40
+    const pr50_map = ATTRIBUTE_MAPPING_POINTS['pr50']; // 70
+    const pr99_map = ATTRIBUTE_MAPPING_POINTS['pr99']; // 99
+    const delta_50_1 = pr50_map - pr1_map;
+    const delta_99_50 = pr99_map - pr50_map;
     
-    // 🔧 安全檢查：確保輸入有效
-    if (metricVal === null || metricVal === undefined || isNaN(metricVal)) {
-        console.error('getAttributeScoreSmooth: 無效輸入', metricVal);
-        return 1; // 返回最小值而不是 0，避免計算問題
-    }
-    
-    // 定義理論極限值
-    let theoreticalMin, theoreticalMax;
-    if (statType === 'SLG') {
-        theoreticalMin = 0.0;
-        theoreticalMax = 4.0;
-    } else if (statType === 'BA') {
-        theoreticalMin = 0.0;
-        theoreticalMax = 1.0;
-    } else { // OBA
-        theoreticalMin = 0.0;
-        theoreticalMax = 1.0;
-    }
-    
-    let score = 0;
-    
-    // 階段 1: 理論最低 → PR1
+    // 🔥 關鍵判斷：是否在 PR1 以下的區間
     if (metricVal <= pr1Benchmark) {
+        // 🔥 PR1 以下使用對數平滑函數
+        
+        let theoreticalMin = 0.000; // 所有統計都從 0 開始
+        
         if (metricVal <= theoreticalMin) {
-            score = 1; // 🔧 最小值設為 1 而不是 0，避免幾何平均問題
-        } else {
-            // 平滑從 1 到 40
-            score = 1 + (pr1_map - 1) * (metricVal - theoreticalMin) / (pr1Benchmark - theoreticalMin);
+            return 0.1; // 極限值設為 0.1，避免 0 值問題
         }
+        
+        // 🔥 對數函數：上凸曲線，極限趨近於 0
+        const normalizedProgress = (metricVal - theoreticalMin) / (pr1Benchmark - theoreticalMin);
+        
+        // k=5.0 提供明顯的上凸效果
+        const k = 5.0;
+        const logScore = pr1_map * Math.log(1 + k * normalizedProgress) / Math.log(1 + k);
+        
+        return Math.max(0.1, logScore);
     }
-    // 階段 2: PR1 → PR50
-    else if (metricVal <= pr50Benchmark) {
-        score = pr1_map + (pr50_map - pr1_map) * (metricVal - pr1Benchmark) / (pr50Benchmark - pr1Benchmark);
-    }
-    // 階段 3: PR50 → PR99
-    else if (metricVal <= pr99Benchmark) {
-        score = pr50_map + (pr99_map - pr50_map) * (metricVal - pr50Benchmark) / (pr99Benchmark - pr50Benchmark);
-    }
-    // 階段 4: PR99 → 理論最高
+    
+    // 🔥 PR1 以上完全使用原版邏輯 (保持不變)
     else {
-        if (metricVal >= theoreticalMax) {
-            score = 500;
-        } else {
-            const remainingRange = theoreticalMax - pr99Benchmark;
-            if (remainingRange > 0) {
-                const progressBeyondPr99 = (metricVal - pr99Benchmark) / remainingRange;
-                score = pr99_map + (500 - pr99_map) * Math.sqrt(Math.max(0, progressBeyondPr99));
-            } else {
-                score = pr99_map;
+        let score = 0;
+        
+        // 極值處理 (原版邏輯)
+        const isExtremeValue = (
+            (statType === 'BA' && metricVal >= 0.95) ||
+            (statType === 'SLG' && metricVal >= 3.0) ||
+            (statType === 'OBA' && metricVal >= 0.95)
+        );
+        
+        if (isExtremeValue) {
+            if (statType === 'BA' && metricVal >= 1.0) return 500;
+            if (statType === 'SLG' && metricVal >= 3.5) return 500;
+            if (statType === 'OBA' && metricVal >= 1.0) return 500;
+            
+            if (statType === 'BA') {
+                return 200 + (metricVal - 0.95) / 0.05 * 300;
+            }
+            if (statType === 'SLG') {
+                return 200 + (metricVal - 3.0) / 0.5 * 300;
+            }
+            if (statType === 'OBA') {
+                return 200 + (metricVal - 0.95) / 0.05 * 300;
             }
         }
+        
+        // PR1 → PR50 (原版邏輯)
+        if (metricVal <= pr50Benchmark) {
+            score = pr1_map + delta_50_1 * (metricVal - pr1Benchmark) / (pr50Benchmark - pr1Benchmark);
+        }
+        // PR50 → PR99 (原版邏輯)
+        else if (metricVal <= pr99Benchmark) {
+            score = pr50_map + delta_99_50 * (metricVal - pr50Benchmark) / (pr99Benchmark - pr50Benchmark);
+        }
+        // PR99 以上 (原版邏輯)
+        else {
+            const slope_pr50_pr99 = delta_99_50 / (pr99Benchmark - pr50Benchmark);
+            const basicExtension = pr99_map + slope_pr50_pr99 * (metricVal - pr99Benchmark);
+            const overPr99Factor = (metricVal - pr99Benchmark) / (pr99Benchmark - pr50Benchmark);
+            let extraBonus = 0;
+            
+            if (statType === 'SLG') {
+                extraBonus = Math.min(overPr99Factor * 80, 300);
+            } else if (statType === 'BA') {
+                extraBonus = Math.min(overPr99Factor * 60, 250);
+            } else if (statType === 'OBA') {
+                extraBonus = Math.min(overPr99Factor * 60, 250);
+            }
+            
+            score = basicExtension + extraBonus;
+        }
+        
+        return Math.max(0.1, Math.min(500, score));
     }
-    
-    // 🔧 確保返回有效數值，但不強制取整
-    const result = Math.max(1, Math.min(500, score));
-    return isNaN(result) ? 1 : result;
 }
 
-// 🔧 修正版數據轉三圍函數
+// 🔥 數據轉三圍主函數（使用混合轉換）
 function calculatePlayerGameAttributes(xBA, xSLG, xwOBA) {
-    // 🔧 輸入驗證和預處理
+    // 輸入處理
     const safeXBA = parseFloat(xBA) || 0;
     const safeXSLG = parseFloat(xSLG) || 0;
     const safeXwOBA = parseFloat(xwOBA) || 0;
     
-    console.log('輸入數據:', { xBA: safeXBA, xSLG: safeXSLG, xwOBA: safeXwOBA });
+    console.log('混合轉換輸入:', { xBA: safeXBA, xSLG: safeXSLG, xwOBA: safeXwOBA });
     
-    const powScore = getAttributeScoreSmooth(safeXSLG, LEAGUE_BENCHMARKS['xSLG']['pr1'], LEAGUE_BENCHMARKS['xSLG']['pr50'], LEAGUE_BENCHMARKS['xSLG']['pr99'], 'SLG');
-    const hitScore = getAttributeScoreSmooth(safeXBA, LEAGUE_BENCHMARKS['xBA']['pr1'], LEAGUE_BENCHMARKS['xBA']['pr50'], LEAGUE_BENCHMARKS['xBA']['pr99'], 'BA');
-    const eyeScore = getAttributeScoreSmooth(safeXwOBA, LEAGUE_BENCHMARKS['xwOBA']['pr1'], LEAGUE_BENCHMARKS['xwOBA']['pr50'], LEAGUE_BENCHMARKS['xwOBA']['pr99'], 'OBA');
+    // 🔥 使用混合轉換函數
+    const powScore = getAttributeScoreHybrid(safeXSLG, LEAGUE_BENCHMARKS['xSLG']['pr1'], LEAGUE_BENCHMARKS['xSLG']['pr50'], LEAGUE_BENCHMARKS['xSLG']['pr99'], 'SLG');
+    const hitScore = getAttributeScoreHybrid(safeXBA, LEAGUE_BENCHMARKS['xBA']['pr1'], LEAGUE_BENCHMARKS['xBA']['pr50'], LEAGUE_BENCHMARKS['xBA']['pr99'], 'BA');
+    const eyeScore = getAttributeScoreHybrid(safeXwOBA, LEAGUE_BENCHMARKS['xwOBA']['pr1'], LEAGUE_BENCHMARKS['xwOBA']['pr50'], LEAGUE_BENCHMARKS['xwOBA']['pr99'], 'OBA');
     
-    console.log('轉換結果:', { POW: powScore, HIT: hitScore, EYE: eyeScore });
+    console.log('混合轉換結果:', { POW: powScore, HIT: hitScore, EYE: eyeScore });
     
     return {
-        POW: powScore, // 🔧 不要強制取整，保留小數
+        POW: powScore,
         HIT: hitScore,
         EYE: eyeScore
     };
 }
 
-// 🔧 修正版 OVR 計算函數（加強錯誤處理）
+// 🔧 簡化版 OVR 計算函數（移除雜訊資訊）
 function calculateBatterOVR(pow, hit, eye) {
     // 🔧 嚴格的輸入驗證
     const safePOW = parseFloat(pow) || 1;
@@ -141,6 +163,12 @@ function calculateBatterOVR(pow, hit, eye) {
         eliteBonus += factor * factor * 5.0;
     }
     
+    // 極端值特殊處理
+    if (arithmeticMean > 200) {
+        const factor = Math.min((arithmeticMean - 200) / 100, 1.0);
+        eliteBonus += factor * 20.0;
+    }
+    
     // 均衡度調整
     const maxAttribute = Math.max(safePOW, safeHIT, safeEYE);
     const minAttribute = Math.min(safePOW, safeHIT, safeEYE);
@@ -175,12 +203,11 @@ function calculateBatterOVR(pow, hit, eye) {
 function getLeagueLevel(ovr) {
     if (ovr >= 110) return "歷史最強 🐐";
     if (ovr >= 99) return "當代最強 👑";
-    if (ovr >= 95) return "聯盟前10% 🔥";
-    if (ovr >= 88) return "可靠主力 ⭐";
+    if (ovr >= 95) return "頂尖選手 🔥";
+    if (ovr >= 85) return "可靠主力 ⭐";
     if (ovr >= 70) return "平均先發 📈";
     if (ovr >= 40) return "大聯盟替補 ⚾";
-    if (ovr >= 20) return "小聯盟水準 📉";
-    return "業餘愛好者 🍨";
+    return "小聯盟水準 📉";
 }
 
 // 🎯 均衡度描述函數
@@ -192,7 +219,7 @@ function getBalanceDescription(ratio) {
     return "(明顯偏科)";
 }
 
-// 🔧 修正版 OVR 分解顯示
+// 🎯 精簡版 OVR 分解顯示（移除雜訊）
 function displayOVRBreakdown(breakdown, targetElement) {
     if (!targetElement) return;
     
@@ -217,3 +244,23 @@ function displayOVRBreakdown(breakdown, targetElement) {
     
     targetElement.innerHTML = html;
 }
+
+// 🧪 測試混合系統（可選）
+function testHybridSystem() {
+    console.log('🧪 測試混合轉換系統...');
+    
+    const testCases = [
+        {name: '極低值', xBA: 0.001, xSLG: 0.004, xwOBA: 0.031},
+        {name: 'PR1 邊界', xBA: 0.200, xSLG: 0.310, xwOBA: 0.260},
+        {name: 'Judge 2024', xBA: 0.322, xSLG: 0.701, xwOBA: 0.458},
+        {name: 'Ohtani 2024', xBA: 0.310, xSLG: 0.646, xwOBA: 0.390}
+    ];
+    
+    testCases.forEach(testCase => {
+        const result = calculatePlayerGameAttributes(testCase.xBA, testCase.xSLG, testCase.xwOBA);
+        console.log(`${testCase.name}: POW=${result.POW.toFixed(1)}, HIT=${result.HIT.toFixed(1)}, EYE=${result.EYE.toFixed(1)}`);
+    });
+}
+
+// 運行測試（可選）
+// testHybridSystem();
