@@ -1,51 +1,34 @@
-// main.js - 主程式邏輯（修正版 + 預設值）
+// main.js - 修正版主程式邏輯
 
-// 🔥 新增：設定預設值的函數
-function setDefaultValues() {
-    // 數據轉三圍的預設值
-    if (!document.getElementById('xBA').value) {
-        document.getElementById('xBA').value = 0.280;
-    }
-    if (!document.getElementById('xSLG').value) {
-        document.getElementById('xSLG').value = 0.450;
-    }
-    if (!document.getElementById('xwOBA').value) {
-        document.getElementById('xwOBA').value = 0.350;
-    }
-    
-    // 三圍轉數據的預設值
-    if (!document.getElementById('inputPOW').value) {
-        document.getElementById('inputPOW').value = 85;
-    }
-    if (!document.getElementById('inputHIT').value) {
-        document.getElementById('inputHIT').value = 75;
-    }
-    if (!document.getElementById('inputEYE').value) {
-        document.getElementById('inputEYE').value = 80;
-    }
-    if (!document.getElementById('inputPA').value) {
-        document.getElementById('inputPA').value = 600;
-    }
-}
-
-// 🔥 修正版：計算三圍和 OVR（從數據輸入）
+// 🔧 修正版：計算三圍和 OVR（從數據輸入）
 function calculateAttributes() {
-    // 設定預設值
-    setDefaultValues();
+    // 🔧 允許 0 值輸入
+    const xBA = parseFloat(document.getElementById('xBA').value);
+    const xSLG = parseFloat(document.getElementById('xSLG').value);
+    const xwOBA = parseFloat(document.getElementById('xwOBA').value);
     
-    const xBA = parseFloat(document.getElementById('xBA').value) || 0.280;
-    const xSLG = parseFloat(document.getElementById('xSLG').value) || 0.450;
-    const xwOBA = parseFloat(document.getElementById('xwOBA').value) || 0.350;
+    console.log('原始輸入:', { xBA, xSLG, xwOBA });
     
-    // 基本驗證（使用預設值後應該都有值了）
-    if (xBA < 0 || xBA > 1 || xSLG < 0 || xSLG > 4 || xwOBA < 0 || xwOBA > 1) {
-        alert('請確保所有數據都在合理範圍內！');
+    // 🔧 處理 0 值和 NaN
+    const safeXBA = isNaN(xBA) ? 0 : Math.max(0, xBA);
+    const safeXSLG = isNaN(xSLG) ? 0 : Math.max(0, xSLG);
+    const safeXwOBA = isNaN(xwOBA) ? 0 : Math.max(0, xwOBA);
+    
+    console.log('安全輸入:', { safeXBA, safeXSLG, safeXwOBA });
+    
+    // 基本範圍驗證
+    if (safeXBA > 1 || safeXSLG > 4 || safeXwOBA > 1) {
+        alert('請確保數據在合理範圍內！BA/OBP ≤ 1.0, SLG ≤ 4.0');
         return;
     }
     
-    const attributes = calculatePlayerGameAttributes(xBA, xSLG, xwOBA);
-    const ovrResult = calculateBatterOVR(attributes.POW, attributes.HIT, attributes.EYE);
+    const attributes = calculatePlayerGameAttributes(safeXBA, safeXSLG, safeXwOBA);
+    console.log('轉換結果:', attributes);
     
+    const ovrResult = calculateBatterOVR(attributes.POW, attributes.HIT, attributes.EYE);
+    console.log('OVR結果:', ovrResult);
+    
+    // 🔧 顯示結果（保留小數）
     document.getElementById('powResult').textContent = attributes.POW.toFixed(1);
     document.getElementById('hitResult').textContent = attributes.HIT.toFixed(1);
     document.getElementById('eyeResult').textContent = attributes.EYE.toFixed(1);
@@ -56,30 +39,29 @@ function calculateAttributes() {
     document.getElementById('attributeResults').style.display = 'block';
 }
 
-// 🔥 修正版：計算預測數據和 OVR（從三圍輸入）
+// 🔧 修正版：計算預測數據和 OVR（從三圍輸入）
 function calculateStats() {
-    // 設定預設值
-    setDefaultValues();
+    const pow = parseFloat(document.getElementById('inputPOW').value);
+    const hit = parseFloat(document.getElementById('inputHIT').value);
+    const eye = parseFloat(document.getElementById('inputEYE').value);
+    const pa = parseInt(document.getElementById('inputPA').value);
     
-    const pow = parseFloat(document.getElementById('inputPOW').value) || 85;
-    const hit = parseFloat(document.getElementById('inputHIT').value) || 75;
-    const eye = parseFloat(document.getElementById('inputEYE').value) || 80;
-    const pa = parseInt(document.getElementById('inputPA').value) || 600;
+    console.log('三圍輸入:', { pow, hit, eye, pa });
     
-    // 基本驗證
-    if (pow < 0 || hit < 0 || eye < 0 || pa < 1) {
-        alert('請確保所有數值都為正數！');
-        return;
-    }
+    // 🔧 處理 NaN 和設置預設值
+    const safePOW = isNaN(pow) ? 70 : Math.max(0, pow);
+    const safeHIT = isNaN(hit) ? 70 : Math.max(0, hit);
+    const safeEYE = isNaN(eye) ? 70 : Math.max(0, eye);
+    const safePA = isNaN(pa) ? 600 : Math.max(1, pa);
     
-    if (pow > 500 || hit > 500 || eye > 500) {
+    if (safePOW > 500 || safeHIT > 500 || safeEYE > 500) {
         alert('三圍不得超過500！');
         return;
     }
     
     // 運行模擬
-    const stats = simulatePlayerStats(pow, hit, eye, NUM_SIMULATIONS, pa);
-    const ovrResult = calculateBatterOVR(pow, hit, eye);
+    const stats = simulatePlayerStats(safePOW, safeHIT, safeEYE, NUM_SIMULATIONS, safePA);
+    const ovrResult = calculateBatterOVR(safePOW, safeHIT, safeEYE);
     
     // 顯示結果
     document.getElementById('baResult').textContent = stats.BA.toFixed(3);
@@ -96,72 +78,48 @@ function calculateStats() {
     document.getElementById('statsResults').style.display = 'block';
 }
 
-// 🧪 測試函數群組
-
-// 測試正常範圍精確度
-function testNormalRange() {
-    console.log("🧪 測試正常範圍精確度 (100,100,100)...");
-    
-    const normalStats = simulatePlayerStats(100, 100, 100, 100, 600);
-    const normalOVR = calculateBatterOVR(100, 100, 100);
-    
-    console.log(`
-🎯 正常範圍測試結果:
-
-🔧 輸入三圍: POW=100, HIT=100, EYE=100
-
-📈 模擬表現:
-   打擊率: ${normalStats.BA.toFixed(3)} (期望: ~0.320)
-   長打率: ${normalStats.SLG.toFixed(3)} (期望: ~0.590)
-   上壘率: ${normalStats.OBP.toFixed(3)} (期望: ~0.400)
-   OPS: ${normalStats.OPS.toFixed(3)} (期望: ~0.990)
-   全壘打: ${normalStats.HR_count} / 600 PA (期望: ~40)
-   三振率: ${(normalStats.K_rate*100).toFixed(1)}% (期望: ~15%)
-   保送率: ${(normalStats.BB_rate*100).toFixed(1)}% (期望: ~12%)
-   
-⭐ 綜合評價: OVR ${normalOVR.ovr}
-
-💡 這應該接近原型球員 PR99 的水準
-    `);
-}
-
-// 🧪 新增：測試曲線單調性
-function testCurveMonotonicity() {
-    console.log("🧪 測試曲線單調性...");
-    
-    const testCases = [
-        {xBA: 1.0, xSLG: 2.0, xwOBA: 1.0},
-        {xBA: 1.0, xSLG: 2.0, xwOBA: 0.994},
-        {xBA: 1.0, xSLG: 2.0, xwOBA: 0.99},
-        {xBA: 1.0, xSLG: 2.0, xwOBA: 0.988}
+// 🔧 修正版：設定預設值（移除，讓用戶能輸入 0）
+function setDefaultValues() {
+    // 只在欄位完全空白時設定預設值
+    const inputs = [
+        {id: 'xBA', defaultVal: 0.280},
+        {id: 'xSLG', defaultVal: 0.450}, 
+        {id: 'xwOBA', defaultVal: 0.350},
+        {id: 'inputPOW', defaultVal: 85},
+        {id: 'inputHIT', defaultVal: 75},
+        {id: 'inputEYE', defaultVal: 80},
+        {id: 'inputPA', defaultVal: 600}
     ];
     
-    let resultsText = "🎯 曲線單調性測試:\n\n";
-    
-    testCases.forEach((testCase, index) => {
-        const attributes = calculatePlayerGameAttributes(testCase.xBA, testCase.xSLG, testCase.xwOBA);
-        resultsText += `測試 ${index + 1}: xwOBA=${testCase.xwOBA} → EYE=${attributes.EYE}\n`;
+    inputs.forEach(input => {
+        const element = document.getElementById(input.id);
+        if (element && element.value === '') { // 只在完全空白時設定
+            element.value = input.defaultVal;
+        }
     });
-    
-    console.log(resultsText);
-    console.log("🔍 EYE 應該隨著 xwOBA 單調遞減");
 }
 
 // 頁面載入完成後的初始化
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 棒球能力值計算器 v2.1 已載入（曲線修正版）');
+    console.log('🚀 棒球能力值計算器 v2.2 已載入（平滑轉換版）');
     
-    // 🔥 頁面載入時設定預設值
+    // 🔧 只在頁面初次載入時設定預設值
     setDefaultValues();
     
-    // 設置輸入驗證
+    // 🔧 修正輸入驗證：允許 0 值
     ['xBA', 'xSLG', 'xwOBA'].forEach(id => {
         const input = document.getElementById(id);
         if (input) {
+            // 🔧 修改 step 屬性允許更精細輸入
+            input.step = '0.001';
+            input.min = '0'; // 明確設定最小值為 0
+            
             input.addEventListener('input', function() {
                 const value = parseFloat(this.value);
                 const maxVal = id === 'xSLG' ? 4 : 1;
-                if (value < 0 || value > maxVal) {
+                
+                // 🔧 允許 0 值
+                if (isNaN(value) || value < 0 || value > maxVal) {
                     this.style.borderColor = '#ff6b6b';
                 } else {
                     this.style.borderColor = '#4ecdc4';
@@ -173,9 +131,10 @@ document.addEventListener('DOMContentLoaded', function() {
     ['inputPOW', 'inputHIT', 'inputEYE'].forEach(id => {
         const input = document.getElementById(id);
         if (input) {
+            input.min = '0'; // 明確設定最小值為 0
             input.addEventListener('input', function() {
                 const value = parseFloat(this.value);
-                if (value < 0 || value > 500) {
+                if (isNaN(value) || value < 0 || value > 500) {
                     this.style.borderColor = '#ff6b6b';
                 } else if (value >= 200) {
                     this.style.borderColor = '#ff9500';
@@ -185,250 +144,23 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
-    
-    const paInput = document.getElementById('inputPA');
-    if (paInput) {
-        paInput.addEventListener('input', function() {
-            const value = parseInt(this.value);
-            if (value < 1 || value > 1000) {
-                this.style.borderColor = '#ff6b6b';
-            } else {
-                this.style.borderColor = '#4ecdc4';
-            }
-        });
-    }
-    
-    // 🧪 運行曲線單調性測試
-    testCurveMonotonicity();
 });
 
-// 窗口全局函數，供測試使用
-window.testNormalRange = testNormalRange;
-window.testCurveMonotonicity = testCurveMonotonicity;// main.js - 主程式邏輯（修正版）
-
-// 計算三圍和 OVR（從數據輸入）
-function calculateAttributes() {
-    const xBA = parseFloat(document.getElementById('xBA').value);
-    const xSLG = parseFloat(document.getElementById('xSLG').value);
-    const xwOBA = parseFloat(document.getElementById('xwOBA').value);
-    
-    if (!xBA || !xSLG || !xwOBA) {
-        alert('請填入所有數據！');
-        return;
-    }
-    
-    if (xBA < 0 || xBA > 1 || xSLG < 0 || xSLG > 4 || xwOBA < 0 || xwOBA > 1) {
-        alert('請確保所有數據都在合理範圍內！');
-        return;
-    }
-    
-    const attributes = calculatePlayerGameAttributes(xBA, xSLG, xwOBA);
-    const ovrResult = calculateBatterOVR(attributes.POW, attributes.HIT, attributes.EYE);
-    
-    document.getElementById('powResult').textContent = attributes.POW.toFixed(1);
-    document.getElementById('hitResult').textContent = attributes.HIT.toFixed(1);
-    document.getElementById('eyeResult').textContent = attributes.EYE.toFixed(1);
-    document.getElementById('ovrFromStats').textContent = ovrResult.ovr;
-    
-    displayOVRBreakdown(ovrResult.breakdown, document.getElementById('ovrBreakdownStats'));
-    
-    document.getElementById('attributeResults').style.display = 'block';
-}
-
-// 計算預測數據和 OVR（從三圍輸入）
-function calculateStats() {
-    const pow = parseFloat(document.getElementById('inputPOW').value);
-    const hit = parseFloat(document.getElementById('inputHIT').value);
-    const eye = parseFloat(document.getElementById('inputEYE').value);
-    const pa = parseInt(document.getElementById('inputPA').value);
-    
-    if (!pow || !hit || !eye || !pa) {
-        alert('請填入所有三圍和打席數！');
-        return;
-    }
-    
-    if (pow < 0 || hit < 0 || eye < 0 || pa < 1) {
-        alert('請確保所有數值都為正數！');
-        return;
-    }
-    
-    if (pow > 500 || hit > 500 || eye > 500) {
-        alert('三圍不得超過500！');
-        return;
-    }
-    
-    // 運行模擬
-    const stats = simulatePlayerStats(pow, hit, eye, NUM_SIMULATIONS, pa);
-    const ovrResult = calculateBatterOVR(pow, hit, eye);
-    
-    // 顯示結果
-    document.getElementById('baResult').textContent = stats.BA.toFixed(3);
-    document.getElementById('obpResult').textContent = stats.OBP.toFixed(3);
-    document.getElementById('slgResult').textContent = stats.SLG.toFixed(3);
-    document.getElementById('opsResult').textContent = stats.OPS.toFixed(3);
-    document.getElementById('hrResult').textContent = Math.round(stats.HR_count);
-    document.getElementById('bbRateResult').textContent = (stats.BB_rate * 100).toFixed(1) + '%';
-    document.getElementById('kRateResult').textContent = (stats.K_rate * 100).toFixed(1) + '%';
-    document.getElementById('ovrFromAttributes').textContent = ovrResult.ovr;
-    
-    displayOVRBreakdown(ovrResult.breakdown, document.getElementById('ovrBreakdownAttributes'));
-    
-    document.getElementById('statsResults').style.display = 'block';
-}
-
-// 🧪 測試函數群組
-
-// 測試正常範圍精確度
-function testNormalRange() {
-    console.log("🧪 測試正常範圍精確度 (100,100,100)...");
-    
-    const normalStats = simulatePlayerStats(100, 100, 100, 100, 600);
-    const normalOVR = calculateBatterOVR(100, 100, 100);
-    
-    const testResults = document.getElementById('testResults');
-    if (testResults) {
-        testResults.style.display = 'block';
-        testResults.innerHTML = `
-🎯 正常範圍測試結果:
-
-🔧 輸入三圍: POW=100, HIT=100, EYE=100
-
-📈 模擬表現:
-   打擊率: ${normalStats.BA.toFixed(3)} (期望: ~0.320)
-   長打率: ${normalStats.SLG.toFixed(3)} (期望: ~0.590)
-   上壘率: ${normalStats.OBP.toFixed(3)} (期望: ~0.400)
-   OPS: ${normalStats.OPS.toFixed(3)} (期望: ~0.990)
-   全壘打: ${normalStats.HR_count} / 600 PA (期望: ~40)
-   三振率: ${(normalStats.K_rate*100).toFixed(1)}% (期望: ~15%)
-   保送率: ${(normalStats.BB_rate*100).toFixed(1)}% (期望: ~12%)
-   
-⭐ 綜合評價: OVR ${normalOVR.ovr}
-
-💡 這應該接近原型球員 PR99 的水準
-`;
-    }
-}
-
-// 測試理論極限值
+// 🧪 測試函數
 function testExtremeValues() {
-    console.log("🧪 測試理論極限值 (BA=1.0, SLG=4.0, OBA=1.0)...");
+    console.log("🧪 測試極端值轉換...");
     
-    const extremeAttribs = calculatePlayerGameAttributes(1.0, 4.0, 1.0);
-    const extremeStats = simulatePlayerStats(extremeAttribs.POW, extremeAttribs.HIT, extremeAttribs.EYE, 50, 600);
-    const extremeOVR = calculateBatterOVR(extremeAttribs.POW, extremeAttribs.HIT, extremeAttribs.EYE);
-    
-    const testResults = document.getElementById('testResults');
-    if (testResults) {
-        testResults.style.display = 'block';
-        testResults.innerHTML = `
-🎯 理論極限值測試結果:
-
-📊 輸入數據: BA=1.000, SLG=4.000, OBA=1.000
-
-🔧 轉換三圍:
-   POW: ${extremeAttribs.POW}
-   HIT: ${extremeAttribs.HIT} 
-   EYE: ${extremeAttribs.EYE}
-
-📈 模擬表現:
-   打擊率: ${extremeStats.BA.toFixed(3)} (目標: 接近 1.000)
-   長打率: ${extremeStats.SLG.toFixed(3)} (目標: 接近 4.000)
-   上壘率: ${extremeStats.OBP.toFixed(3)} (目標: 接近 1.000)
-   OPS: ${extremeStats.OPS.toFixed(3)}
-   全壘打: ${extremeStats.HR_count} / 600 PA
-   
-⭐ 綜合評價: OVR ${extremeOVR.ovr}
-
-✅ 檢驗結果:
-   BA 誤差: ${Math.abs(extremeStats.BA - 1.0).toFixed(3)}
-   SLG 誤差: ${Math.abs(extremeStats.SLG - 4.0).toFixed(3)}
-   OBP 誤差: ${Math.abs(extremeStats.OBP - 1.0).toFixed(3)}
-`;
-    }
-}
-
-// 測試當前系統各級別
-function testCurrentSystem() {
-    console.log("🧪 測試當前系統各個級別...");
-    
-    const testCases = [
-        {name: "正常優秀 (99,99,99)", pow: 99, hit: 99, eye: 99},
-        {name: "正常頂尖 (130,130,130)", pow: 130, hit: 130, eye: 130},
-        {name: "極端入門 (200,200,200)", pow: 200, hit: 200, eye: 200},
-        {name: "理論上限 (500,500,500)", pow: 500, hit: 500, eye: 500}
+    const extremeCases = [
+        {xBA: 0, xSLG: 0, xwOBA: 0},
+        {xBA: 0.001, xSLG: 0.004, xwOBA: 0.031},
+        {xBA: 1.0, xSLG: 4.0, xwOBA: 1.0}
     ];
     
-    let resultsText = "🎯 系統各級別測試結果:\n\n";
-    
-    testCases.forEach(testCase => {
-        const stats = simulatePlayerStats(testCase.pow, testCase.hit, testCase.eye, 25, 600);
-        const ovr = calculateBatterOVR(testCase.pow, testCase.hit, testCase.eye);
-        
-        resultsText += `${testCase.name}:\n`;
-        resultsText += `   BA: ${stats.BA.toFixed(3)} | SLG: ${stats.SLG.toFixed(3)} | OBP: ${stats.OBP.toFixed(3)}\n`;
-        resultsText += `   HR: ${stats.HR_count} | OVR: ${ovr.ovr}\n\n`;
+    extremeCases.forEach((testCase, i) => {
+        const attrs = calculatePlayerGameAttributes(testCase.xBA, testCase.xSLG, testCase.xwOBA);
+        console.log(`案例 ${i+1}:`, testCase, '→', attrs);
     });
-    
-    const testResults = document.getElementById('testResults');
-    if (testResults) {
-        testResults.style.display = 'block';
-        testResults.innerHTML = resultsText;
-    }
 }
 
-// 頁面載入完成後的初始化
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 棒球能力值計算器 v2.1 已載入（模塊化 & 修正版）');
-    
-    // 設置輸入驗證
-    ['xBA', 'xSLG', 'xwOBA'].forEach(id => {
-        const input = document.getElementById(id);
-        if (input) {
-            input.addEventListener('input', function() {
-                const value = parseFloat(this.value);
-                const maxVal = id === 'xSLG' ? 4 : 1;
-                if (value < 0 || value > maxVal) {
-                    this.style.borderColor = '#ff6b6b';
-                } else {
-                    this.style.borderColor = '#4ecdc4';
-                }
-            });
-        }
-    });
-    
-    ['inputPOW', 'inputHIT', 'inputEYE'].forEach(id => {
-        const input = document.getElementById(id);
-        if (input) {
-            input.addEventListener('input', function() {
-                const value = parseFloat(this.value);
-                if (value < 0 || value > 500) {
-                    this.style.borderColor = '#ff6b6b';
-                } else if (value >= 200) {
-                    this.style.borderColor = '#ff9500'; // 橙色表示極端值
-                } else {
-                    this.style.borderColor = '#4ecdc4';
-                }
-            });
-        }
-    });
-    
-    const paInput = document.getElementById('inputPA');
-    if (paInput) {
-        paInput.addEventListener('input', function() {
-            const value = parseInt(this.value);
-            if (value < 1 || value > 1000) {
-                this.style.borderColor = '#ff6b6b';
-            } else {
-                this.style.borderColor = '#4ecdc4';
-            }
-        });
-    }
-    
-    // 自動運行一次正常範圍測試（驗證修正效果）
-    // testNormalRange();
-});
-
-// 窗口全局函數，供測試使用
-window.testNormalRange = testNormalRange;
+// 窗口全局函數
 window.testExtremeValues = testExtremeValues;
-window.testCurrentSystem = testCurrentSystem;
