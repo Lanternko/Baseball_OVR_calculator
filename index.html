@@ -4,6 +4,194 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>棒球OVR雙向轉換器 v1.3</title>
+    <style>
+        /* 基礎樣式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft JhengHei', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            color: #666;
+            font-weight: 400;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: start;
+        }
+
+        .calculator-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.4em;
+            font-weight: 600;
+            margin-bottom: 25px;
+            color: #333;
+        }
+
+        .icon {
+            font-size: 1.2em;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+            font-size: 0.95em;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #4ecdc4;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.1);
+        }
+
+        .help-text {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px 0;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(78, 205, 196, 0.3);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .results {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 4px solid #4ecdc4;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .result-value {
+            font-weight: 700;
+            font-size: 1.1em;
+            color: #333;
+            background: white;
+            padding: 5px 12px;
+            border-radius: 6px;
+            border: 1px solid #e1e5e9;
+        }
+
+        /* 響應式設計 */
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .player-card {
+                width: 240px;
+                height: 320px;
+            }
+        }
+    </style>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -50,6 +238,7 @@
                 </button>
                 
                 <div id="attributeResults" class="results" style="display: none;">
+                    <div id="playerCardFromStats"></div>
                     <div class="result-item">
                         <span class="result-label">🎯 HIT (Hit Tool)</span>
                         <span class="result-value" id="hitResult">-</span>
@@ -63,7 +252,7 @@
                         <span class="result-value" id="eyeResult">-</span>
                     </div>
                     
-                    <div id="playerCardFromStats"></div>
+                    
                 </div>
             </div>
             
@@ -109,6 +298,8 @@
                 </button>
                 
                 <div id="statsResults" class="results" style="display: none;">
+
+                    <div id="playerCardFromAttributes"></div>
                     <div class="result-item">
                         <span class="result-label">📈 打擊率 (BA)</span>
                         <span class="result-value" id="baResult">-</span>
@@ -138,7 +329,7 @@
                         <span class="result-value" id="kRateResult">-</span>
                     </div>
                     
-                    <div id="playerCardFromAttributes"></div>
+                    
                 </div>
             </div>
         </div>
@@ -161,12 +352,13 @@
         }
 
         function getRarityLabel(ovr) {
-            if (ovr >= 130) return '神級球員';
-            if (ovr >= 110) return '神話球員';
-            if (ovr >= 95) return '傳奇球員';
-            if (ovr >= 80) return '史詩球員';
-            if (ovr >= 60) return '稀有球員';
-            return '普通球員';
+            if (ovr >= 130) return '神獸級';
+            if (ovr >= 110) return '名人堂';
+            if (ovr >= 95) return '全明星';
+            if (ovr >= 80) return '優秀';
+            if (ovr >= 60) return '合格';
+            if (ovr >= 40) return '普通';
+            return '小聯盟';
         }
 
         function createPlayerCard(playerName, pow, hit, eye, ovr, containerId) {
@@ -190,28 +382,22 @@
                     </div>
 
                     <div class="attributes-section">
-                        <div class="attribute-bar">
-                            <span class="attr-label">POW</span>
-                            <div class="attr-bar-container">
-                                <div class="attr-bar-fill pow-bar" style="width: ${Math.min(pow / 150 * 100, 100)}%"></div>
+                        <div class="attributes-grid">
+
+                            <div class="attribute-column">
+                                <div class="attr-label">HIT</div>
+                                <div class="attr-value">${Math.round(hit)}</div>
                             </div>
-                            <span class="attr-value">${Math.round(pow)}</span>
-                        </div>
-                        
-                        <div class="attribute-bar">
-                            <span class="attr-label">HIT</span>
-                            <div class="attr-bar-container">
-                                <div class="attr-bar-fill hit-bar" style="width: ${Math.min(hit / 150 * 100, 100)}%"></div>
+
+                            <div class="attribute-column">
+                                <div class="attr-label">POW</div>
+                                <div class="attr-value">${Math.round(pow)}</div>
                             </div>
-                            <span class="attr-value">${Math.round(hit)}</span>
-                        </div>
-                        
-                        <div class="attribute-bar">
-                            <span class="attr-label">EYE</span>
-                            <div class="attr-bar-container">
-                                <div class="attr-bar-fill eye-bar" style="width: ${Math.min(eye / 150 * 100, 100)}%"></div>
+                            
+                            <div class="attribute-column">
+                                <div class="attr-label">EYE</div>
+                                <div class="attr-value">${Math.round(eye)}</div>
                             </div>
-                            <span class="attr-value">${Math.round(eye)}</span>
                         </div>
                     </div>
                 </div>
@@ -297,12 +483,15 @@
         // 設定預設值
         function setDefaultValues() {
             const inputs = [
-                {id: 'xBA', defaultVal: 0.280},
-                {id: 'xSLG', defaultVal: 0.450}, 
-                {id: 'xwOBA', defaultVal: 0.350},
-                {id: 'inputPOW', defaultVal: 85},
+                {id: 'name1', defaultVal: '24大谷翔平'},
+                {id: 'xBA', defaultVal: 0.314},
+                {id: 'xSLG', defaultVal: 0.660}, 
+                {id: 'xwOBA', defaultVal: 0.442},
+                {id: 'name2', defaultVal: '先發打者'},
                 {id: 'inputHIT', defaultVal: 75},
-                {id: 'inputEYE', defaultVal: 80},
+                {id: 'inputPOW', defaultVal: 82},
+                
+                {id: 'inputEYE', defaultVal: 77},
                 {id: 'inputPA', defaultVal: 600}
             ];
             

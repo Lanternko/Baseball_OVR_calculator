@@ -21,9 +21,14 @@ function getAttributeScoreHybrid(metricVal, pr1Benchmark, pr50Benchmark, pr99Ben
         // 🔥 對數函數：上凸曲線，極限趨近於 0
         const normalizedProgress = (metricVal - theoreticalMin) / (pr1Benchmark - theoreticalMin);
         
-        // k=5.0 提供明顯的上凸效果
-        const k = 5.0;
+       // 調整對數平滑參數以改善 40 屬性轉換
+        const k = 4.0; // 降低: 5.0 → 4.0 (減少彎曲度)
         const logScore = pr1_map * Math.log(1 + k * normalizedProgress) / Math.log(1 + k);
+        
+        // 微調基準點對應
+        if (statType === 'SLG') {
+            return Math.max(0.1, logScore * 1.02); // POW 小幅提升
+        }
         
         return Math.max(0.1, logScore);
     }

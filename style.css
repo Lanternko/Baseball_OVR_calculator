@@ -9,6 +9,9 @@
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     cursor: pointer;
     margin: 20px auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .player-card:hover {
@@ -22,13 +25,13 @@
     border: 2px solid #64748b;
 }
 .rarity-rare { 
-    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    background: linear-gradient(135deg, #4788b6, #416fb0);
     border: 2px solid #3b82f6;
     box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
 }
 .rarity-epic { 
-    background: linear-gradient(135deg, #10b981, #047857);
-    border: 2px solid #10b981;
+    background: linear-gradient(135deg, #179372fc, #0c8f6a);
+    border: 2px solid #055c3f;
     box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
 }
 .rarity-legendary { 
@@ -141,7 +144,7 @@
 }
 
 .card-header {
-    padding: 20px 20px 10px 20px;
+    padding: 10px 20px 45px 20px;
     text-align: center;
     color: white;
     position: relative;
@@ -160,19 +163,19 @@
 .player-name {
     font-size: 18px;
     font-weight: bold;
-    margin-bottom: 10px;
+    margin-bottom: 0;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .ovr-section {
     text-align: center;
-    padding: 20px;
+    padding: 23px 20px 25px 20px;
     position: relative;
     z-index: 2;
 }
 
 .ovr-number {
-    font-size: 4.5em;
+    font-size: 6em;
     font-weight: 900;
     color: white;
     text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.7);
@@ -182,7 +185,7 @@
 }
 
 .ovr-label {
-    font-size: 14px;
+    font-size: 16px;
     color: rgba(255, 255, 255, 0.9);
     font-weight: bold;
     text-transform: uppercase;
@@ -190,73 +193,40 @@
 }
 
 .attributes-section {
-    padding: 20px;
+    padding: 23px 20px 25px 20px;
     position: relative;
     z-index: 2;
 }
 
-.attribute-bar {
+.attributes-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 15px;
+    text-align: center;
+}
+
+.attribute-column {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    margin-bottom: 12px;
     color: white;
-    font-size: 14px;
     font-weight: bold;
 }
 
 .attr-label {
-    width: 45px;
     font-size: 12px;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-}
-
-.attr-bar-container {
-    flex: 1;
-    height: 8px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-    margin: 0 10px;
-    overflow: hidden;
-    position: relative;
-}
-
-.attr-bar-fill {
-    height: 100%;
-    border-radius: 4px;
-    transition: width 0.8s ease;
-    position: relative;
-}
-
-.attr-bar-fill::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, 
-        transparent 0%, 
-        rgba(255, 255, 255, 0.2) 50%, 
-        transparent 100%);
-    animation: shine 3s ease-in-out infinite;
-}
-
-@keyframes shine {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+    opacity: 0.9;
 }
 
 .attr-value {
-    width: 35px;
-    text-align: right;
-    font-size: 13px;
+    font-size: 22px;
+    font-weight: 900;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    color: white;
 }
-
-/* 屬性條顏色 - 多巴胺友好版本 */
-.pow-bar { background: linear-gradient(90deg, #f87171, #fca5a5); }
-.hit-bar { background: linear-gradient(90deg, #34d399, #6ee7b7); }
-.eye-bar { background: linear-gradient(90deg, #60a5fa, #93c5fd); }
 
 /* 背景裝飾 */
 .card-background {
@@ -288,4 +258,26 @@
 @keyframes card-shine {
     0% { transform: rotate(45deg) translateX(-100%); }
     100% { transform: rotate(45deg) translateX(100%); }
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .main-content {
+        grid-template-columns: 1fr;
+        gap: 20px;
+        padding: 20px;
+    }
+    
+    .header h1 {
+        font-size: 2em;
+    }
+    
+    .test-section {
+        margin: 20px;
+    }
+    
+    .player-card {
+        width: 240px;
+        height: 320px;
+    }
 }
