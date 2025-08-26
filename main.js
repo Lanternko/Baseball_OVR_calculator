@@ -103,8 +103,7 @@ function setDefaultValues() {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 棒球能力值計算器 v2.2 已載入（平滑轉換版）');
     
-    // 🔧 只在頁面初次載入時設定預設值
-    setDefaultValues();
+    // 不自動設定預設值，讓用戶看到 placeholder 顏色
     
     // 🔧 修正輸入驗證：允許 0 值
     ['xBA', 'xSLG', 'xwOBA'].forEach(id => {

@@ -485,8 +485,6 @@
     font-weight: var(--font-bold);
     margin-bottom: var(--spacing-lg);
     text-align: center;
-    border-bottom: 2px solid var(--accent-primary);
-    padding-bottom: var(--spacing-md);
   }
   
   .desktop-stats-grid {
@@ -499,11 +497,12 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--spacing-md);
+    padding: var(--spacing-lg) var(--spacing-md);
     border-bottom: 1px solid var(--border-subtle);
     background: var(--bg-surface);
     border-radius: var(--radius-sm);
     transition: all 0.2s ease;
+    gap: var(--spacing-xl);
   }
   
   .desktop-stat-item:hover {

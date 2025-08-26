@@ -15,27 +15,16 @@
     <script src="player-card.js"></script>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
+    <!-- 全寬度頭部區域 -->
+    <div class="header">
+        <div class="header-content">
             <h1 class="full-title">棒球OVR雙向轉換器</h1>
             <h1 class="mobile-title">OVR雙向轉換</h1>
             <p>基於HIT/POW/EYE的球員卡數據預測</p>
-            <!-- 右上角主題下拉選單 -->
-            <div class="theme-dropdown">
-                <button class="theme-dropdown-btn" id="themeDropdownBtn" onclick="toggleThemeDropdown()" title="切換主題">
-                    淺色
-                </button>
-                <div class="theme-dropdown-menu" id="themeDropdownMenu">
-                    <div class="dropdown-option" onclick="selectTheme('dark')">
-                        <div class="theme-preview dark-preview"></div>
-                        <span>深色模式</span>
-                    </div>
-                    <div class="dropdown-option" onclick="selectTheme('light')">
-                        <div class="theme-preview light-preview"></div>
-                        <span>淺色模式</span>
-                    </div>
-                </div>
-            </div>
+            <!-- 右上角主題切換按鈕 -->
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="切換深淺模式">
+                ◐
+            </button>
             
             <!-- 分頁按鈕 -->
             <div class="tab-buttons">
@@ -47,9 +36,12 @@
                 </button>
             </div>
         </div>
-        
-        <!-- 頁首與表單間的漸層分隔線 -->
-        <div class="gradient-divider"></div>
+    </div>
+    
+    <!-- 頁首與表單間的漸層分隔線 -->
+    <div class="gradient-divider"></div>
+    
+    <div class="container">
         
         <div class="main-content">
             <!-- 數據轉三圍 -->
@@ -63,6 +55,8 @@
                         <input type="text" id="playerName" placeholder="例如：大谷翔平24'" maxlength="20">
                     </div>
                 </div>
+                
+                <div class="input-spacing"></div>
                 
                 <div class="input-row">
                     <div class="input-label-column">
@@ -114,6 +108,8 @@
                         <input type="text" id="playerNameAttributes" placeholder="例如：大谷翔平24'" maxlength="20">
                     </div>
                 </div>
+                
+                <div class="input-spacing"></div>
                 
                 <div class="input-row">
                     <div class="input-label-column">
@@ -199,26 +195,36 @@
             document.getElementById('statsResults').style.display = 'block';
         }
 
-        // 設定預設值
-        function setDefaultValues() {
-            const inputs = [
-                {id: 'playerName', defaultVal: '大谷翔平24\''},
-                {id: 'xBA', defaultVal: 0.314},
-                {id: 'xSLG', defaultVal: 0.66}, 
-                {id: 'xwOBA', defaultVal: 0.442},
-                {id: 'playerNameAttributes', defaultVal: '先發打者'},
-                {id: 'inputHIT', defaultVal: 93},
-                {id: 'inputPOW', defaultVal: 108},
-                {id: 'inputEYE', defaultVal: 109},
-                {id: 'inputPA', defaultVal: 600}
-            ];
-            
-            inputs.forEach(input => {
-                const element = document.getElementById(input.id);
-                if (element && element.value === '') {
-                    element.value = input.defaultVal;
-                }
-            });
+        // 按需設定預設值（按鈕觸發）
+        function useDefaultValues(mode) {
+            if (mode === 'statsToAttributes') {
+                const inputs = [
+                    {id: 'playerName', defaultVal: '大谷翔平24\''},
+                    {id: 'xBA', defaultVal: 0.314},
+                    {id: 'xSLG', defaultVal: 0.66}, 
+                    {id: 'xwOBA', defaultVal: 0.442}
+                ];
+                inputs.forEach(input => {
+                    const element = document.getElementById(input.id);
+                    if (element) {
+                        element.value = input.defaultVal;
+                    }
+                });
+            } else if (mode === 'attributesToStats') {
+                const inputs = [
+                    {id: 'playerNameAttributes', defaultVal: '先發打者'},
+                    {id: 'inputHIT', defaultVal: 93},
+                    {id: 'inputPOW', defaultVal: 108},
+                    {id: 'inputEYE', defaultVal: 109},
+                    {id: 'inputPA', defaultVal: 600}
+                ];
+                inputs.forEach(input => {
+                    const element = document.getElementById(input.id);
+                    if (element) {
+                        element.value = input.defaultVal;
+                    }
+                });
+            }
         }
 
         // 設備檢測和界面模式
@@ -885,11 +891,10 @@
             // 根據選擇設定新主題
             switch(themeName) {
                 case 'light':
-                    body.setAttribute('data-theme', 'light');
+                    // 淺色模式使用根變數，不需要設定data-theme
                     break;
                 case 'dark':
-                default:
-                    // 預設深色主題，不需要設定data-theme
+                    body.setAttribute('data-theme', 'dark');
                     break;
             }
             
@@ -899,31 +904,20 @@
             console.log(`主題已切換為: ${themeName}`);
         }
 
-        // 主題模態視窗控制
-        function toggleThemeDropdown() {
-            const dropdown = document.getElementById('themeDropdownMenu');
-            const isVisible = dropdown.classList.contains('show');
-            if (isVisible) {
-                dropdown.classList.remove('show');
-            } else {
-                dropdown.classList.add('show');
-            }
+        // 主題切換控制
+        function toggleTheme() {
+            const currentTheme = localStorage.getItem('selectedTheme') || 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            changeTheme(newTheme);
+            updateThemeIcon(newTheme);
         }
 
-        function selectTheme(themeName) {
-            changeTheme(themeName);
-            updateThemeButtonText(themeName);
-            toggleThemeDropdown();
-        }
-
-        function updateThemeButtonText(themeName) {
-            const themeBtn = document.getElementById('themeDropdownBtn');
-            const themeNames = {
-                'dark': '深色',
-                'light': '淺色'
-            };
-            if (themeBtn && themeNames[themeName]) {
-                themeBtn.textContent = themeNames[themeName];
+        function updateThemeIcon(themeName) {
+            const themeBtn = document.getElementById('themeToggle');
+            if (themeBtn) {
+                // 淺色模式顯示深色半圓（點擊切換到深色）
+                // 深色模式顯示淺色半圓（點擊切換到淺色）  
+                themeBtn.textContent = themeName === 'light' ? '◐' : '◑';
             }
         }
 
@@ -931,7 +925,7 @@
         function initTheme() {
             const savedTheme = localStorage.getItem('selectedTheme') || 'light';
             changeTheme(savedTheme);
-            updateThemeButtonText(savedTheme);
+            updateThemeIcon(savedTheme);
         }
 
         // 頁面載入時初始化主題
@@ -940,15 +934,6 @@
         });
 
         // 點擊模態外部關閉
-        document.addEventListener('click', function(e) {
-            const dropdown = document.getElementById('themeDropdownMenu');
-            const themeDropdown = document.querySelector('.theme-dropdown');
-            
-            if (dropdown && dropdown.classList.contains('show') && 
-                !themeDropdown.contains(e.target)) {
-                dropdown.classList.remove('show');
-            }
-        });
 
 
         window.testExtremeValues = testExtremeValues;

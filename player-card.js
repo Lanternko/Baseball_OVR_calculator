@@ -179,8 +179,8 @@ function updatePlayerCardContent(modal, playerData, statsData, mode = 'attribute
     
     if (isStatsToAttributes) {
         // 計算OVR模式：左欄顯示三圍，右欄顯示數據
-        if (desktopPlayerName && playerData.name) {
-            desktopPlayerName.textContent = `${playerData.name} - 球員能力值`;
+        if (desktopPlayerName) {
+            desktopPlayerName.textContent = '球員能力值';
         }
         
         // 左欄顯示球員卡（三圍）
@@ -208,8 +208,8 @@ function updatePlayerCardContent(modal, playerData, statsData, mode = 'attribute
         }
     } else {
         // 模擬數據模式：左欄顯示數據，右欄顯示三圍
-        if (desktopPlayerName && playerData.name) {
-            desktopPlayerName.textContent = `${playerData.name} - 預測統計數據`;
+        if (desktopPlayerName) {
+            desktopPlayerName.textContent = '預測統計數據';
         }
         
         // 左欄顯示統計數據
