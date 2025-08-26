@@ -20,6 +20,14 @@
             color: #333;
         }
 
+        /* 移動端使用原始容器的off-white背景 */
+        @media (max-width: 768px) {
+            body {
+                background: rgba(255, 255, 255, 0.95); /* 原始容器的off-white色 */
+                padding: 0;
+            }
+        }
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -550,108 +558,109 @@
             display: none; /* 移動端默認隱藏第二個計算器 */
         }
 
-        /* 手機版優化 */
-        .mobile-device, 
+        /* 手機版優化 - 平衡版本 */
         @media (max-width: 768px) {
             body {
-                padding: 2px;
+                padding: 4px;
                 min-height: 100vh;
             }
             
             .container {
-                padding: 6px;
-                border-radius: 10px;
+                padding: 10px;
+                border-radius: 0; /* 移除圓角，與背景融合 */
                 margin: 0;
+                background: rgba(255, 255, 255, 0.98); /* 稍微透明的白色 */
+                box-shadow: none; /* 移除陰影 */
             }
             
             .header {
-                margin-bottom: 10px;
+                margin-bottom: 12px;
             }
             
             .header h1 {
-                font-size: 1.3em;
-                margin-bottom: 1px;
+                font-size: 1.5em;
+                margin-bottom: 3px;
                 line-height: 1.2;
             }
             
             .header p {
-                font-size: 0.75em;
-                margin-bottom: 6px;
-                line-height: 1.1;
+                font-size: 0.85em;
+                margin-bottom: 8px;
+                line-height: 1.2;
             }
             
             .tab-buttons {
-                margin-top: 6px;
-                margin-bottom: 10px;
-                padding: 2px;
-                border-radius: 8px;
+                margin-top: 8px;
+                margin-bottom: 12px;
+                padding: 3px;
+                border-radius: 10px;
             }
             
             .tab-btn {
-                padding: 5px 10px;
-                font-size: 0.8em;
-                border-radius: 6px;
-            }
-            
-            .calculator-section {
-                padding: 8px;
+                padding: 7px 14px;
+                font-size: 0.9em;
                 border-radius: 8px;
             }
             
+            .calculator-section {
+                padding: 12px;
+                border-radius: 10px;
+            }
+            
             .section-title {
-                font-size: 0.9em;
-                margin-bottom: 8px;
+                font-size: 1em;
+                margin-bottom: 10px;
             }
             
             .input-group {
-                margin-bottom: 4px;
+                margin-bottom: 6px;
             }
             
             .input-group label {
-                font-size: 0.7em;
-                margin-bottom: 1px;
+                font-size: 0.8em;
+                margin-bottom: 3px;
                 white-space: nowrap;
             }
             
             .input-group input {
-                padding: 4px 6px;
-                font-size: 0.75em;
-                border-radius: 4px;
+                padding: 6px 8px;
+                font-size: 0.85em;
+                border-radius: 6px;
             }
             
             .help-text {
-                font-size: 0.6em;
-                margin-top: 0px;
-                line-height: 1;
+                font-size: 0.7em;
+                margin-top: 2px;
+                line-height: 1.1;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
             }
             
             .button {
-                padding: 5px;
-                font-size: 0.8em;
-                margin: 4px 0;
-                border-radius: 4px;
+                padding: 8px;
+                font-size: 0.9em;
+                margin: 6px 0;
+                border-radius: 6px;
             }
             
             .modal-content {
-                max-width: 98vw;
-                max-height: 92vh;
-                margin: 5px;
+                max-width: 95vw;
+                max-height: 90vh;
+                margin: 20px auto;
             }
             
             .modal-header {
-                padding: 10px 15px;
+                padding: 12px 18px;
             }
             
             .modal-header h3 {
-                font-size: 1.1em;
+                font-size: 1.2em;
             }
             
             .modal-card-container {
-                padding: 20px;
-                max-height: 80vh;
+                padding: 25px;
+                max-height: 75vh;
                 overflow-y: auto;
             }
 
@@ -671,25 +680,25 @@
             .stats-summary {
                 width: 100%;
                 min-width: auto;
-                padding: 10px;
+                padding: 15px;
             }
 
             .stats-summary h4 {
-                font-size: 1em;
-                margin-bottom: 8px;
+                font-size: 1.1em;
+                margin-bottom: 12px;
             }
 
             .stat-item {
-                padding: 4px 0;
+                padding: 6px 0;
             }
 
             .stat-label {
-                font-size: 0.8em;
+                font-size: 0.9em;
             }
 
             .stat-value {
-                font-size: 0.85em;
-                padding: 2px 5px;
+                font-size: 0.95em;
+                padding: 4px 8px;
             }
         }
     </style>
