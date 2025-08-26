@@ -52,10 +52,11 @@
         }
 
         .main-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
             gap: 40px;
-            align-items: start;
+            min-height: 600px;
         }
 
         .calculator-section {
@@ -81,23 +82,23 @@
         }
 
         .input-group {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         .input-group label {
             display: block;
             font-weight: 600;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             color: #555;
-            font-size: 0.95em;
+            font-size: 0.9em;
         }
 
         .input-group input {
             width: 100%;
-            padding: 12px 15px;
+            padding: 10px 12px;
             border: 2px solid #e1e5e9;
-            border-radius: 10px;
-            font-size: 1em;
+            border-radius: 8px;
+            font-size: 0.95em;
             transition: all 0.3s ease;
             background: #f8f9fa;
         }
@@ -110,24 +111,25 @@
         }
 
         .help-text {
-            font-size: 0.9em;
+            font-size: 0.8em;
             color: #666;
-            margin-top: 5px;
+            margin-top: 3px;
             font-style: italic;
+            line-height: 1.2;
         }
 
         .button {
             width: 100%;
-            padding: 15px;
+            padding: 12px;
             background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
             color: white;
             border: none;
-            border-radius: 10px;
-            font-size: 1.1em;
+            border-radius: 8px;
+            font-size: 1em;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin: 20px 0;
+            margin: 15px 0;
         }
 
         .button:hover {
@@ -174,10 +176,153 @@
             border: 1px solid #e1e5e9;
         }
 
+        /* 切換開關樣式 */
+        .mode-switch-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 25px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .mode-label {
+            font-weight: 600;
+            color: #333;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .mode-label.active {
+            color: #4ecdc4;
+            font-weight: 700;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 80px;
+            height: 40px;
+            background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid #d1d5db;
+            overflow: hidden;
+        }
+
+        .toggle-switch.active {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            border-color: #4ecdc4;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, #ffffff, #f8fafc);
+            border-radius: 50%;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 2;
+        }
+
+        .toggle-slider.active {
+            transform: translateX(40px);
+            box-shadow: 0 4px 12px rgba(78, 205, 196, 0.3);
+        }
+
+        .toggle-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+            animation: toggle-shine 3s ease-in-out infinite;
+        }
+
+        @keyframes toggle-shine {
+            0%, 100% { transform: translateX(-100%); }
+            50% { transform: translateX(100%); }
+        }
+
+        /* 分頁按鈕樣式 */
+        .tab-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 2px;
+            margin-top: 25px;
+            padding: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: transparent;
+            color: #666;
+            user-select: none;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #333;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            color: white;
+            box-shadow: 0 4px 12px rgba(78, 205, 196, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .tab-btn.active:hover {
+            background: linear-gradient(135deg, #45b8b0, #3d8f7d);
+            transform: translateY(-1px);
+        }
+
+        /* 計算器切換動畫 */
+        .calculator-section {
+            transition: all 0.4s ease-in-out;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .calculator-section.hidden {
+            display: none !important;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .main-content {
+            position: relative;
+            min-height: 600px;
+        }
+
+        .calculator-section {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
         /* 響應式設計 */
         @media (max-width: 768px) {
             .main-content {
-                grid-template-columns: 1fr;
+                flex-direction: column;
                 gap: 20px;
                 padding: 20px;
             }
@@ -190,6 +335,362 @@
                 width: 240px;
                 height: 320px;
             }
+
+            .mode-switch-container {
+                gap: 15px;
+                padding: 10px;
+            }
+
+            .mode-label {
+                font-size: 0.9em;
+            }
+
+            .toggle-switch {
+                width: 70px;
+                height: 35px;
+            }
+
+            .toggle-slider {
+                width: 25px;
+                height: 25px;
+            }
+
+            .toggle-slider.active {
+                transform: translateX(32px);
+            }
+        }
+
+        /* 模態視窗樣式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(8px);
+            animation: modalFadeIn 0.3s ease-out;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 0;
+            max-width: 90vw;
+            max-height: 90vh;
+            position: relative;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease-out;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.5em;
+            font-weight: 700;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 2em;
+            cursor: pointer;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .modal-card-container {
+            padding: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+
+        .modal-content-wrapper {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+        }
+
+        .stats-summary {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            min-width: 280px;
+        }
+
+        .stats-summary h4 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 1.2em;
+            text-align: center;
+            border-bottom: 2px solid #4ecdc4;
+            padding-bottom: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            font-weight: 600;
+            color: #555;
+            font-size: 0.9em;
+        }
+
+        .stat-value {
+            font-weight: 700;
+            color: #333;
+            background: #f8f9fa;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.95em;
+        }
+
+        .view-card-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            margin-top: 15px !important;
+        }
+
+        .view-card-btn:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%) !important;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes modalSlideIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(-50px) scale(0.9); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+            }
+        }
+
+        /* 桌面端專用樣式 */
+        .desktop-device .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: start;
+        }
+
+        .desktop-device .tab-buttons {
+            display: none; /* 桌面端隱藏分頁按鈕，直接顯示兩個計算器 */
+        }
+
+        .desktop-device #attributesToStatsCalculator {
+            display: block !important; /* 桌面端同時顯示兩個計算器 */
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+        }
+
+        /* 移動端專用樣式 */
+        .mobile-device .main-content {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: auto;
+            padding: 0;
+        }
+
+        .mobile-device .tab-buttons {
+            display: flex; /* 移動端顯示分頁按鈕 */
+        }
+
+        .mobile-device #attributesToStatsCalculator {
+            display: none; /* 移動端默認隱藏第二個計算器 */
+        }
+
+        /* 手機版優化 */
+        .mobile-device, 
+        @media (max-width: 768px) {
+            body {
+                padding: 2px;
+                min-height: 100vh;
+            }
+            
+            .container {
+                padding: 6px;
+                border-radius: 10px;
+                margin: 0;
+            }
+            
+            .header {
+                margin-bottom: 10px;
+            }
+            
+            .header h1 {
+                font-size: 1.3em;
+                margin-bottom: 1px;
+                line-height: 1.2;
+            }
+            
+            .header p {
+                font-size: 0.75em;
+                margin-bottom: 6px;
+                line-height: 1.1;
+            }
+            
+            .tab-buttons {
+                margin-top: 6px;
+                margin-bottom: 10px;
+                padding: 2px;
+                border-radius: 8px;
+            }
+            
+            .tab-btn {
+                padding: 5px 10px;
+                font-size: 0.8em;
+                border-radius: 6px;
+            }
+            
+            .calculator-section {
+                padding: 8px;
+                border-radius: 8px;
+            }
+            
+            .section-title {
+                font-size: 0.9em;
+                margin-bottom: 8px;
+            }
+            
+            .input-group {
+                margin-bottom: 4px;
+            }
+            
+            .input-group label {
+                font-size: 0.7em;
+                margin-bottom: 1px;
+                white-space: nowrap;
+            }
+            
+            .input-group input {
+                padding: 4px 6px;
+                font-size: 0.75em;
+                border-radius: 4px;
+            }
+            
+            .help-text {
+                font-size: 0.6em;
+                margin-top: 0px;
+                line-height: 1;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            .button {
+                padding: 5px;
+                font-size: 0.8em;
+                margin: 4px 0;
+                border-radius: 4px;
+            }
+            
+            .modal-content {
+                max-width: 98vw;
+                max-height: 92vh;
+                margin: 5px;
+            }
+            
+            .modal-header {
+                padding: 10px 15px;
+            }
+            
+            .modal-header h3 {
+                font-size: 1.1em;
+            }
+            
+            .modal-card-container {
+                padding: 20px;
+                max-height: 80vh;
+                overflow-y: auto;
+            }
+
+            .modal-content-wrapper {
+                flex-direction: column;
+                gap: 20px;
+                align-items: center;
+                width: 100%;
+            }
+            
+            /* 恢復原始球員卡設計 */
+            .modal-card-container .player-card {
+                width: 280px;
+                height: 380px;
+            }
+
+            .stats-summary {
+                width: 100%;
+                min-width: auto;
+                padding: 10px;
+            }
+
+            .stats-summary h4 {
+                font-size: 1em;
+                margin-bottom: 8px;
+            }
+
+            .stat-item {
+                padding: 4px 0;
+            }
+
+            .stat-label {
+                font-size: 0.8em;
+            }
+
+            .stat-value {
+                font-size: 0.85em;
+                padding: 2px 5px;
+            }
         }
     </style>
     <link rel="stylesheet" href="style.css">
@@ -197,21 +698,31 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>⚾ 棒球OVR雙向轉換器 v1.3</h1>
+            <h1>⚾ 棒球OVR雙向轉換器</h1>
             <p>基於 POW/HIT/EYE 三圍系統的棒球數據預測工具</p>
+            
+            <!-- 分頁按鈕 -->
+            <div class="tab-buttons">
+                <button class="tab-btn active" id="tabOVR" onclick="switchToMode('statsToAttributes')">
+                    🎯 計算OVR
+                </button>
+                <button class="tab-btn" id="tabSimulate" onclick="switchToMode('attributesToStats')">
+                    📊 模擬數據
+                </button>
+            </div>
         </div>
         
         <div class="main-content">
             <!-- 數據轉三圍 -->
-            <div class="calculator-section">
+            <div class="calculator-section" id="statsToAttributesCalculator">
                 <h2 class="section-title">
-                    <span class="icon">📊</span>
-                    數據 → 三圍 + OVR
+                    <span class="icon">🎯</span>
+                    計算OVR
                 </h2>
                 
                 <div class="input-group">
                     <label for="playerName">球員名稱 (可選)</label>
-                    <input type="text" id="playerName" placeholder="例如: Aaron Judge" maxlength="20">
+                    <input type="text" id="playerName" placeholder="例如: 大谷翔平24'" maxlength="20">
                     <div class="help-text">自定義球員名稱，留空則顯示"球員"</div>
                 </div>
                 
@@ -233,34 +744,18 @@
                     <div class="help-text">通常在 0.250 - 0.450 之間</div>
                 </div>
                 
-                <button class="button" onclick="calculateAttributes()">
-                    計算三圍 + OVR
+                <button class="button" onclick="calculateAndShowModal('statsToAttributes')">
+                    🎯 計算OVR
                 </button>
                 
-                <div id="attributeResults" class="results" style="display: none;">
-                    <div id="playerCardFromStats"></div>
-                    <div class="result-item">
-                        <span class="result-label">🎯 HIT (Hit Tool)</span>
-                        <span class="result-value" id="hitResult">-</span>
-                    </div>
-                    <div class="result-item">
-                        <span class="result-label">💪 POW (Power)</span>
-                        <span class="result-value" id="powResult">-</span>
-                    </div>
-                    <div class="result-item">
-                        <span class="result-label">👁️ EYE (Plate Discipline)</span>
-                        <span class="result-value" id="eyeResult">-</span>
-                    </div>
-                    
-                    
-                </div>
+                <!-- 移除中間結果顯示，直接顯示模態 -->
             </div>
             
             <!-- 三圍轉數據 -->
-            <div class="calculator-section">
+            <div class="calculator-section" id="attributesToStatsCalculator" style="display: none;">
                 <h2 class="section-title">
-                    <span class="icon">⚙️</span>
-                    三圍 → 預測數據
+                    <span class="icon">📊</span>
+                    模擬數據
                 </h2>
                 
                 <div class="input-group">
@@ -293,44 +788,24 @@
                     <div class="help-text">一個完整賽季通常 500-700 打席</div>
                 </div>
                 
-                <button class="button" onclick="calculateStats()">
-                    預測數據 + OVR
+                <button class="button" onclick="calculateAndShowModal('attributesToStats')">
+                    📊 模擬數據
                 </button>
                 
-                <div id="statsResults" class="results" style="display: none;">
+                <!-- 移除中間結果顯示，直接顯示模態 -->
+            </div>
+        </div>
+    </div>
 
-                    <div id="playerCardFromAttributes"></div>
-                    <div class="result-item">
-                        <span class="result-label">📈 打擊率 (BA)</span>
-                        <span class="result-value" id="baResult">-</span>
-                    </div>
-                    <div class="result-item">
-                        <span class="result-label">💥 長打率 (SLG)</span>
-                        <span class="result-value" id="slgResult">-</span>
-                    </div>
-                    <div class="result-item">
-                        <span class="result-label">🏃 上壘率 (OBP)</span>
-                        <span class="result-value" id="obpResult">-</span>
-                    </div>
-                    <div class="result-item">
-                        <span class="result-label">🔥 OPS</span>
-                        <span class="result-value" id="opsResult">-</span>
-                    </div>
-                    <div class="result-item">
-                        <span class="result-label">⚾ 全壘打</span>
-                        <span class="result-value" id="hrResult">-</span>
-                    </div>
-                    <div class="result-item">
-                        <span class="result-label">👁️ 保送率</span>
-                        <span class="result-value" id="bbRateResult">-</span>
-                    </div>
-                    <div class="result-item">
-                        <span class="result-label">🌪️ 三振率</span>
-                        <span class="result-value" id="kRateResult">-</span>
-                    </div>
-                    
-                    
-                </div>
+    <!-- 球員卡模態視窗 -->
+    <div id="playerCardModal" class="modal-overlay" style="display: none;" onclick="closePlayerCardModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>🎴 球員卡</h3>
+                <button class="close-btn" onclick="closePlayerCardModal()">×</button>
+            </div>
+            <div id="modalPlayerCard" class="modal-card-container">
+                <!-- 球員卡將在這裡顯示 -->
             </div>
         </div>
     </div>
@@ -409,63 +884,66 @@
             }
         }
 
-        // 計算三圍和 OVR（從數據輸入）
+        // 新的統一計算並顯示模態函數
+        function calculateAndShowModal(mode) {
+            const inputs = getCurrentInputs(mode);
+            if (!inputs) return;
+            
+            // 檢查輸入範圍
+            if (mode === 'statsToAttributes') {
+                if (inputs.xBA > 1 || inputs.xSLG > 4 || inputs.xwOBA > 1) {
+                    alert('請確保數據在合理範圍內！BA/OBP ≤ 1.0, SLG ≤ 4.0');
+                    return;
+                }
+            } else {
+                if (inputs.pow > 500 || inputs.hit > 500 || inputs.eye > 500) {
+                    alert('三圍不得超過500！');
+                    return;
+                }
+            }
+            
+            // 直接顯示模態（會自動處理計算和快取）
+            showPlayerCardModal(mode);
+        }
+
+        // 計算三圍和 OVR（從數據輸入）- 保留用於內部使用
         function calculateAttributes() {
-            const xBA = parseFloat(document.getElementById('xBA').value);
-            const xSLG = parseFloat(document.getElementById('xSLG').value);
-            const xwOBA = parseFloat(document.getElementById('xwOBA').value);
-            const playerName = document.getElementById('playerName').value.trim();
+            const inputs = getCurrentInputs('statsToAttributes');
+            if (!inputs) return;
             
-            console.log('原始輸入:', { xBA, xSLG, xwOBA, playerName });
-            
-            const safeXBA = isNaN(xBA) ? 0 : Math.max(0, xBA);
-            const safeXSLG = isNaN(xSLG) ? 0 : Math.max(0, xSLG);
-            const safeXwOBA = isNaN(xwOBA) ? 0 : Math.max(0, xwOBA);
-            
-            console.log('安全輸入:', { safeXBA, safeXSLG, safeXwOBA });
-            
-            if (safeXBA > 1 || safeXSLG > 4 || safeXwOBA > 1) {
+            if (inputs.xBA > 1 || inputs.xSLG > 4 || inputs.xwOBA > 1) {
                 alert('請確保數據在合理範圍內！BA/OBP ≤ 1.0, SLG ≤ 4.0');
                 return;
             }
             
-            const attributes = calculatePlayerGameAttributes(safeXBA, safeXSLG, safeXwOBA);
-            console.log('轉換結果:', attributes);
-            
+            const attributes = calculatePlayerGameAttributes(inputs.xBA, inputs.xSLG, inputs.xwOBA);
             const ovrResult = calculateBatterOVR(attributes.POW, attributes.HIT, attributes.EYE);
-            console.log('OVR結果:', ovrResult);
             
             document.getElementById('powResult').textContent = attributes.POW.toFixed(1);
             document.getElementById('hitResult').textContent = attributes.HIT.toFixed(1);
             document.getElementById('eyeResult').textContent = attributes.EYE.toFixed(1);
             
-            createPlayerCard(playerName, attributes.POW, attributes.HIT, attributes.EYE, ovrResult.ovr, 'playerCardFromStats');
+            // 清除快取如果需要
+            const newHash = generateInputHash(inputs, 'statsToAttributes');
+            if (inputHashCache.statsToAttributes !== newHash) {
+                playerCardCache.statsToAttributes = null;
+            }
             
             document.getElementById('attributeResults').style.display = 'block';
         }
 
-        // 計算預測數據和 OVR（從三圍輸入）
+        // 計算預測數據和 OVR（從三圍輸入）- 保留用於內部使用
         function calculateStats() {
-            const pow = parseFloat(document.getElementById('inputPOW').value);
-            const hit = parseFloat(document.getElementById('inputHIT').value);
-            const eye = parseFloat(document.getElementById('inputEYE').value);
-            const pa = parseInt(document.getElementById('inputPA').value);
-            const playerName = document.getElementById('playerNameAttributes').value.trim();
+            const inputs = getCurrentInputs('attributesToStats');
+            if (!inputs) return;
             
-            console.log('三圍輸入:', { pow, hit, eye, pa, playerName });
-            
-            const safePOW = isNaN(pow) ? 70 : Math.max(0, pow);
-            const safeHIT = isNaN(hit) ? 70 : Math.max(0, hit);
-            const safeEYE = isNaN(eye) ? 70 : Math.max(0, eye);
-            const safePA = isNaN(pa) ? 600 : Math.max(1, pa);
-            
-            if (safePOW > 500 || safeHIT > 500 || safeEYE > 500) {
+            if (inputs.pow > 500 || inputs.hit > 500 || inputs.eye > 500) {
                 alert('三圍不得超過500！');
                 return;
             }
             
-            const stats = simulatePlayerStats(safePOW, safeHIT, safeEYE, NUM_SIMULATIONS, safePA);
-            const ovrResult = calculateBatterOVR(safePOW, safeHIT, safeEYE);
+            const stats = simulatePlayerStats(inputs.pow, inputs.hit, inputs.eye, NUM_SIMULATIONS, inputs.pa);
+            const ovrResult = calculateBatterOVR(inputs.pow, inputs.hit, inputs.eye);
             
             document.getElementById('baResult').textContent = stats.BA.toFixed(3);
             document.getElementById('obpResult').textContent = stats.OBP.toFixed(3);
@@ -475,7 +953,11 @@
             document.getElementById('bbRateResult').textContent = (stats.BB_rate * 100).toFixed(1) + '%';
             document.getElementById('kRateResult').textContent = (stats.K_rate * 100).toFixed(1) + '%';
             
-            createPlayerCard(playerName, safePOW, safeHIT, safeEYE, ovrResult.ovr, 'playerCardFromAttributes');
+            // 清除快取如果需要
+            const newHash = generateInputHash(inputs, 'attributesToStats');
+            if (inputHashCache.attributesToStats !== newHash) {
+                playerCardCache.attributesToStats = null;
+            }
             
             document.getElementById('statsResults').style.display = 'block';
         }
@@ -483,14 +965,13 @@
         // 設定預設值
         function setDefaultValues() {
             const inputs = [
-                {id: 'name1', defaultVal: '24大谷翔平'},
+                {id: 'playerName', defaultVal: '大谷翔平24\''},
                 {id: 'xBA', defaultVal: 0.314},
                 {id: 'xSLG', defaultVal: 0.660}, 
                 {id: 'xwOBA', defaultVal: 0.442},
-                {id: 'name2', defaultVal: '先發打者'},
+                {id: 'playerNameAttributes', defaultVal: '先發打者'},
                 {id: 'inputHIT', defaultVal: 75},
                 {id: 'inputPOW', defaultVal: 82},
-                
                 {id: 'inputEYE', defaultVal: 77},
                 {id: 'inputPA', defaultVal: 600}
             ];
@@ -503,12 +984,400 @@
             });
         }
 
+        // 設備檢測和界面模式
+        let isMobile = false;
+        let isTablet = false;
+        let currentMode = 'statsToAttributes'; // 'statsToAttributes' or 'attributesToStats'
+
+        // 檢測設備類型
+        function detectDevice() {
+            const userAgent = navigator.userAgent.toLowerCase();
+            const screenWidth = window.innerWidth;
+            
+            // 檢測移動設備
+            isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/.test(userAgent) || screenWidth <= 768;
+            isTablet = /ipad|android/.test(userAgent) && screenWidth > 768 && screenWidth <= 1024;
+            
+            console.log(`設備檢測: ${isMobile ? '移動端' : '桌面端'}, 屏幕寬度: ${screenWidth}px`);
+            
+            // 根據設備類型添加CSS類
+            document.body.classList.toggle('mobile-device', isMobile);
+            document.body.classList.toggle('tablet-device', isTablet);
+            document.body.classList.toggle('desktop-device', !isMobile && !isTablet);
+            
+            return { isMobile, isTablet, screenWidth };
+        }
+
+        // 快取系統
+        let playerCardCache = {
+            statsToAttributes: null,
+            attributesToStats: null
+        };
+        
+        let inputHashCache = {
+            statsToAttributes: '',
+            attributesToStats: ''
+        };
+
+        // 模態視窗控制
+        function showPlayerCardModal(mode) {
+            const modal = document.getElementById('playerCardModal');
+            const modalCardContainer = document.getElementById('modalPlayerCard');
+            
+            // 檢查是否有快取的卡片
+            if (playerCardCache[mode]) {
+                modalCardContainer.innerHTML = playerCardCache[mode];
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden'; // 防止背景滾動
+                return;
+            }
+            
+            // 如果沒有快取，先計算再顯示
+            if (mode === 'statsToAttributes') {
+                const inputs = getCurrentInputs('statsToAttributes');
+                if (!inputs) return;
+                
+                calculateAndCacheStatsToAttributes(inputs);
+            } else {
+                const inputs = getCurrentInputs('attributesToStats');
+                if (!inputs) return;
+                
+                calculateAndCacheAttributesToStats(inputs);
+            }
+            
+            // 顯示模態視窗
+            modalCardContainer.innerHTML = playerCardCache[mode];
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePlayerCardModal(event) {
+            // 如果是點擊背景或關閉按鈕
+            if (!event || event.target === document.getElementById('playerCardModal') || event.target.classList.contains('close-btn')) {
+                const modal = document.getElementById('playerCardModal');
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto'; // 恢復滾動
+            }
+        }
+
+        // 獲取當前輸入值
+        function getCurrentInputs(mode) {
+            if (mode === 'statsToAttributes') {
+                const xBA = parseFloat(document.getElementById('xBA').value);
+                const xSLG = parseFloat(document.getElementById('xSLG').value);
+                const xwOBA = parseFloat(document.getElementById('xwOBA').value);
+                const playerName = document.getElementById('playerName').value.trim();
+                
+                if (isNaN(xBA) || isNaN(xSLG) || isNaN(xwOBA)) {
+                    alert('請填入完整的數據！');
+                    return null;
+                }
+                
+                return { xBA, xSLG, xwOBA, playerName };
+            } else {
+                const pow = parseFloat(document.getElementById('inputPOW').value);
+                const hit = parseFloat(document.getElementById('inputHIT').value);
+                const eye = parseFloat(document.getElementById('inputEYE').value);
+                const pa = parseInt(document.getElementById('inputPA').value);
+                const playerName = document.getElementById('playerNameAttributes').value.trim();
+                
+                if (isNaN(pow) || isNaN(hit) || isNaN(eye) || isNaN(pa)) {
+                    alert('請填入完整的三圍數據！');
+                    return null;
+                }
+                
+                return { pow, hit, eye, pa, playerName };
+            }
+        }
+
+        // 生成輸入雜湊值以檢查是否需要重新計算
+        function generateInputHash(inputs, mode) {
+            if (mode === 'statsToAttributes') {
+                return `${inputs.xBA}-${inputs.xSLG}-${inputs.xwOBA}-${inputs.playerName}`;
+            } else {
+                return `${inputs.pow}-${inputs.hit}-${inputs.eye}-${inputs.pa}-${inputs.playerName}`;
+            }
+        }
+
+        // 計算並快取數據轉三圍結果
+        function calculateAndCacheStatsToAttributes(inputs) {
+            const hash = generateInputHash(inputs, 'statsToAttributes');
+            
+            // 檢查是否需要重新計算
+            if (inputHashCache.statsToAttributes === hash && playerCardCache.statsToAttributes) {
+                return playerCardCache.statsToAttributes;
+            }
+            
+            console.log('重新計算數據→三圍...');
+            
+            const attributes = calculatePlayerGameAttributes(inputs.xBA, inputs.xSLG, inputs.xwOBA);
+            const ovrResult = calculateBatterOVR(attributes.POW, attributes.HIT, attributes.EYE);
+            
+            // 生成球員卡HTML
+            const tempDiv = document.createElement('div');
+            const displayName = inputs.playerName || '球員';
+            const rarityClass = getRarityClass(ovrResult.ovr);
+            const rarityLabel = getRarityLabel(ovrResult.ovr);
+            
+            tempDiv.innerHTML = `
+                <div class="player-card ${rarityClass}">
+                    <div class="card-background"></div>
+                    <div class="card-shine"></div>
+                    
+                    <div class="card-header">
+                        <div class="rarity-label">${rarityLabel}</div>
+                        <div class="player-name">${displayName}</div>
+                    </div>
+
+                    <div class="ovr-section">
+                        <div class="ovr-number">${ovrResult.ovr}</div>
+                        <div class="ovr-label">Overall</div>
+                    </div>
+
+                    <div class="attributes-section">
+                        <div class="attributes-grid">
+                            <div class="attribute-column">
+                                <div class="attr-label">HIT</div>
+                                <div class="attr-value">${Math.round(attributes.HIT)}</div>
+                            </div>
+                            <div class="attribute-column">
+                                <div class="attr-label">POW</div>
+                                <div class="attr-value">${Math.round(attributes.POW)}</div>
+                            </div>
+                            <div class="attribute-column">
+                                <div class="attr-label">EYE</div>
+                                <div class="attr-value">${Math.round(attributes.EYE)}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 快取結果
+            playerCardCache.statsToAttributes = tempDiv.innerHTML;
+            inputHashCache.statsToAttributes = hash;
+            
+            return playerCardCache.statsToAttributes;
+        }
+
+        // 計算並快取三圍轉數據結果
+        function calculateAndCacheAttributesToStats(inputs) {
+            const hash = generateInputHash(inputs, 'attributesToStats');
+            
+            // 檢查是否需要重新計算
+            if (inputHashCache.attributesToStats === hash && playerCardCache.attributesToStats) {
+                return playerCardCache.attributesToStats;
+            }
+            
+            console.log('重新計算三圍→數據...');
+            
+            const stats = simulatePlayerStats(inputs.pow, inputs.hit, inputs.eye, NUM_SIMULATIONS, inputs.pa);
+            const ovrResult = calculateBatterOVR(inputs.pow, inputs.hit, inputs.eye);
+            
+            // 生成球員卡和統計數據HTML
+            const tempDiv = document.createElement('div');
+            const displayName = inputs.playerName || '球員';
+            const rarityClass = getRarityClass(ovrResult.ovr);
+            const rarityLabel = getRarityLabel(ovrResult.ovr);
+            
+            tempDiv.innerHTML = `
+                <div class="modal-content-wrapper">
+                    <div class="player-card ${rarityClass}">
+                        <div class="card-background"></div>
+                        <div class="card-shine"></div>
+                        
+                        <div class="card-header">
+                            <div class="rarity-label">${rarityLabel}</div>
+                            <div class="player-name">${displayName}</div>
+                        </div>
+
+                        <div class="ovr-section">
+                            <div class="ovr-number">${ovrResult.ovr}</div>
+                            <div class="ovr-label">Overall</div>
+                        </div>
+
+                        <div class="attributes-section">
+                            <div class="attributes-grid">
+                                <div class="attribute-column">
+                                    <div class="attr-label">HIT</div>
+                                    <div class="attr-value">${Math.round(inputs.hit)}</div>
+                                </div>
+                                <div class="attribute-column">
+                                    <div class="attr-label">POW</div>
+                                    <div class="attr-value">${Math.round(inputs.pow)}</div>
+                                </div>
+                                <div class="attribute-column">
+                                    <div class="attr-label">EYE</div>
+                                    <div class="attr-value">${Math.round(inputs.eye)}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-summary">
+                        <h4>📊 預測統計數據</h4>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-label">📈 打擊率 (BA)</span>
+                                <span class="stat-value">${stats.BA.toFixed(3)}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">🏃 上壘率 (OBP)</span>
+                                <span class="stat-value">${stats.OBP.toFixed(3)}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">💥 長打率 (SLG)</span>
+                                <span class="stat-value">${stats.SLG.toFixed(3)}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">🔥 OPS</span>
+                                <span class="stat-value">${stats.OPS.toFixed(3)}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">⚾ 全壘打</span>
+                                <span class="stat-value">${Math.round(stats.HR_count)}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">👁️ 保送率</span>
+                                <span class="stat-value">${(stats.BB_rate * 100).toFixed(1)}%</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">🌪️ 三振率</span>
+                                <span class="stat-value">${(stats.K_rate * 100).toFixed(1)}%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 快取結果
+            playerCardCache.attributesToStats = tempDiv.innerHTML;
+            inputHashCache.attributesToStats = hash;
+            
+            return playerCardCache.attributesToStats;
+        }
+
+        function switchToMode(mode) {
+            // 只在移動端執行分頁切換
+            if (!isMobile) {
+                console.log('桌面端不需要分頁切換');
+                return;
+            }
+            
+            const tabOVR = document.getElementById('tabOVR');
+            const tabSimulate = document.getElementById('tabSimulate');
+            const statsToAttrsCalc = document.getElementById('statsToAttributesCalculator');
+            const attrsToStatsCalc = document.getElementById('attributesToStatsCalculator');
+            
+            // 更新按鈕狀態
+            if (mode === 'statsToAttributes') {
+                tabOVR.classList.add('active');
+                tabSimulate.classList.remove('active');
+                currentMode = 'statsToAttributes';
+                
+                // 平滑切換計算器（僅移動端）
+                attrsToStatsCalc.style.opacity = '0';
+                attrsToStatsCalc.style.transform = 'translateY(-20px)';
+                
+                setTimeout(() => {
+                    attrsToStatsCalc.style.display = 'none';
+                    statsToAttrsCalc.style.display = 'block';
+                    statsToAttrsCalc.style.opacity = '0';
+                    statsToAttrsCalc.style.transform = 'translateY(20px)';
+                    
+                    setTimeout(() => {
+                        statsToAttrsCalc.style.opacity = '1';
+                        statsToAttrsCalc.style.transform = 'translateY(0)';
+                    }, 50);
+                }, 200);
+                
+                console.log('📱 移動端切換到計算OVR模式');
+            } else {
+                tabOVR.classList.remove('active');
+                tabSimulate.classList.add('active');
+                currentMode = 'attributesToStats';
+                
+                // 平滑切換計算器（僅移動端）
+                statsToAttrsCalc.style.opacity = '0';
+                statsToAttrsCalc.style.transform = 'translateY(-20px)';
+                
+                setTimeout(() => {
+                    statsToAttrsCalc.style.display = 'none';
+                    attrsToStatsCalc.style.display = 'block';
+                    attrsToStatsCalc.style.opacity = '0';
+                    attrsToStatsCalc.style.transform = 'translateY(20px)';
+                    
+                    setTimeout(() => {
+                        attrsToStatsCalc.style.opacity = '1';
+                        attrsToStatsCalc.style.transform = 'translateY(0)';
+                    }, 50);
+                }, 200);
+                
+                console.log('📱 移動端切換到模擬數據模式');
+            }
+        }
+
         // 頁面載入完成後的初始化
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 棒球能力值計算器 v2.3 已載入（球員卡整合版）');
+            console.log('🚀 棒球能力值計算器 v2.3 已載入（響應式分流版）');
+            
+            // 檢測設備類型並應用相應樣式
+            const deviceInfo = detectDevice();
+            
+            if (deviceInfo.isMobile) {
+                initMobileInterface();
+            } else {
+                initDesktopInterface();
+            }
             
             setDefaultValues();
+            setupInputValidation();
+        });
+
+        // 移動端界面初始化
+        function initMobileInterface() {
+            console.log('💻 初始化移動端界面');
             
+            // 初始化分頁按鈕 - 默認選中計算OVR
+            const tabOVR = document.getElementById('tabOVR');
+            const tabSimulate = document.getElementById('tabSimulate');
+            if (tabOVR) tabOVR.classList.add('active');
+            if (tabSimulate) tabSimulate.classList.remove('active');
+            
+            // 確保只顯示第一個計算器
+            const statsToAttrsCalc = document.getElementById('statsToAttributesCalculator');
+            const attrsToStatsCalc = document.getElementById('attributesToStatsCalculator');
+            if (statsToAttrsCalc) {
+                statsToAttrsCalc.style.display = 'block';
+                statsToAttrsCalc.style.opacity = '1';
+            }
+            if (attrsToStatsCalc) {
+                attrsToStatsCalc.style.display = 'none';
+            }
+        }
+
+        // 桌面端界面初始化
+        function initDesktopInterface() {
+            console.log('🖥️ 初始化桌面端界面');
+            
+            // 桌面端同時顯示兩個計算器，不需要分頁按鈕
+            const statsToAttrsCalc = document.getElementById('statsToAttributesCalculator');
+            const attrsToStatsCalc = document.getElementById('attributesToStatsCalculator');
+            
+            if (statsToAttrsCalc) {
+                statsToAttrsCalc.style.display = 'block';
+                statsToAttrsCalc.style.opacity = '1';
+                statsToAttrsCalc.style.transform = 'translateY(0)';
+            }
+            if (attrsToStatsCalc) {
+                attrsToStatsCalc.style.display = 'block';
+                attrsToStatsCalc.style.opacity = '1';
+                attrsToStatsCalc.style.transform = 'translateY(0)';
+            }
+        }
+
+        // 輸入驗證設置（通用）
+        function setupInputValidation() {            
             ['xBA', 'xSLG', 'xwOBA'].forEach(id => {
                 const input = document.getElementById(id);
                 if (input) {
@@ -524,9 +1393,22 @@
                         } else {
                             this.style.borderColor = '#4ecdc4';
                         }
+                        
+                        // 清除快取當輸入改變
+                        playerCardCache.statsToAttributes = null;
+                        inputHashCache.statsToAttributes = '';
                     });
                 }
             });
+            
+            // 為球員名稱也加上快取清除
+            const playerNameInput = document.getElementById('playerName');
+            if (playerNameInput) {
+                playerNameInput.addEventListener('input', function() {
+                    playerCardCache.statsToAttributes = null;
+                    inputHashCache.statsToAttributes = '';
+                });
+            }
             
             ['inputPOW', 'inputHIT', 'inputEYE'].forEach(id => {
                 const input = document.getElementById(id);
@@ -541,9 +1423,46 @@
                         } else {
                             this.style.borderColor = '#4ecdc4';
                         }
+                        
+                        // 清除快取當輸入改變
+                        playerCardCache.attributesToStats = null;
+                        inputHashCache.attributesToStats = '';
                     });
                 }
             });
+            
+            // 為其他三圍→數據輸入也加上快取清除
+            const inputPA = document.getElementById('inputPA');
+            if (inputPA) {
+                inputPA.addEventListener('input', function() {
+                    playerCardCache.attributesToStats = null;
+                    inputHashCache.attributesToStats = '';
+                });
+            }
+            
+            const playerNameAttributes = document.getElementById('playerNameAttributes');
+            if (playerNameAttributes) {
+                playerNameAttributes.addEventListener('input', function() {
+                    playerCardCache.attributesToStats = null;
+                    inputHashCache.attributesToStats = '';
+                });
+            }
+        }
+
+        // 響應式檢測 - 當窗口大小改變時重新檢測設備
+        window.addEventListener('resize', function() {
+            const oldIsMobile = isMobile;
+            const deviceInfo = detectDevice();
+            
+            // 如果設備類型改變，重新初始化界面
+            if (oldIsMobile !== deviceInfo.isMobile) {
+                console.log('設備類型改變，重新初始化界面');
+                if (deviceInfo.isMobile) {
+                    initMobileInterface();
+                } else {
+                    initDesktopInterface();
+                }
+            }
         });
 
         // 測試函數
