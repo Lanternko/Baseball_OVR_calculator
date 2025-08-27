@@ -665,6 +665,11 @@ body {
   transform: translateY(0) !important;
 }
 
+/* Add invisible spacer between last input and buttons in left section */
+.desktop-device #statsToAttributesCalculator .button-group {
+  margin-top: calc(60px + var(--spacing-md)); /* Height of one input row + spacing */
+}
+
 /* 移動端佈局 */
 .mobile-device .main-content {
   display: flex;

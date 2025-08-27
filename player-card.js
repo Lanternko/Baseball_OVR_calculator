@@ -100,76 +100,65 @@ function updatePlayerCardContent(modal, playerData, statsData, mode = 'attribute
         playerName.textContent = playerData.name;
     }
     
-    // 根據模式決定正面/背面內容
+    // Mobile flip card: ALWAYS put player card in cardBack, stats in statsGrid
+    const statsSubtitle = modal.querySelector('.stats-subtitle');
+    const flipHint = modal.querySelector('.flip-hint');
+    
+    // Both modes: ALWAYS put player card in cardBack, stats in statsGrid
+    // The difference is just which content shows first (controlled by initial flip state)
+    
     if (isStatsToAttributes) {
-        // 計算OVR模式：正面為三圍，背面為數據
-        const statsSubtitle = modal.querySelector('.stats-subtitle');
+        // 計算OVR模式：想要正面顯示球員卡
         if (statsSubtitle) {
             statsSubtitle.textContent = '⚡ 球員能力值';
         }
         
-        const flipHint = modal.querySelector('.flip-hint');
         if (flipHint) {
             flipHint.textContent = '點擊查看統計數據';
         }
         
-        // 正面顯示球員卡（三圍）
-        if (statsGrid && playerData) {
-            const playerCardHtml = generatePlayerCardHTML(playerData);
-            statsGrid.innerHTML = playerCardHtml;
-        }
-        
-        // 背面顯示統計數據
-        if (cardBack && statsData) {
-            let statsHtml = '<div class="stats-card"><div class="stats-header"><div class="stats-title">' + playerData.name + '</div><div class="stats-subtitle">📊 預測統計數據</div></div><div class="stats-grid">';
-            for (const [key, value] of Object.entries(statsData)) {
-                const label = getStatLabel(key);
-                if (label && value !== undefined) {
-                    statsHtml += `
-                        <div class="stat-item">
-                            <span class="stat-label">${label}</span>
-                            <span class="stat-value">${formatStatValue(key, value)}</span>
-                        </div>
-                    `;
-                }
-            }
-            statsHtml += '</div></div>';
-            cardBack.innerHTML = statsHtml;
+        // Set card to show player card first (start flipped)
+        const flipCard = modal.querySelector('.flip-card');
+        if (flipCard) {
+            flipCard.classList.add('flipped'); // Start flipped to show back (player card) first
         }
     } else {
-        // 模擬數據模式：正面為數據，背面為三圍
-        const statsSubtitle = modal.querySelector('.stats-subtitle');
+        // 模擬數據模式：想要正面顯示統計數據
         if (statsSubtitle) {
             statsSubtitle.textContent = '📊 預測統計數據';
         }
         
-        const flipHint = modal.querySelector('.flip-hint');
         if (flipHint) {
             flipHint.textContent = '點擊查看能力值';
         }
         
-        // 正面顯示統計數據
-        if (statsGrid && statsData) {
-            let statsHtml = '';
-            for (const [key, value] of Object.entries(statsData)) {
-                const label = getStatLabel(key);
-                if (label && value !== undefined) {
-                    statsHtml += `
-                        <div class="stat-item">
-                            <span class="stat-label">${label}</span>
-                            <span class="stat-value">${formatStatValue(key, value)}</span>
-                        </div>
-                    `;
-                }
+        // Set card to show stats first (start unflipped)
+        const flipCard = modal.querySelector('.flip-card');
+        if (flipCard) {
+            flipCard.classList.remove('flipped'); // Start unflipped to show front (stats) first
+        }
+    }
+    
+    // ALWAYS put stats in front (statsGrid), player card in back (cardBack)
+    if (statsGrid && statsData) {
+        let statsHtml = '';
+        for (const [key, value] of Object.entries(statsData)) {
+            const label = getStatLabel(key);
+            if (label && value !== undefined) {
+                statsHtml += `
+                    <div class="stat-item">
+                        <span class="stat-label">${label}</span>
+                        <span class="stat-value">${formatStatValue(key, value)}</span>
+                    </div>
+                `;
             }
-            statsGrid.innerHTML = statsHtml;
         }
-        
-        // 背面顯示球員卡（三圍）
-        if (cardBack && playerData) {
-            const cardHtml = generatePlayerCardHTML(playerData);
-            cardBack.innerHTML = cardHtml;
-        }
+        statsGrid.innerHTML = statsHtml;
+    }
+    
+    if (cardBack && playerData) {
+        const cardHtml = generatePlayerCardHTML(playerData);
+        cardBack.innerHTML = cardHtml;
     }
     
     // 更新桌面版兩欄佈局
@@ -177,25 +166,26 @@ function updatePlayerCardContent(modal, playerData, statsData, mode = 'attribute
     const desktopStatsGrid = modal.querySelector('#desktopStatsGrid');
     const desktopCardColumn = modal.querySelector('#desktopCardColumn');
     
+    // Desktop layout: ALWAYS put player card in desktopCardColumn, stats in desktopStatsGrid
     if (isStatsToAttributes) {
         // 計算OVR模式：左欄顯示三圍，右欄顯示數據
         if (desktopPlayerName) {
             desktopPlayerName.textContent = '球員能力值';
         }
         
-        // 左欄顯示球員卡（三圍）
-        if (desktopStatsGrid && playerData) {
+        // 右欄顯示球員卡（三圍） - ALWAYS use desktopCardColumn for player cards
+        if (desktopCardColumn && playerData) {
             const cardHtml = generatePlayerCardHTML(playerData);
-            desktopStatsGrid.innerHTML = cardHtml;
+            desktopCardColumn.innerHTML = cardHtml;
         }
         
-        // 右欄顯示統計數據
-        if (desktopCardColumn && statsData) {
-            let statsHtml = '<div class="desktop-stats-display">';
+        // 左欄顯示統計數據 - ALWAYS use desktopStatsGrid for stats
+        if (desktopStatsGrid && statsData) {
+            let desktopStatsHtml = '';
             for (const [key, value] of Object.entries(statsData)) {
                 const label = getStatLabel(key);
                 if (label && value !== undefined) {
-                    statsHtml += `
+                    desktopStatsHtml += `
                         <div class="desktop-stat-item">
                             <span class="desktop-stat-label">${label}</span>
                             <span class="desktop-stat-value">${formatStatValue(key, value)}</span>
@@ -203,8 +193,7 @@ function updatePlayerCardContent(modal, playerData, statsData, mode = 'attribute
                     `;
                 }
             }
-            statsHtml += '</div>';
-            desktopCardColumn.innerHTML = statsHtml;
+            desktopStatsGrid.innerHTML = desktopStatsHtml;
         }
     } else {
         // 模擬數據模式：左欄顯示數據，右欄顯示三圍
@@ -212,7 +201,7 @@ function updatePlayerCardContent(modal, playerData, statsData, mode = 'attribute
             desktopPlayerName.textContent = '預測統計數據';
         }
         
-        // 左欄顯示統計數據
+        // 左欄顯示統計數據 - ALWAYS use desktopStatsGrid for stats
         if (desktopStatsGrid && statsData) {
             let desktopStatsHtml = '';
             for (const [key, value] of Object.entries(statsData)) {
@@ -229,12 +218,23 @@ function updatePlayerCardContent(modal, playerData, statsData, mode = 'attribute
             desktopStatsGrid.innerHTML = desktopStatsHtml;
         }
         
-        // 右欄顯示球員卡（三圍）
+        // 右欄顯示球員卡（三圍） - ALWAYS use desktopCardColumn for player cards
         if (desktopCardColumn && playerData) {
             const cardHtml = generatePlayerCardHTML(playerData);
             desktopCardColumn.innerHTML = cardHtml;
         }
     }
+}
+
+
+// 從三圍計算OVR（如果沒有直接提供OVR值）
+function calculateOVRFromAttributes(data) {
+    const hit = data.HIT || 75;
+    const pow = data.POW || 75;
+    const eye = data.EYE || 75;
+    
+    // 簡單的OVR計算公式
+    return Math.round((hit * 0.35) + (pow * 0.35) + (eye * 0.30));
 }
 
 // 統計數據標籤映射
@@ -267,18 +267,23 @@ function formatStatValue(key, value) {
 
 // 生成球員卡HTML
 function generatePlayerCardHTML(playerData) {
+    const ovr = playerData.ovr || calculateOVRFromAttributes(playerData);
+    const hit = playerData.HIT || 75;
+    const pow = playerData.POW || 75;
+    const eye = playerData.EYE || 75;
+    
     return `
-        <div class="player-card ${getRarityClass(playerData.ovr)}">
+        <div class="player-card ${getRarityClass(ovr)}">
             <div class="card-background"></div>
             <div class="card-shine"></div>
             
             <div class="card-header">
-                <div class="rarity-label">${getRarityLabel(playerData.ovr)}</div>
+                <div class="rarity-label">${getRarityLabel(ovr)}</div>
                 <div class="player-name">${playerData.name || '無名球員'}</div>
             </div>
             
             <div class="ovr-section">
-                <div class="ovr-number">${Math.round(playerData.ovr)}</div>
+                <div class="ovr-number">${Math.round(ovr)}</div>
                 <div class="ovr-label">OVERALL</div>
             </div>
             
@@ -286,15 +291,15 @@ function generatePlayerCardHTML(playerData) {
                 <div class="attributes-grid">
                     <div class="attribute-column">
                         <div class="attr-label">HIT</div>
-                        <div class="attr-value">${Math.round(playerData.HIT)}</div>
+                        <div class="attr-value">${Math.round(hit)}</div>
                     </div>
                     <div class="attribute-column">
                         <div class="attr-label">POW</div>
-                        <div class="attr-value">${Math.round(playerData.POW)}</div>
+                        <div class="attr-value">${Math.round(pow)}</div>
                     </div>
                     <div class="attribute-column">
                         <div class="attr-label">EYE</div>
-                        <div class="attr-value">${Math.round(playerData.EYE)}</div>
+                        <div class="attr-value">${Math.round(eye)}</div>
                     </div>
                 </div>
             </div>
