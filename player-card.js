@@ -114,7 +114,7 @@ function updatePlayerCardContent(modal, playerData, statsData, mode = 'attribute
         }
         
         if (flipHint) {
-            flipHint.textContent = '點擊查看統計數據';
+            flipHint.textContent = '';
         }
         
         // Set card to show player card first (start flipped)
@@ -129,7 +129,7 @@ function updatePlayerCardContent(modal, playerData, statsData, mode = 'attribute
         }
         
         if (flipHint) {
-            flipHint.textContent = '點擊查看能力值';
+            flipHint.textContent = '';
         }
         
         // Set card to show stats first (start unflipped)

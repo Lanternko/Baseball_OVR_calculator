@@ -121,8 +121,8 @@
 
 /* 正面：統計數據卡片 */
 .stats-card {
-    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-    color: white;
+    background: linear-gradient(135deg, #F5F5DC, #E6E6C7);
+    color: #333333;
     padding: var(--spacing-xl);
     display: flex;
     flex-direction: column;
@@ -234,7 +234,7 @@
 .stat-value {
     font-weight: var(--font-bold);
     font-size: 1.1em;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.1);
     padding: var(--spacing-xs) var(--spacing-sm);
     border-radius: var(--radius-sm);
     backdrop-filter: blur(4px);
