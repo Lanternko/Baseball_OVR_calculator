@@ -104,8 +104,11 @@ function updatePlayerCardContent(modal, playerData, statsData, mode = 'attribute
     const statsSubtitle = modal.querySelector('.stats-subtitle');
     const flipHint = modal.querySelector('.flip-hint');
     
+    // Both modes: ALWAYS put player card in cardBack, stats in statsGrid
+    // The difference is just which content shows first (controlled by initial flip state)
+    
     if (isStatsToAttributes) {
-        // 計算OVR模式：正面為三圍，背面為數據
+        // 計算OVR模式：想要正面顯示球員卡
         if (statsSubtitle) {
             statsSubtitle.textContent = '⚡ 球員能力值';
         }
@@ -114,36 +117,13 @@ function updatePlayerCardContent(modal, playerData, statsData, mode = 'attribute
             flipHint.textContent = '點擊查看統計數據';
         }
         
-        // 正面顯示球員卡（三圍） - ALWAYS use cardBack for player cards
-        if (cardBack && playerData) {
-            const playerCardHtml = generatePlayerCardHTML(playerData);
-            cardBack.innerHTML = playerCardHtml;
-        }
-        
-        // 背面顯示統計數據 - ALWAYS use statsGrid for stats
-        if (statsGrid && statsData) {
-            let statsHtml = '';
-            for (const [key, value] of Object.entries(statsData)) {
-                const label = getStatLabel(key);
-                if (label && value !== undefined) {
-                    statsHtml += `
-                        <div class="stat-item">
-                            <span class="stat-label">${label}</span>
-                            <span class="stat-value">${formatStatValue(key, value)}</span>
-                        </div>
-                    `;
-                }
-            }
-            statsGrid.innerHTML = statsHtml;
-        }
-        
-        // Swap front/back for this mode by adding CSS class
+        // Set card to show player card first (start flipped)
         const flipCard = modal.querySelector('.flip-card');
         if (flipCard) {
-            flipCard.classList.add('mode-swapped');
+            flipCard.classList.add('flipped'); // Start flipped to show back (player card) first
         }
     } else {
-        // 模擬數據模式：正面為數據，背面為三圍
+        // 模擬數據模式：想要正面顯示統計數據
         if (statsSubtitle) {
             statsSubtitle.textContent = '📊 預測統計數據';
         }
@@ -152,34 +132,33 @@ function updatePlayerCardContent(modal, playerData, statsData, mode = 'attribute
             flipHint.textContent = '點擊查看能力值';
         }
         
-        // 正面顯示統計數據 - ALWAYS use statsGrid for stats
-        if (statsGrid && statsData) {
-            let statsHtml = '';
-            for (const [key, value] of Object.entries(statsData)) {
-                const label = getStatLabel(key);
-                if (label && value !== undefined) {
-                    statsHtml += `
-                        <div class="stat-item">
-                            <span class="stat-label">${label}</span>
-                            <span class="stat-value">${formatStatValue(key, value)}</span>
-                        </div>
-                    `;
-                }
-            }
-            statsGrid.innerHTML = statsHtml;
-        }
-        
-        // 背面顯示球員卡（三圍） - ALWAYS use cardBack for player cards
-        if (cardBack && playerData) {
-            const cardHtml = generatePlayerCardHTML(playerData);
-            cardBack.innerHTML = cardHtml;
-        }
-        
-        // Remove swap class for normal mode
+        // Set card to show stats first (start unflipped)
         const flipCard = modal.querySelector('.flip-card');
         if (flipCard) {
-            flipCard.classList.remove('mode-swapped');
+            flipCard.classList.remove('flipped'); // Start unflipped to show front (stats) first
         }
+    }
+    
+    // ALWAYS put stats in front (statsGrid), player card in back (cardBack)
+    if (statsGrid && statsData) {
+        let statsHtml = '';
+        for (const [key, value] of Object.entries(statsData)) {
+            const label = getStatLabel(key);
+            if (label && value !== undefined) {
+                statsHtml += `
+                    <div class="stat-item">
+                        <span class="stat-label">${label}</span>
+                        <span class="stat-value">${formatStatValue(key, value)}</span>
+                    </div>
+                `;
+            }
+        }
+        statsGrid.innerHTML = statsHtml;
+    }
+    
+    if (cardBack && playerData) {
+        const cardHtml = generatePlayerCardHTML(playerData);
+        cardBack.innerHTML = cardHtml;
     }
     
     // 更新桌面版兩欄佈局

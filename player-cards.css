@@ -5,17 +5,18 @@
 /* 球員卡樣式 */
 .player-card {
     width: 280px;
-    height: 380px;
+    min-height: 380px;
+    height: auto;
     border-radius: 15px;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     cursor: pointer;
     margin: 20px auto;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
 }
 
 .player-card:hover {

@@ -102,22 +102,7 @@
     transform: rotateY(180deg);
 }
 
-/* Mode swapped: front and back content are swapped */
-.flip-card.mode-swapped .flip-card-front {
-    transform: rotateY(180deg);
-}
-
-.flip-card.mode-swapped .flip-card-back {
-    transform: rotateY(0deg);
-}
-
-.flip-card.mode-swapped.flipped .flip-card-front {
-    transform: rotateY(0deg);
-}
-
-.flip-card.mode-swapped.flipped .flip-card-back {
-    transform: rotateY(180deg);
-}
+/* Remove mode-swapped CSS - we'll handle content swapping in JavaScript instead */
 
 .flip-card-front,
 .flip-card-back {
@@ -407,9 +392,26 @@
 @media (max-width: 768px) {
   .modal-content {
     max-width: 95vw;
-    max-height: 95vh;
+    max-height: 98vh;
     width: auto;
   }
+  
+  /* Special handling for player card modals - ensure full card is visible */
+  .modal-overlay:has(.flip-card-container) .modal-content,
+  #playerCardModal .modal-content {
+    max-height: none;
+    height: auto;
+    min-height: 500px;
+  }
+  
+  /* Allow scrolling if modal is taller than viewport */
+  .modal-overlay:has(.flip-card-container),
+  #playerCardModal {
+    align-items: flex-start;
+    overflow-y: auto;
+    padding: 20px 0;
+  }
+}
   
   .theme-modal {
     margin: var(--spacing-lg);
