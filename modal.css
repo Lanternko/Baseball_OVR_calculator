@@ -404,12 +404,11 @@
     min-height: 500px;
   }
   
-  /* Allow scrolling if modal is taller than viewport */
+  /* Center player card modal on mobile */
   .modal-overlay:has(.flip-card-container),
   #playerCardModal {
-    align-items: flex-start;
-    overflow-y: auto;
-    padding: 20px 0;
+    align-items: center;
+    justify-content: center;
   }
 }
   
