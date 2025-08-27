@@ -79,13 +79,13 @@
     justify-content: center;
     align-items: center;
     background: var(--bg-secondary);
-    min-height: 400px;
+    min-height: 480px;
 }
 
 .flip-card-container {
     perspective: 1000px;
-    width: 300px;
-    height: 400px;
+    width: 320px;
+    height: 420px;
     margin: 0 auto;
 }
 
@@ -99,6 +99,23 @@
 }
 
 .flip-card.flipped {
+    transform: rotateY(180deg);
+}
+
+/* Mode swapped: front and back content are swapped */
+.flip-card.mode-swapped .flip-card-front {
+    transform: rotateY(180deg);
+}
+
+.flip-card.mode-swapped .flip-card-back {
+    transform: rotateY(0deg);
+}
+
+.flip-card.mode-swapped.flipped .flip-card-front {
+    transform: rotateY(0deg);
+}
+
+.flip-card.mode-swapped.flipped .flip-card-back {
     transform: rotateY(180deg);
 }
 
@@ -144,6 +161,50 @@
 .stats-header {
     text-align: center;
     margin-bottom: var(--spacing-lg);
+}
+
+/* OVR顯示區域 */
+.ovr-section {
+    text-align: center;
+    margin: var(--spacing-lg) 0;
+}
+
+.ovr-number {
+    font-size: 4rem;
+    font-weight: 900;
+    line-height: 1;
+    text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.ovr-label {
+    font-size: 1rem;
+    font-weight: 600;
+    opacity: 0.9;
+    margin-top: var(--spacing-sm);
+}
+
+/* 三圍屬性網格 */
+.attributes-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+}
+
+.attribute-item {
+    text-align: center;
+}
+
+.attr-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin-bottom: var(--spacing-xs);
+}
+
+.attr-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
 .stats-title {
@@ -441,7 +502,7 @@
   
   .modal-card-container {
     padding: var(--spacing-xl);
-    min-height: 500px;
+    min-height: 550px;
     display: flex;
     align-items: stretch;
     gap: var(--spacing-xl);
@@ -473,10 +534,11 @@
   }
   
   .desktop-card-column {
-    flex: 0 0 350px;
+    flex: 0 0 400px;
     display: flex;
     align-items: center;
     justify-content: center;
+    min-height: 450px;
   }
   
   .desktop-stats-title {
