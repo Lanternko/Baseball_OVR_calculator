@@ -18,13 +18,14 @@ const HR_S_CURVE_POW_ANCHORS = [
     [40, 0.025],    // PR1: 2.5% HR rate (~15 HR/600 PA)
     [60, 0.035],    // 
     [70, 0.042],    // PR50: 4.2% HR rate (~25 HR/600 PA)
-    [85, 0.055],    // 
-    [99, 0.067],    // PR99: 6.7% HR rate (~40 HR/600 PA) - 對應分析表
-    [110, 0.078],   // MVP級: 7.8% HR rate (~47 HR) - 對應分析表
-    [120, 0.085],   // HOF: 8.5% HR rate (~51 HR) - 對應分析表  
-    [130, 0.092],   // GOAT: 9.2% HR rate (~55 HR) - 對應分析表
-    [140, 0.100],   // Legendary: 10.0% HR rate
-    [150, 0.108]    // Mythical: 10.8% HR rate
+    [85, 0.060],    // 平滑過渡
+    [95, 0.065],    // 添加95錨點: 6.5% HR rate
+    [100, 0.070],   // 精確調整: 7.0% HR rate 使 SLG = 0.570 + 50%+ HR/XBH
+    [110, 0.080],   // 平滑增加: 8.0% HR rate (~48 HR)
+    [120, 0.090],   // 平滑增加: 9.0% HR rate (~54 HR)
+    [130, 0.105],   // 史詩級: 10.5% HR rate (~63 HR - Ruth領域)
+    [140, 0.115],   // 傳奇級: 11.5% HR rate (~69 HR - 接近Bonds)
+    [150, 0.120]    // 極限級: 12.0% HR rate (~72 HR - 接近Bonds記錄)
 ];
 
 const BABIP_S_CURVE_HIT_ANCHORS = [
@@ -36,13 +37,13 @@ const BABIP_S_CURVE_HIT_ANCHORS = [
     [80, 0.295],    // 平滑過渡
     [85, 0.300],    // 平滑過渡
     [90, 0.307],    // 平滑過渡
-    [95, 0.315],    // 平滑過渡
-    [100, 0.355],   // PR99基準: 產生 BA 0.320 (提升至 0.355)
-    [110, 0.365],   // 平滑遞增
-    [120, 0.375],   // 平滑遞增
-    [130, 0.385],   // 平滑遞增
-    [140, 0.395],   // 平滑遞增
-    [150, 0.405]    // 平滑遞增
+    [95, 0.330],    // 平滑過渡: 改善95-100轉換
+    [100, 0.350],   // 精確調整: 產生 BA 0.320 (降低至 0.350)
+    [110, 0.375],   // 平滑遞增 (+10)
+    [120, 0.385],   // 平滑遞增 (+10)  
+    [130, 0.395],   // 平滑遞增 (+10)
+    [140, 0.405],   // 平滑遞增 (+10)
+    [150, 0.480]    // 調整至README.md: 支援BA .380
 ];
 
 const BB_S_CURVE_EYE_ANCHORS = [
@@ -55,12 +56,12 @@ const BB_S_CURVE_EYE_ANCHORS = [
     [85, 0.105],    // 平滑過渡
     [90, 0.115],    // 平滑過渡
     [95, 0.125],    // 平滑過渡
-    [100, 0.180],   // PR99基準: 調整以產生 OBP 0.420 (提升至 0.180)
-    [110, 0.190],   // 平滑遞增
-    [120, 0.200],   // 平滑遞增
-    [130, 0.210],   // 平滑遞增
-    [140, 0.220],   // 平滑遞增
-    [150, 0.230]    // 平滑遞增
+    [100, 0.135],   // 精確調整: 使 OBP = 0.420 (降低至 0.135)
+    [110, 0.180],   // 平滑遞增 (+20)
+    [120, 0.220],   // 加速增加 (+40)
+    [130, 0.280],   // 加速增加 (+60) - Ted Williams territory
+    [140, 0.340],   // 加速增加 (+60) - Ruth territory  
+    [150, 0.380]    // 極限增加 (+40) - 接近Bonds
 ];
 
 const K_EYE_EFFECTIVENESS_S_CURVE_ANCHORS = [
@@ -124,14 +125,44 @@ const DOUBLES_RATE_S_CURVE_POW_ANCHORS = [
     [0, 0.20],      // Very low power: ~20 doubles (weak hitters)
     [40, 0.22],     // PR1: ~22 doubles (bottom 1% power)
     [70, 0.30],     // PR50: ~30 doubles (average power)
-    [85, 0.32],     // 降低: 0.35 → 0.32
-    [95, 0.33],     // 降低: 0.37 → 0.33
-    [99, 0.31],     // 進一步降低二壘安打率以減少SLG
-    [110, 0.32],    // MVP power: ~32 doubles (HR takes some away)
-    [120, 0.28],    // HOF power: ~28 doubles (more HR conversion) 
+    [85, 0.31],     // 平滑下降: 31 doubles
+    [95, 0.31],     // 平滑下降: 31 doubles 
+    [100, 0.30],    // Elite power: 30 doubles (balanced with HR)
+    [110, 0.28],    // MVP power: 28 doubles (more HR conversion)
+    [120, 0.26],    // HOF power: 26 doubles (aggressive HR conversion) 
     [130, 0.25],    // GOAT power: ~25 doubles (Judge level)
     [140, 0.22],    // Legendary: ~22 doubles
     [150, 0.20]     // Mythical: ~20 doubles (max HR conversion)
+];
+
+// 🔥 NEW: XBH-First Model - Total Extra Base Hits per 600 PA
+const TOTAL_XBH_S_CURVE_POW_ANCHORS = [
+    [0, 25],        // Very low power: ~25 XBH
+    [40, 45],       // PR1: ~45 XBH (bottom 1%)
+    [70, 65],       // PR50: ~65 XBH (average power)
+    [85, 72],       // Good power: ~72 XBH
+    [95, 74],       // 添加95錨點: ~74 XBH
+    [100, 75],      // Elite power: ~75 XBH (targeting .570 SLG)
+    [110, 80],      // MVP power: ~80 XBH
+    [120, 85],      // HOF power: ~85 XBH
+    [130, 90],      // GOAT power: ~90 XBH (Judge 2022 level)
+    [140, 94],      // Legendary: ~94 XBH
+    [150, 110]      // Mythical: ~110 XBH (README.md 極限)
+];
+
+// 🔥 NEW: HR/XBH Ratio - Based on real MLB elite performance
+const HR_XBH_RATIO_S_CURVE_POW_ANCHORS = [
+    [0, 0.25],      // Very low power: 25% HR/XBH
+    [40, 0.33],     // PR1: 33% HR/XBH (bottom 1%)
+    [70, 0.40],     // PR50: 40% HR/XBH (average power)
+    [85, 0.48],     // Good power: 48% HR/XBH
+    [95, 0.52],     // 添加95錨點: 52% HR/XBH
+    [100, 0.55],    // Elite power: 55% HR/XBH (Ohtani 2023 level)
+    [110, 0.61],    // MVP power: 61% HR/XBH (Judge 2024 level)
+    [120, 0.66],    // HOF power: 66% HR/XBH
+    [130, 0.69],    // GOAT power: 69% HR/XBH (Judge 2022 level)
+    [140, 0.72],    // Legendary: 72% HR/XBH
+    [150, 0.68]     // Mythical: 68% HR/XBH (~75 HR, 35 2B per README.md)
 ];
 
 const AVG_2B_PER_HIT_BIP_NOT_HR_AT_MIDPOINT = 0.30;

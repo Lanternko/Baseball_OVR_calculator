@@ -68,13 +68,22 @@ function getPAEventProbabilitiesNormal(POW, HIT, EYE, playerHBPRate = LEAGUE_AVG
         pIPO = Math.max(0, pBIPForOtherOutcomes * (1.0 - pHitGivenBIPRemaining));
         
         if (pTotalHitsOnRemainingBIP > 0) {
-            // 🔥 使用 POW-dependent 2B rate system
-            const p2BGivenHitBIPNotHR = interpolateSCurve(POW, DOUBLES_RATE_S_CURVE_POW_ANCHORS);
-            const p2BGivenHitBIPNotHRCapped = Math.max(MIN_2B_PER_HIT_BIP_NOT_HR, 
-                Math.min(MAX_2B_PER_HIT_BIP_NOT_HR, p2BGivenHitBIPNotHR));
+            // 🔥 NEW: True XBH-First Approach
+            const totalXBHPer600PA = interpolateSCurve(POW, TOTAL_XBH_S_CURVE_POW_ANCHORS);
+            const hrXBHRatio = interpolateSCurve(POW, HR_XBH_RATIO_S_CURVE_POW_ANCHORS);
             
-            p2B = Math.max(0, pTotalHitsOnRemainingBIP * p2BGivenHitBIPNotHRCapped);
-            p1B = Math.max(0, pTotalHitsOnRemainingBIP * (1.0 - p2BGivenHitBIPNotHRCapped));
+            // Convert XBH per 600 PA to probability per PA
+            const pTotalXBH = Math.min(0.25, totalXBHPer600PA / 600.0); // Cap at realistic 25%
+            
+            // Now override HR calculation with XBH-first approach
+            pHR = Math.min(pTotalXBH * hrXBHRatio, 0.15); // Cap HR at 15% max
+            p2B = Math.max(0, pTotalXBH - pHR); // Remaining XBH becomes doubles
+            
+            // Singles = remaining hits after XBH
+            p1B = Math.max(0, pTotalHitsOnRemainingBIP - pTotalXBH);
+            
+            // Recalculate IPO to maintain probability conservation
+            pIPO = Math.max(0, pBIPForOtherOutcomes - pTotalHitsOnRemainingBIP);
         } else {
             p1B = p2B = 0.0;
         }
