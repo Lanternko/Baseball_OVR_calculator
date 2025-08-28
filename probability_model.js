@@ -46,9 +46,9 @@ function getPAEventProbabilitiesNormal(POW, HIT, EYE, playerHBPRate = LEAGUE_AVG
     // 計算基礎全壘打率
     let baseHRRate = interpolateSCurve(POW, HR_S_CURVE_POW_ANCHORS);
     
-    // 應用 EYE 和 HIT 修正因子
-    const eyeHRModifier = 1.0 + scaleAttributeToEffectiveness(EYE, 70.0, 40.0, true) * 0.12;
-    const hitHRModifier = 1.0 + scaleAttributeToEffectiveness(HIT, 70.0, 40.0, true) * 0.18;
+    // 應用 EYE 和 HIT 修正因子（最小化疊加效應以精確匹配分析表）
+    const eyeHRModifier = 1.0 + scaleAttributeToEffectiveness(EYE, 70.0, 40.0, true) * 0.02; // 進一步降低: 0.04→0.02
+    const hitHRModifier = 1.0 + scaleAttributeToEffectiveness(HIT, 70.0, 40.0, true) * 0.03; // 進一步降低: 0.06→0.03
     let pHR = baseHRRate * eyeHRModifier * hitHRModifier;
     pHR = Math.max(0.0, Math.min(pHR, 0.20));
     

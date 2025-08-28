@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>HIT Model Test</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: #2c3e50; 
+            color: white; 
+            padding: 20px; 
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 { 
+            text-align: center; 
+            color: #3498db;
+            margin-bottom: 30px;
+        }
+        .test-button { 
+            background: linear-gradient(135deg, #27ae60, #2ecc71); 
+            color: white; 
+            padding: 15px 30px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 16px;
+            font-weight: 600;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4);
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin: 20px 0; 
+            background: #34495e;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td { 
+            padding: 12px; 
+            text-align: center; 
+            border-bottom: 1px solid #555;
+        }
+        th { 
+            background: #1a252f;
+            font-weight: 600;
+            color: #3498db;
+        }
+        td {
+            font-family: 'Courier New', monospace;
+        }
+        tr:hover {
+            background: #3e5570;
+        }
+        .benchmark-highlight {
+            background: #f39c12 !important;
+            font-weight: bold;
+        }
+        .summary {
+            background: #1a252f;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .summary h3 {
+            color: #27ae60;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 HIT 模型分析工具</h1>
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+            <button class="test-button" onclick="runHITTest()">🎯 執行 HIT 分析</button>
+            <button class="test-button" onclick="runBenchmarkTest()">📋 基準點測試</button>
+        </div>
+        
+        <div class="summary">
+            <h3>🎯 測試配置</h3>
+            <p><strong>固定參數</strong>: POW=70, EYE=70 (聯盟平均)</p>
+            <p><strong>變動參數</strong>: HIT 40-150 (每10點)</p>
+            <p><strong>目標驗證</strong>: HIT 40/70/99 是否命中基準 BA 0.210/0.250/0.320</p>
+        </div>
+        
+        <div id="results">
+            <p style="text-align: center; color: #7f8c8d;">點擊上方按鈕開始測試...</p>
+        </div>
+    </div>
+
+    <script src="constants.js"></script>
+    <script src="probability_model.js"></script>
+    <script src="simulation_engine.js"></script>
+
+    <script>
+        function runHITTest() {
+            console.log('🎯 Testing HIT Model Analysis');
+            console.log('Fixed POW=70, EYE=70, varying HIT 40-150');
+            
+            const results = [];
+            const benchmarks = {'40': 0.210, '70': 0.250, '99': 0.320};
+            
+            for (let hit = 40; hit <= 150; hit += 5) {
+                const stats = simulatePlayerStats(70, hit, 70, 100, 600);
+                const babip = stats.BABIP || 0;
+                const kRate = (stats.K_rate * 100).toFixed(1);
+                const hitCount = Math.round(stats.H_count || 0);
+                
+                results.push({
+                    HIT: hit,
+                    BA: stats.BA.toFixed(3),
+                    BABIP: babip.toFixed(3),
+                    'K%': kRate + '%',
+                    '安打數': hitCount,
+                    '三振數': Math.round(stats.K_count || 0),
+                    isBenchmark: benchmarks.hasOwnProperty(hit.toString())
+                });
+            }
+            
+            console.table(results);
+            
+            // Display results in HTML
+            let html = `
+                <div class="summary">
+                    <h3>📈 HIT 模型分析結果</h3>
+                    <p><strong>測試完成</strong>: HIT 40-150 完整分析</p>
+                    <p><strong>關鍵發現</strong>: 檢查基準點是否對齊 MLB 分佈要求</p>
+                </div>
+                
+                <table>
+                    <tr>
+                        <th>HIT</th>
+                        <th>BA</th>
+                        <th>BABIP</th>
+                        <th>三振率</th>
+                        <th>安打數</th>
+                        <th>三振數</th>
+                        <th>基準檢查</th>
+                    </tr>
+            `;
+            
+            results.forEach(row => {
+                const benchmark = benchmarks[row.HIT];
+                const benchmarkStatus = benchmark ? 
+                    `目標: ${benchmark.toFixed(3)}` : '-';
+                const deviation = benchmark ? 
+                    (Math.abs(parseFloat(row.BA) - benchmark) * 1000).toFixed(1) : '-';
+                const rowClass = row.isBenchmark ? 'benchmark-highlight' : '';
+                
+                html += `
+                    <tr class="${rowClass}">
+                        <td><strong>${row.HIT}</strong></td>
+                        <td><strong>${row.BA}</strong></td>
+                        <td>${row.BABIP}</td>
+                        <td>${row['K%']}</td>
+                        <td>${row['安打數']}</td>
+                        <td>${row['三振數']}</td>
+                        <td>${benchmarkStatus}${deviation !== '-' ? `<br>誤差: ${deviation}` : ''}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</table>';
+            
+            // Add benchmark summary
+            html += '<div class="summary">';
+            html += '<h3>🎯 基準點達成檢查</h3>';
+            Object.entries(benchmarks).forEach(([hit, target]) => {
+                const result = results.find(r => r.HIT == hit);
+                if (result) {
+                    const actual = parseFloat(result.BA);
+                    const error = Math.abs(actual - target);
+                    const status = error < 0.010 ? '✅ 優秀' : error < 0.020 ? '⚠️ 良好' : '❌ 需改善';
+                    html += `<p><strong>HIT ${hit}</strong>: 目標 ${target.toFixed(3)}, 實際 ${actual.toFixed(3)}, 誤差 ${error.toFixed(3)} ${status}</p>`;
+                }
+            });
+            html += '</div>';
+            
+            document.getElementById('results').innerHTML = html;
+        }
+        
+        function runBenchmarkTest() {
+            console.log('📋 Running HIT Benchmark Validation');
+            
+            const benchmarkTests = [
+                {hit: 40, target: 0.210, desc: 'PR1 基準'},
+                {hit: 70, target: 0.250, desc: 'PR50 基準'},
+                {hit: 99, target: 0.320, desc: 'PR99 基準'}
+            ];
+            
+            const results = [];
+            
+            benchmarkTests.forEach(test => {
+                const stats = simulatePlayerStats(70, test.hit, 70, 200, 600);
+                const error = Math.abs(stats.BA - test.target);
+                const status = error < 0.010 ? '✅ 優秀' : error < 0.020 ? '⚠️ 良好' : '❌ 需改善';
+                
+                results.push({
+                    描述: test.desc,
+                    HIT: test.hit,
+                    目標BA: test.target.toFixed(3),
+                    實際BA: stats.BA.toFixed(3),
+                    誤差: error.toFixed(3),
+                    狀態: status
+                });
+            });
+            
+            let html = `
+                <div class="summary">
+                    <h3>📋 HIT 基準點驗證結果</h3>
+                    <p><strong>測試目的</strong>: 驗證 HIT 屬性是否正確對應 MLB BA 分佈基準</p>
+                </div>
+                
+                <table>
+                    <tr>
+                        <th>基準描述</th>
+                        <th>HIT值</th>
+                        <th>目標BA</th>
+                        <th>實際BA</th>
+                        <th>誤差</th>
+                        <th>評估</th>
+                    </tr>
+            `;
+            
+            results.forEach(row => {
+                const rowClass = row.狀態.includes('優秀') ? 'benchmark-highlight' : '';
+                html += `
+                    <tr class="${rowClass}">
+                        <td>${row.描述}</td>
+                        <td><strong>${row.HIT}</strong></td>
+                        <td>${row.目標BA}</td>
+                        <td><strong>${row.實際BA}</strong></td>
+                        <td>${row.誤差}</td>
+                        <td>${row.狀態}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</table>';
+            
+            const allGood = results.every(r => r.狀態.includes('優秀') || r.狀態.includes('良好'));
+            html += `
+                <div class="summary">
+                    <h3>📊 整體評估</h3>
+                    <p><strong>系統狀態</strong>: ${allGood ? '🎯 HIT 基準點校準良好' : '⚠️ 需要調整 HIT 錨點'}</p>
+                    <p><strong>建議</strong>: ${allGood ? '可以進行下一步測試' : '請調整 BABIP_S_CURVE_HIT_ANCHORS 參數'}</p>
+                </div>
+            `;
+            
+            document.getElementById('results').innerHTML = html;
+        }
+    </script>
+</body>
+</html>

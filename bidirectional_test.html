@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雙向轉換準確性測試</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: #2c3e50; 
+            color: white; 
+            padding: 20px; 
+            margin: 0;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .test-section { 
+            background: #34495e; 
+            padding: 25px; 
+            margin: 20px 0; 
+            border-radius: 12px; 
+        }
+        h1 { 
+            text-align: center; 
+            margin-bottom: 30px;
+            font-size: 2.2em;
+        }
+        h2 {
+            color: #3498db;
+            margin-bottom: 20px;
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .test-button { 
+            background: linear-gradient(135deg, #3498db, #2980b9); 
+            color: white; 
+            padding: 15px 20px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin: 15px 0; 
+            background: #2c3e50;
+            font-size: 12px;
+        }
+        th, td { 
+            padding: 8px; 
+            border: 1px solid #555; 
+            text-align: center; 
+        }
+        th { 
+            background: #1a252f;
+            font-weight: 600;
+        }
+        .excellent { background: #27ae60; }
+        .good { background: #f39c12; }
+        .poor { background: #e74c3c; }
+        .summary {
+            background: #1a252f;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        #results {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 雙向轉換準確性測試系統</h1>
+        
+        <div class="test-section">
+            <h2>📊 基準屬性組合測試</h2>
+            <p>測試各種屬性組合的雙向轉換準確性：屬性→數據→模擬→屬性</p>
+            
+            <div class="test-grid">
+                <button class="test-button" onclick="testAttributeSet(40, 40, 40)">🔵 全40 (PR1)</button>
+                <button class="test-button" onclick="testAttributeSet(70, 70, 70)">🟡 全70 (PR50)</button>
+                <button class="test-button" onclick="testAttributeSet(99, 99, 99)">🟠 全99 (PR99)</button>
+                
+                <button class="test-button" onclick="testAttributeSet(40, 70, 99)">🔀 混合1 (40/70/99)</button>
+                <button class="test-button" onclick="testAttributeSet(99, 40, 70)">🔀 混合2 (99/40/70)</button>
+                <button class="test-button" onclick="testAttributeSet(70, 99, 40)">🔀 混合3 (70/99/40)</button>
+                
+                <button class="test-button" onclick="testAttributeSet(85, 85, 85)">⭐ 全85 (全明星)</button>
+                <button class="test-button" onclick="testAttributeSet(95, 95, 95)">👑 全95 (MVP)</button>
+                <button class="test-button" onclick="runFullBidirectionalTest()">🎯 完整測試</button>
+            </div>
+            
+            <div id="results">
+                <p style="text-align: center; color: #7f8c8d;">點擊上方按鈕開始測試...</p>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>📈 誤差分析標準</h2>
+            <table>
+                <tr><th>誤差等級</th><th>單項誤差</th><th>總誤差</th><th>顏色標記</th><th>評價</th></tr>
+                <tr class="excellent"><td>優秀</td><td>&lt; 0.010</td><td>&lt; 0.025</td><td>綠色</td><td>模型準確</td></tr>
+                <tr class="good"><td>良好</td><td>&lt; 0.020</td><td>&lt; 0.050</td><td>黃色</td><td>可接受</td></tr>
+                <tr class="poor"><td>需改善</td><td>&gt; 0.020</td><td>&gt; 0.050</td><td>紅色</td><td>需要調整</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <script src="constants.js"></script>
+    <script src="probability_model.js"></script>
+    <script src="simulation_engine.js"></script>
+    <script src="ovr_calculator.js"></script>
+    
+    <script>
+        // 等待所有模組載入完成
+        window.addEventListener('load', function() {
+            console.log('所有模組已載入');
+            if (typeof simulatePlayerStats === 'undefined') {
+                console.error('simulatePlayerStats 未定義');
+            }
+            if (typeof calculatePlayerGameAttributes === 'undefined') {
+                console.error('calculatePlayerGameAttributes 未定義');
+            }
+        });
+    </script>
+    
+    <script>
+        // 測試單一屬性組合的雙向轉換
+        function testAttributeSet(pow, hit, eye) {
+            const results = document.getElementById('results');
+            results.innerHTML = `<p>🔄 測試 POW ${pow}, HIT ${hit}, EYE ${eye} 的雙向轉換...</p>`;
+            
+            setTimeout(() => {
+                try {
+                    // 步驟1: 屬性 → 模擬數據
+                    const simulated = simulatePlayerStats(pow, hit, eye, 200, 600);
+                    const simulatedStats = {
+                        xBA: simulated.BA,
+                        xSLG: simulated.SLG, 
+                        xwOBA: simulated.OBP // 使用OBP作為xwOBA的近似值
+                    };
+                    
+                    // 步驟2: 模擬數據 → 轉換回屬性
+                    const converted = calculatePlayerGameAttributes(simulatedStats.xBA, simulatedStats.xSLG, simulatedStats.xwOBA);
+                    
+                    // 步驟3: 計算誤差
+                    const powError = Math.abs(converted.POW - pow);
+                    const hitError = Math.abs(converted.HIT - hit);
+                    const eyeError = Math.abs(converted.EYE - eye);
+                    const totalError = powError + hitError + eyeError;
+                    
+                    // 步驟4: 評估等級
+                    function getErrorClass(error, isSingle = true) {
+                        const threshold = isSingle ? [3, 6] : [9, 15];
+                        return error < threshold[0] ? 'excellent' : error < threshold[1] ? 'good' : 'poor';
+                    }
+                    
+                    function getErrorText(error, isSingle = true) {
+                        const threshold = isSingle ? [3, 6] : [9, 15];
+                        return error < threshold[0] ? '✅ 優秀' : error < threshold[1] ? '⚠️ 良好' : '❌ 需改善';
+                    }
+                    
+                    results.innerHTML = `
+                        <h3>🔄 雙向轉換結果: POW ${pow}, HIT ${hit}, EYE ${eye}</h3>
+                        
+                        <h4>步驟1: 屬性 → 模擬數據</h4>
+                        <table>
+                            <tr><th>模擬結果</th><th>BA</th><th>OBP</th><th>SLG</th></tr>
+                            <tr><td>數值</td><td>${simulatedStats.xBA.toFixed(3)}</td><td>${simulatedStats.xwOBA.toFixed(3)}</td><td>${simulatedStats.xSLG.toFixed(3)}</td></tr>
+                        </table>
+                        
+                        <h4>步驟2: 模擬數據 → 轉換屬性</h4>
+                        <table>
+                            <tr><th>屬性</th><th>原始值</th><th>轉換值</th><th>誤差</th><th>狀態</th></tr>
+                            <tr class="${getErrorClass(powError)}">
+                                <td>POW</td><td>${pow}</td><td>${converted.POW.toFixed(1)}</td><td>${powError.toFixed(1)}</td><td>${getErrorText(powError)}</td>
+                            </tr>
+                            <tr class="${getErrorClass(hitError)}">
+                                <td>HIT</td><td>${hit}</td><td>${converted.HIT.toFixed(1)}</td><td>${hitError.toFixed(1)}</td><td>${getErrorText(hitError)}</td>
+                            </tr>
+                            <tr class="${getErrorClass(eyeError)}">
+                                <td>EYE</td><td>${eye}</td><td>${converted.EYE.toFixed(1)}</td><td>${eyeError.toFixed(1)}</td><td>${getErrorText(eyeError)}</td>
+                            </tr>
+                        </table>
+                        
+                        <div class="summary ${getErrorClass(totalError, false)}">
+                            <strong>總誤差: ${totalError.toFixed(1)}</strong> - ${getErrorText(totalError, false)}
+                            ${totalError < 9 ? '<br>🎯 雙向轉換準確度優秀！' : totalError < 15 ? '<br>✅ 雙向轉換準確度良好' : '<br>⚠️ 需要調整基準值或模型參數'}
+                        </div>
+                    `;
+                } catch (error) {
+                    results.innerHTML = `<p style="color: #e74c3c;">❌ 測試失敗: ${error.message}</p>`;
+                }
+            }, 500);
+        }
+        
+        // 運行完整的雙向轉換測試
+        function runFullBidirectionalTest() {
+            const results = document.getElementById('results');
+            results.innerHTML = `<p>🎯 執行完整雙向轉換測試...</p>`;
+            
+            setTimeout(() => {
+                const testCases = [
+                    [40, 40, 40], [70, 70, 70], [99, 99, 99],
+                    [40, 70, 99], [99, 40, 70], [70, 99, 40],
+                    [85, 85, 85], [95, 95, 95],
+                    [60, 80, 90], [110, 75, 65]
+                ];
+                
+                let totalTests = 0;
+                let excellentTests = 0;
+                let goodTests = 0;
+                let poorTests = 0;
+                let worstError = 0;
+                let worstCase = '';
+                
+                let tableRows = '';
+                
+                testCases.forEach(([pow, hit, eye]) => {
+                    try {
+                        const simulated = simulatePlayerStats(pow, hit, eye, 100, 600);
+                        const simulatedStats = {
+                            xBA: simulated.BA,
+                            xSLG: simulated.SLG,
+                            xwOBA: simulated.OBP
+                        };
+                        
+                        const converted = calculatePlayerGameAttributes(simulatedStats.xBA, simulatedStats.xSLG, simulatedStats.xwOBA);
+                        
+                        const powError = Math.abs(converted.POW - pow);
+                        const hitError = Math.abs(converted.HIT - hit);
+                        const eyeError = Math.abs(converted.EYE - eye);
+                        const totalError = powError + hitError + eyeError;
+                        
+                        totalTests++;
+                        if (totalError < 9) excellentTests++;
+                        else if (totalError < 15) goodTests++;
+                        else poorTests++;
+                        
+                        if (totalError > worstError) {
+                            worstError = totalError;
+                            worstCase = \`POW\${pow}/HIT\${hit}/EYE\${eye}\`;
+                        }
+                        
+                        const errorClass = totalError < 9 ? 'excellent' : totalError < 15 ? 'good' : 'poor';
+                        const status = totalError < 9 ? '✅' : totalError < 15 ? '⚠️' : '❌';
+                        
+                        tableRows += \`
+                            <tr class="\${errorClass}">
+                                <td>POW\${pow}/HIT\${hit}/EYE\${eye}</td>
+                                <td>\${converted.POW.toFixed(0)}/\${converted.HIT.toFixed(0)}/\${converted.EYE.toFixed(0)}</td>
+                                <td>\${powError.toFixed(1)}</td>
+                                <td>\${hitError.toFixed(1)}</td>
+                                <td>\${eyeError.toFixed(1)}</td>
+                                <td>\${totalError.toFixed(1)}</td>
+                                <td>\${status}</td>
+                            </tr>
+                        \`;
+                    } catch (error) {
+                        console.error(\`測試 POW\${pow}/HIT\${hit}/EYE\${eye} 失敗:\`, error);
+                    }
+                });
+                
+                const excellentRate = (excellentTests / totalTests * 100).toFixed(1);
+                const goodRate = (goodTests / totalTests * 100).toFixed(1);
+                const poorRate = (poorTests / totalTests * 100).toFixed(1);
+                
+                results.innerHTML = \`
+                    <h3>🎯 完整雙向轉換測試結果</h3>
+                    
+                    <div class="summary">
+                        <h4>📊 整體表現統計</h4>
+                        <p><strong>測試案例</strong>: \${totalTests}個</p>
+                        <p><span class="excellent" style="padding: 2px 8px; border-radius: 4px;">優秀: \${excellentTests}個 (\${excellentRate}%)</span></p>
+                        <p><span class="good" style="padding: 2px 8px; border-radius: 4px;">良好: \${goodTests}個 (\${goodRate}%)</span></p>
+                        <p><span class="poor" style="padding: 2px 8px; border-radius: 4px;">需改善: \${poorTests}個 (\${poorRate}%)</span></p>
+                        <p><strong>最大誤差</strong>: \${worstError.toFixed(1)} (\${worstCase})</p>
+                        <p><strong>系統評級</strong>: \${excellentRate >= 80 ? '🎯 優秀系統' : excellentRate >= 60 ? '✅ 良好系統' : '⚠️ 需要改善'}</p>
+                    </div>
+                    
+                    <table>
+                        <tr><th>原始屬性</th><th>轉換結果</th><th>POW誤差</th><th>HIT誤差</th><th>EYE誤差</th><th>總誤差</th><th>狀態</th></tr>
+                        \${tableRows}
+                    </table>
+                \`;
+            }, 1000);
+        }
+    </script>
+    
+    <p style="text-align: center; margin-top: 30px;">
+        <a href="research.html" style="color: #3498db; text-decoration: none;">← 返回研究模式</a>
+    </p>
+</body>
+</html>

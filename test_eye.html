@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>EYE Model Test</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: #2c3e50; 
+            color: white; 
+            padding: 20px; 
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 { 
+            text-align: center; 
+            color: #9b59b6;
+            margin-bottom: 30px;
+        }
+        .test-button { 
+            background: linear-gradient(135deg, #8e44ad, #9b59b6); 
+            color: white; 
+            padding: 15px 30px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 16px;
+            font-weight: 600;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(155, 89, 182, 0.4);
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin: 20px 0; 
+            background: #34495e;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td { 
+            padding: 12px; 
+            text-align: center; 
+            border-bottom: 1px solid #555;
+        }
+        th { 
+            background: #1a252f;
+            font-weight: 600;
+            color: #9b59b6;
+        }
+        td {
+            font-family: 'Courier New', monospace;
+        }
+        tr:hover {
+            background: #3e5570;
+        }
+        .benchmark-highlight {
+            background: #e74c3c !important;
+            font-weight: bold;
+        }
+        .summary {
+            background: #1a252f;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .summary h3 {
+            color: #9b59b6;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>👁️ EYE 模型分析工具</h1>
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+            <button class="test-button" onclick="runEYETest()">🎯 執行 EYE 分析</button>
+            <button class="test-button" onclick="runBenchmarkTest()">📋 基準點測試</button>
+        </div>
+        
+        <div class="summary">
+            <h3>👁️ 測試配置</h3>
+            <p><strong>固定參數</strong>: POW=70, HIT=70 (聯盟平均)</p>
+            <p><strong>變動參數</strong>: EYE 40-150 (每10點)</p>
+            <p><strong>目標驗證</strong>: EYE 40/70/99 是否命中基準 OBP 0.280/0.320/0.420</p>
+        </div>
+        
+        <div id="results">
+            <p style="text-align: center; color: #7f8c8d;">點擊上方按鈕開始測試...</p>
+        </div>
+    </div>
+
+    <script src="constants.js"></script>
+    <script src="probability_model.js"></script>
+    <script src="simulation_engine.js"></script>
+
+    <script>
+        function runEYETest() {
+            console.log('👁️ Testing EYE Model Analysis');
+            console.log('Fixed POW=70, HIT=70, varying EYE 40-150');
+            
+            const results = [];
+            const benchmarks = {'40': 0.280, '70': 0.320, '99': 0.420};
+            
+            for (let eye = 40; eye <= 150; eye += 5) {
+                const stats = simulatePlayerStats(70, 70, eye, 100, 600);
+                const bbRate = (stats.BB_rate * 100).toFixed(1);
+                const kRate = (stats.K_rate * 100).toFixed(1);
+                const bbCount = Math.round(stats.BB_count || 0);
+                const kCount = Math.round(stats.K_count || 0);
+                
+                results.push({
+                    EYE: eye,
+                    OBP: stats.OBP.toFixed(3),
+                    'BB%': bbRate + '%',
+                    'K%': kRate + '%',
+                    '保送數': bbCount,
+                    '三振數': kCount,
+                    'BB/K': bbCount > 0 && kCount > 0 ? (bbCount/kCount).toFixed(2) : '0.00',
+                    isBenchmark: benchmarks.hasOwnProperty(eye.toString())
+                });
+            }
+            
+            console.table(results);
+            
+            // Display results in HTML
+            let html = `
+                <div class="summary">
+                    <h3>📈 EYE 模型分析結果</h3>
+                    <p><strong>測試完成</strong>: EYE 40-150 完整分析</p>
+                    <p><strong>關鍵發現</strong>: 檢查基準點是否對齊 MLB 分佈要求</p>
+                </div>
+                
+                <table>
+                    <tr>
+                        <th>EYE</th>
+                        <th>OBP</th>
+                        <th>保送率</th>
+                        <th>三振率</th>
+                        <th>保送數</th>
+                        <th>三振數</th>
+                        <th>BB/K比</th>
+                        <th>基準檢查</th>
+                    </tr>
+            `;
+            
+            results.forEach(row => {
+                const benchmark = benchmarks[row.EYE];
+                const benchmarkStatus = benchmark ? 
+                    `目標: ${benchmark.toFixed(3)}` : '-';
+                const deviation = benchmark ? 
+                    (Math.abs(parseFloat(row.OBP) - benchmark) * 1000).toFixed(1) : '-';
+                const rowClass = row.isBenchmark ? 'benchmark-highlight' : '';
+                
+                html += `
+                    <tr class="${rowClass}">
+                        <td><strong>${row.EYE}</strong></td>
+                        <td><strong>${row.OBP}</strong></td>
+                        <td>${row['BB%']}</td>
+                        <td>${row['K%']}</td>
+                        <td>${row['保送數']}</td>
+                        <td>${row['三振數']}</td>
+                        <td>${row['BB/K']}</td>
+                        <td>${benchmarkStatus}${deviation !== '-' ? `<br>誤差: ${deviation}` : ''}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</table>';
+            
+            // Add benchmark summary
+            html += '<div class="summary">';
+            html += '<h3>🎯 基準點達成檢查</h3>';
+            Object.entries(benchmarks).forEach(([eye, target]) => {
+                const result = results.find(r => r.EYE == eye);
+                if (result) {
+                    const actual = parseFloat(result.OBP);
+                    const error = Math.abs(actual - target);
+                    const status = error < 0.010 ? '✅ 優秀' : error < 0.020 ? '⚠️ 良好' : '❌ 需改善';
+                    html += `<p><strong>EYE ${eye}</strong>: 目標 ${target.toFixed(3)}, 實際 ${actual.toFixed(3)}, 誤差 ${error.toFixed(3)} ${status}</p>`;
+                }
+            });
+            html += '</div>';
+            
+            document.getElementById('results').innerHTML = html;
+        }
+        
+        function runBenchmarkTest() {
+            console.log('📋 Running EYE Benchmark Validation');
+            
+            const benchmarkTests = [
+                {eye: 40, target: 0.280, desc: 'PR1 基準'},
+                {eye: 70, target: 0.320, desc: 'PR50 基準'},
+                {eye: 99, target: 0.420, desc: 'PR99 基準'}
+            ];
+            
+            const results = [];
+            
+            benchmarkTests.forEach(test => {
+                const stats = simulatePlayerStats(70, 70, test.eye, 200, 600);
+                const error = Math.abs(stats.OBP - test.target);
+                const status = error < 0.010 ? '✅ 優秀' : error < 0.020 ? '⚠️ 良好' : '❌ 需改善';
+                
+                results.push({
+                    描述: test.desc,
+                    EYE: test.eye,
+                    目標OBP: test.target.toFixed(3),
+                    實際OBP: stats.OBP.toFixed(3),
+                    保送率: (stats.BB_rate * 100).toFixed(1) + '%',
+                    三振率: (stats.K_rate * 100).toFixed(1) + '%',
+                    誤差: error.toFixed(3),
+                    狀態: status
+                });
+            });
+            
+            let html = `
+                <div class="summary">
+                    <h3>📋 EYE 基準點驗證結果</h3>
+                    <p><strong>測試目的</strong>: 驗證 EYE 屬性是否正確對應 MLB OBP 分佈基準</p>
+                </div>
+                
+                <table>
+                    <tr>
+                        <th>基準描述</th>
+                        <th>EYE值</th>
+                        <th>目標OBP</th>
+                        <th>實際OBP</th>
+                        <th>保送率</th>
+                        <th>三振率</th>
+                        <th>誤差</th>
+                        <th>評估</th>
+                    </tr>
+            `;
+            
+            results.forEach(row => {
+                const rowClass = row.狀態.includes('優秀') ? 'benchmark-highlight' : '';
+                html += `
+                    <tr class="${rowClass}">
+                        <td>${row.描述}</td>
+                        <td><strong>${row.EYE}</strong></td>
+                        <td>${row.目標OBP}</td>
+                        <td><strong>${row.實際OBP}</strong></td>
+                        <td>${row.保送率}</td>
+                        <td>${row.三振率}</td>
+                        <td>${row.誤差}</td>
+                        <td>${row.狀態}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</table>';
+            
+            const allGood = results.every(r => r.狀態.includes('優秀') || r.狀態.includes('良好'));
+            html += `
+                <div class="summary">
+                    <h3>📊 整體評估</h3>
+                    <p><strong>系統狀態</strong>: ${allGood ? '👁️ EYE 基準點校準良好' : '⚠️ 需要調整 EYE 錨點'}</p>
+                    <p><strong>建議</strong>: ${allGood ? '可以進行下一步測試' : '請調整 BB_S_CURVE_EYE_ANCHORS 參數'}</p>
+                </div>
+            `;
+            
+            document.getElementById('results').innerHTML = html;
+        }
+    </script>
+</body>
+</html>
