@@ -55,6 +55,9 @@ function calculateSimStats(simResults) {
     
     // 計數統計
     stats.HR_count = simResults.HR || 0;
+    stats.doubles_count = simResults['2B'] || 0;
+    stats.triples_count = simResults['3B'] || 0; // In case triples are added later
+    stats.singles_count = simResults['1B'] || 0;
     stats.BB_count = bb;
     stats.K_count = k;
     stats.H_count = h;

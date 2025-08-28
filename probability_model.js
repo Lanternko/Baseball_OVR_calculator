@@ -68,16 +68,8 @@ function getPAEventProbabilitiesNormal(POW, HIT, EYE, playerHBPRate = LEAGUE_AVG
         pIPO = Math.max(0, pBIPForOtherOutcomes * (1.0 - pHitGivenBIPRemaining));
         
         if (pTotalHitsOnRemainingBIP > 0) {
-            const powEffXBH = scaleAttributeToEffectiveness(POW, EXTRABASE_POW_EFFECT_MIDPOINT, EXTRABASE_POW_EFFECT_SCALE, true);
-            const hitEffXBH = scaleAttributeToEffectiveness(HIT, EXTRABASE_HIT_EFFECT_MIDPOINT, EXTRABASE_HIT_EFFECT_SCALE, true);
-            const combinedEffXBH = EXTRABASE_POW_WEIGHT * powEffXBH + EXTRABASE_HIT_WEIGHT * hitEffXBH;
-            
-            const p2BGivenHitBIPNotHR = getRateFromEffectiveness(
-                AVG_2B_PER_HIT_BIP_NOT_HR_AT_MIDPOINT, 
-                MIN_2B_PER_HIT_BIP_NOT_HR, 
-                MAX_2B_PER_HIT_BIP_NOT_HR, 
-                combinedEffXBH
-            );
+            // 🔥 使用 POW-dependent 2B rate system
+            const p2BGivenHitBIPNotHR = interpolateSCurve(POW, DOUBLES_RATE_S_CURVE_POW_ANCHORS);
             const p2BGivenHitBIPNotHRCapped = Math.max(MIN_2B_PER_HIT_BIP_NOT_HR, 
                 Math.min(MAX_2B_PER_HIT_BIP_NOT_HR, p2BGivenHitBIPNotHR));
             

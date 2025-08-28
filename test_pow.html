@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>POW Model Test</title>
+</head>
+<body>
+    <h1>POW Model Test</h1>
+    <button onclick="runPOWTest()">Run POW Analysis</button>
+    <div id="results"></div>
+
+    <script src="constants.js"></script>
+    <script src="probability_model.js"></script>
+    <script src="simulation_engine.js"></script>
+
+    <script>
+        function runPOWTest() {
+            console.log('🔥 Testing Updated POW Model with 2B-to-HR Conversion');
+            console.log('Fixed HIT=70, EYE=70, varying POW 40-150');
+            
+            const results = [];
+            for (let pow = 40; pow <= 150; pow += 10) {
+                const stats = simulatePlayerStats(pow, 70, 70, 100, 600);
+                const hr = Math.round(stats.HR_count);
+                const doubles = Math.round(stats.doubles_count || 0);
+                const xbh = hr + doubles;
+                const hrPct = xbh > 0 ? (hr / xbh * 100).toFixed(1) : '0.0';
+                
+                results.push({
+                    POW: pow,
+                    HR: hr,
+                    '2B': doubles,
+                    XBH: xbh,
+                    'HR/XBH%': hrPct,
+                    SLG: stats.SLG.toFixed(3)
+                });
+            }
+            
+            console.table(results);
+            
+            // Display results in HTML
+            let html = '<table border="1" style="border-collapse: collapse; width: 100%;">';
+            html += '<tr><th>POW</th><th>HR</th><th>2B</th><th>XBH</th><th>HR/XBH%</th><th>SLG</th></tr>';
+            results.forEach(row => {
+                html += `<tr><td>${row.POW}</td><td><strong>${row.HR}</strong></td><td>${row['2B']}</td><td>${row.XBH}</td><td><strong>${row['HR/XBH%']}%</strong></td><td>${row.SLG}</td></tr>`;
+            });
+            html += '</table>';
+            
+            document.getElementById('results').innerHTML = html;
+            
+            // Test key percentiles
+            console.log('');
+            console.log('🎯 Key Percentile Analysis:');
+            const keyPoints = [40, 70, 99, 115, 130, 150];
+            keyPoints.forEach(pow => {
+                const stats = simulatePlayerStats(pow, 70, 70, 500, 600);
+                const hr = Math.round(stats.HR_count);
+                const doubles = Math.round(stats.doubles_count || 0);
+                const percentile = pow <= 40 ? 'PR1' : pow == 70 ? 'PR50' : pow == 99 ? 'PR99' : pow == 115 ? 'Elite(Ohtani)' : pow == 130 ? 'Super Elite' : 'Max';
+                console.log(`POW ${pow} (${percentile}): ${hr} HR, ${doubles} 2B, SLG ${stats.SLG.toFixed(3)}`);
+            });
+        }
+    </script>
+</body>
+</html>

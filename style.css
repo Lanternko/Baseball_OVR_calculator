@@ -99,10 +99,14 @@
   box-sizing: border-box;
 }
 
+html, body {
+  height: 100%;
+  overflow-x: hidden;
+}
+
 body {
   font-family: 'Noto Sans TC', 'Microsoft JhengHei', 'Hiragino Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--bg-main);
-  min-height: 100vh;
   margin: 0;
   padding: 0;
   color: var(--text-primary);
@@ -146,7 +150,7 @@ body {
   max-width: 1000px;
   margin: 0 auto;
   background: transparent;
-  min-height: 100vh;
+  height: auto;
   padding: 0;
   transition: all 0.3s ease;
 }
@@ -256,14 +260,45 @@ body {
 
 
 /* ================================== */
-/* 右上角主題切換按鈕 */
+/* 右上角按鈕區域 */
 /* ================================== */
 
-.theme-toggle {
+.header-buttons {
   position: absolute;
   top: var(--spacing-lg);
   right: 0;
+  display: flex;
+  gap: var(--spacing-sm);
   z-index: 1000;
+}
+
+.analysis-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.3em;
+  color: var(--theme-icon-color);
+  cursor: pointer;
+  padding: var(--spacing-sm);
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+}
+
+.analysis-btn:hover {
+  background: rgba(128, 128, 128, 0.1);
+  transform: scale(1.1);
+}
+
+.analysis-btn:active {
+  transform: scale(0.95);
+}
+
+.theme-toggle {
   background: transparent;
   border: none;
   font-size: 1.5em;
