@@ -13,17 +13,18 @@ const ATTR_EFFECT_MIDPOINT = 70.0;
 
 // 🔥 保持原版精確度的正常範圍 S-Curve 錨點（130以下完全不變）
 const HR_S_CURVE_POW_ANCHORS = [
-    [0, 0.0010],    // 提升: 0.0008 → 0.0010
-    [30, 0.005],    // 提升: 0.004 → 0.005
-    [40, 0.010],    // 提升: 0.008 → 0.010
-    [60, 0.024],    // 提升: 0.022 → 0.024
-    [70, 0.0310],   // 微調: 0.0300 → 0.0310
-    [85, 0.042],    // 提升: 當前過低 → 0.042
-    [99, 0.0500],   // 降低: 0.0520 → 0.0500
-    [115, 0.062],   // 降低: 0.065 → 0.062
-    [130, 0.075],   // 降低: 0.078 → 0.075
-    [140, 0.090],   // 提升: 0.082 → 0.090
-    [150, 0.100]    // 提升: 0.092 → 0.100
+    [0, 0.008],     // Very low: ~5 HR/600 PA 
+    [30, 0.012],    // 
+    [40, 0.025],    // PR1: 2.5% HR rate (~15 HR/600 PA)
+    [60, 0.035],    // 
+    [70, 0.042],    // PR50: 4.2% HR rate (~25 HR/600 PA)
+    [85, 0.055],    // 
+    [99, 0.067],    // PR99: 6.7% HR rate (~40 HR/600 PA)
+    [110, 0.083],   // MVP: 8.3% HR rate (~50 HR - Judge/Ohtani level)
+    [120, 0.092],   // HOF: 9.2% HR rate (~55 HR)
+    [130, 0.100],   // GOAT: 10% HR rate (~60 HR - Bonds level)
+    [140, 0.108],   // Legendary: 10.8% HR rate
+    [150, 0.115]    // Mythical: 11.5% HR rate (~70 HR)
 ];
 
 const BABIP_S_CURVE_HIT_ANCHORS = [
@@ -111,9 +112,23 @@ const K_RATE_EYE_WEIGHT = 0.50;
 const K_HIT_EFFECT_MIDPOINT = 70.0;
 const K_HIT_EFFECT_SCALE = 55.0;
 
-const AVG_2B_PER_HIT_BIP_NOT_HR_AT_MIDPOINT = 0.31;
-const MIN_2B_PER_HIT_BIP_NOT_HR = 0.22;
-const MAX_2B_PER_HIT_BIP_NOT_HR = 0.42;
+// 🔥 POW-dependent 2B rate system - Based on real MLB data patterns
+const DOUBLES_RATE_S_CURVE_POW_ANCHORS = [
+    [0, 0.20],      // Very low power: ~20 doubles (weak hitters)
+    [40, 0.22],     // PR1: ~22 doubles (bottom 1% power)
+    [70, 0.30],     // PR50: ~30 doubles (average power)
+    [85, 0.35],     // Peak doubles zone: ~35 doubles (balanced power)
+    [95, 0.37],     // Peak: ~37 doubles (Witt Jr/Freeman level)
+    [110, 0.32],    // MVP power: ~32 doubles (HR takes some away)
+    [120, 0.28],    // HOF power: ~28 doubles (more HR conversion) 
+    [130, 0.25],    // GOAT power: ~25 doubles (Judge level)
+    [140, 0.22],    // Legendary: ~22 doubles
+    [150, 0.20]     // Mythical: ~20 doubles (max HR conversion)
+];
+
+const AVG_2B_PER_HIT_BIP_NOT_HR_AT_MIDPOINT = 0.30;
+const MIN_2B_PER_HIT_BIP_NOT_HR = 0.20;
+const MAX_2B_PER_HIT_BIP_NOT_HR = 0.37;
 const EXTRABASE_POW_EFFECT_MIDPOINT = 70.0;
 const EXTRABASE_POW_EFFECT_SCALE = 48.0;
 const EXTRABASE_HIT_EFFECT_MIDPOINT = 70.0;
@@ -128,3 +143,10 @@ const NUM_SIMULATIONS = 100; // 模擬次數
 const EXTREME_VALUE_THRESHOLD = 200;
 
 console.log('✅ Constants.js 載入完成 v2.1');
+
+// 🔥 Debug: Check if DOUBLES_RATE_S_CURVE_POW_ANCHORS is properly defined
+if (typeof DOUBLES_RATE_S_CURVE_POW_ANCHORS !== 'undefined') {
+    console.log('✅ DOUBLES_RATE_S_CURVE_POW_ANCHORS loaded:', DOUBLES_RATE_S_CURVE_POW_ANCHORS);
+} else {
+    console.error('❌ DOUBLES_RATE_S_CURVE_POW_ANCHORS not defined!');
+}

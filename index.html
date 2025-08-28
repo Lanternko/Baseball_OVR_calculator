@@ -21,10 +21,12 @@
             <h1 class="full-title">棒球OVR雙向轉換器</h1>
             <h1 class="mobile-title">OVR雙向轉換</h1>
             <p>基於HIT/POW/EYE的球員卡數據預測</p>
-            <!-- 右上角主題切換按鈕 -->
-            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="切換深淺模式">
-                ◐
-            </button>
+            <!-- 右上角按鈕區域 -->
+            <div class="header-buttons">
+                <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="切換深淺模式">
+                    ◐
+                </button>
+            </div>
             
             <!-- 分頁按鈕 -->
             <div class="tab-buttons">
@@ -38,8 +40,6 @@
         </div>
     </div>
     
-    <!-- 頁首與表單間的漸層分隔線 -->
-    <div class="gradient-divider"></div>
     
     <div class="container">
         
@@ -143,7 +143,7 @@
                         <label for="inputPA">打席數 (PA)</label>
                     </div>
                     <div class="input-field-column">
-                        <input type="number" id="inputPA" placeholder="一個完整賽季通常 500-700 打席" min="1" max="1000">
+                        <input type="number" id="inputPA" placeholder="600" min="1" max="1000">
                     </div>
                 </div>
                 
@@ -322,21 +322,21 @@
             }
         }
 
-        // 使用預設值填充輸入框 - 與placeholder相同的數值
+        // 清除輸入框回到placeholder狀態
         function useDefaultValues(mode) {
             if (mode === 'statsToAttributes') {
-                // 重置為placeholder中顯示的預設值
-                document.getElementById('playerName').value = '大谷翔平24\'';
-                document.getElementById('xBA').value = '0.314';
-                document.getElementById('xSLG').value = '0.66';
-                document.getElementById('xwOBA').value = '0.442';
+                // 清空輸入框，顯示placeholder
+                document.getElementById('playerName').value = '';
+                document.getElementById('xBA').value = '';
+                document.getElementById('xSLG').value = '';
+                document.getElementById('xwOBA').value = '';
             } else {
-                // 重置為placeholder中顯示的預設值
-                document.getElementById('playerNameAttributes').value = '先發打者';
-                document.getElementById('inputHIT').value = '93';
-                document.getElementById('inputPOW').value = '108';
-                document.getElementById('inputEYE').value = '109';
-                document.getElementById('inputPA').value = '600';
+                // 清空輸入框，顯示placeholder
+                document.getElementById('playerNameAttributes').value = '';
+                document.getElementById('inputHIT').value = '';
+                document.getElementById('inputPOW').value = '';
+                document.getElementById('inputEYE').value = '';
+                document.getElementById('inputPA').value = '';
             }
         }
 
@@ -345,22 +345,21 @@
             showPlayerCardModal(mode);
         }
 
-        // 獲取當前輸入值
+        // 獲取當前輸入值，如果為空則使用預設值
         function getCurrentInputs(mode) {
             if (mode === 'statsToAttributes') {
-                const xBA = parseFloat(document.getElementById('xBA').value);
-                const xSLG = parseFloat(document.getElementById('xSLG').value);
-                const xwOBA = parseFloat(document.getElementById('xwOBA').value);
+                const xBAInput = document.getElementById('xBA').value;
+                const xSLGInput = document.getElementById('xSLG').value;
+                const xwOBAInput = document.getElementById('xwOBA').value;
                 const playerName = document.getElementById('playerName').value;
                 
-                // 檢查必要輸入
-                if (isNaN(xBA) || isNaN(xSLG) || isNaN(xwOBA)) {
-                    alert('請填入所有必要的統計數據！');
-                    return null;
-                }
+                // 使用輸入值或預設值（對應placeholder）
+                const xBA = parseFloat(xBAInput) || 0.314;
+                const xSLG = parseFloat(xSLGInput) || 0.66;
+                const xwOBA = parseFloat(xwOBAInput) || 0.442;
                 
                 return {
-                    name: playerName || '預測球員',
+                    name: playerName || '大谷翔平24\'',
                     stats: {
                         xBA: Math.max(0, xBA),
                         xSLG: Math.max(0, xSLG),
@@ -368,23 +367,23 @@
                     }
                 };
             } else if (mode === 'attributesToStats') {
-                const hit = parseFloat(document.getElementById('inputHIT').value);
-                const pow = parseFloat(document.getElementById('inputPOW').value);
-                const eye = parseFloat(document.getElementById('inputEYE').value);
-                const pa = parseInt(document.getElementById('inputPA').value);
+                const hitInput = document.getElementById('inputHIT').value;
+                const powInput = document.getElementById('inputPOW').value;
+                const eyeInput = document.getElementById('inputEYE').value;
+                const paInput = document.getElementById('inputPA').value;
                 const playerName = document.getElementById('playerNameAttributes').value;
                 
-                // 檢查必要輸入
-                if (isNaN(hit) || isNaN(pow) || isNaN(eye)) {
-                    alert('請填入所有必要的能力值！');
-                    return null;
-                }
+                // 使用輸入值或預設值（對應placeholder）
+                const hit = parseFloat(hitInput) || 93;
+                const pow = parseFloat(powInput) || 108;
+                const eye = parseFloat(eyeInput) || 109;
+                const pa = parseInt(paInput) || 600;
                 
                 const ovrResult = calculateBatterOVR(pow, hit, eye);
                 
                 return {
-                    name: playerName || '預測球員',
-                    pa: isNaN(pa) ? 600 : Math.max(1, pa),
+                    name: playerName || '大谷翔平24\'',
+                    pa: Math.max(1, pa),
                     attributes: {
                         HIT: Math.max(0, hit),
                         POW: Math.max(0, pow),
@@ -725,9 +724,16 @@
                 initDesktopInterface();
             }
             
-            setDefaultValues();
+            showDefaultValues();
             setupInputValidation();
         });
+
+        // 頁面載入時顯示預設值（作為placeholder樣式）
+        function showDefaultValues() {
+            // 調用使用預設值函數來顯示placeholder狀態
+            useDefaultValues('statsToAttributes');
+            useDefaultValues('attributesToStats');
+        }
 
         // 移動端界面初始化
         function initMobileInterface() {
@@ -860,6 +866,8 @@
             }
         });
 
+
+
         // 測試函數
         function testExtremeValues() {
             console.log("🧪 測試極端值轉換...");
@@ -938,5 +946,12 @@
 
         window.testExtremeValues = testExtremeValues;
     </script>
+    
+    <!-- 隱藏的研究模式入口 - 小彩蛋 -->
+    <div style="position: fixed; bottom: 10px; right: 10px; font-size: 12px; opacity: 0.5; z-index: 100; transition: all 0.3s ease;">
+        <a href="research.html" style="color: #888; text-decoration: none; display: block; padding: 4px;" title="🔬 研究模式" 
+           onmouseover="this.parentElement.style.opacity='0.9'; this.parentElement.style.transform='scale(1.3)'" 
+           onmouseout="this.parentElement.style.opacity='0.5'; this.parentElement.style.transform='scale(1)'">🔬</a>
+    </div>
 </body>
 </html>
