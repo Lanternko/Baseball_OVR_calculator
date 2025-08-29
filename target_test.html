@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Target Analysis Test</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 20px; line-height: 1.6; background-color: #f8f9fa; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2 { color: #2c3e50; text-align: center; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; font-size: 14px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background-color: #f8f9fa; font-weight: bold; }
+        .status-good { background-color: #d4edda; }
+        .status-close { background-color: #d1ecf1; }
+        .status-off { background-color: #fff3cd; }
+        .status-far { background-color: #f8d7da; }
+        .level { font-weight: bold; }
+        .test-btn { background-color: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin: 20px auto; display: block; }
+        .test-btn:hover { background-color: #0056b3; }
+        .results { margin-top: 30px; }
+        .loading { text-align: center; padding: 20px; color: #6c757d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Key Level Performance Analysis</h1>
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+            <p><strong>Testing target performance for levels 40/70/100/120/150</strong></p>
+            <p>Based on README specifications and league benchmarks</p>
+        </div>
+
+        <button class="test-btn" onclick="runTargetAnalysis()">🧪 Run Target Analysis</button>
+        
+        <div id="results" class="results">
+            <div class="loading">Click the button above to run the analysis...</div>
+        </div>
+    </div>
+
+    <script src="constants.js"></script>
+    <script src="probability_model.js"></script>
+    <script src="simulation_engine.js"></script>
+    
+    <script>
+        // Target definitions based on README and constants
+        const targets = {
+            40: {
+                name: "PR1 - Bottom 1%",
+                BA: 0.210, OBP: 0.280, SLG: 0.320, OPS: 0.600, HR: 15, XBH: 45
+            },
+            70: {
+                name: "PR50 - League Average", 
+                BA: 0.250, OBP: 0.320, SLG: 0.420, OPS: 0.740, HR: 25, XBH: 65
+            },
+            100: {
+                name: "PR99 - Top 1%",
+                BA: 0.320, OBP: 0.420, SLG: 0.570, OPS: 0.990, HR: 40, XBH: 78
+            },
+            120: {
+                name: "HOF Peak Level",
+                BA: 0.340, OBP: 0.470, SLG: 0.720, OPS: 1.190, HR: 55, XBH: 85
+            },
+            150: {
+                name: "Fantasy Extreme", 
+                BA: 0.380, OBP: 0.570, SLG: 0.900, OPS: 1.470, HR: 75, XBH: 110
+            }
+        };
+
+        function getStatusClass(gapPct) {
+            if (gapPct <= 5) return 'status-good';
+            if (gapPct <= 10) return 'status-close';
+            if (gapPct <= 15) return 'status-off';
+            return 'status-far';
+        }
+
+        function getStatusText(gapPct) {
+            if (gapPct <= 5) return '✅ Good';
+            if (gapPct <= 10) return '🔄 Close';
+            if (gapPct <= 15) return '⚠️ Off';
+            return '❌ Far';
+        }
+
+        async function runTargetAnalysis() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="loading">🧪 Running simulations... Please wait...</div>';
+
+            setTimeout(() => {
+                try {
+                    let html = '<h2>📊 Current Performance vs Target Analysis</h2>';
+                    html += '<table>';
+                    html += '<thead><tr><th>Level</th><th>Tier</th><th>Stat</th><th>Target</th><th>Current</th><th>Gap</th><th>Gap %</th><th>Status</th></tr></thead>';
+                    html += '<tbody>';
+
+                    const testLevels = [40, 70, 100, 120, 150];
+                    const issues = [];
+
+                    for (let level of testLevels) {
+                        try {
+                            // Run simulation with fewer iterations for speed
+                            const stats = simulatePlayerStats(level, level, level, 20, 600);
+                            const target = targets[level];
+                            
+                            // Calculate XBH as HR + 2B
+                            const currentXBH = stats.HR_count + stats.doubles_count;
+                            
+                            const testStats = [
+                                {name: 'BA', target: target.BA, current: stats.BA, format: 3},
+                                {name: 'OBP', target: target.OBP, current: stats.OBP, format: 3},
+                                {name: 'SLG', target: target.SLG, current: stats.SLG, format: 3},
+                                {name: 'OPS', target: target.OPS, current: stats.OPS, format: 3},
+                                {name: 'HR', target: target.HR, current: stats.HR_count, format: 0},
+                                {name: 'XBH', target: target.XBH, current: currentXBH, format: 0}
+                            ];
+
+                            let isFirstStat = true;
+                            for (let stat of testStats) {
+                                const gap = stat.current - stat.target;
+                                const gapPct = Math.abs(gap / stat.target * 100);
+                                const statusClass = getStatusClass(gapPct);
+                                const statusText = getStatusText(gapPct);
+                                
+                                if (gapPct > 10) {
+                                    issues.push(`Level ${level} ${stat.name}: ${gapPct.toFixed(1)}% gap`);
+                                }
+
+                                html += `<tr class="${statusClass}">`;
+                                if (isFirstStat) {
+                                    html += `<td rowspan="6" class="level">${level}</td>`;
+                                    html += `<td rowspan="6" style="font-size: 11px;">${target.name}</td>`;
+                                    isFirstStat = false;
+                                }
+                                html += `<td><strong>${stat.name}</strong></td>`;
+                                html += `<td>${stat.target.toFixed(stat.format)}</td>`;
+                                html += `<td>${stat.current.toFixed(stat.format)}</td>`;
+                                html += `<td>${gap > 0 ? '+' : ''}${gap.toFixed(stat.format)}</td>`;
+                                html += `<td>${gapPct.toFixed(1)}%</td>`;
+                                html += `<td>${statusText}</td>`;
+                                html += '</tr>';
+                            }
+
+                        } catch (error) {
+                            html += `<tr class="status-far"><td colspan="8">❌ Error testing level ${level}: ${error.message}</td></tr>`;
+                        }
+                    }
+
+                    html += '</tbody></table>';
+
+                    // Priority issues summary
+                    html += '<div style="margin-top: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 5px;">';
+                    html += '<h3>🔍 Priority Issues Summary</h3>';
+                    if (issues.length > 0) {
+                        html += '<ul>';
+                        for (let issue of issues) {
+                            html += `<li>${issue}</li>`;
+                        }
+                        html += '</ul>';
+                    } else {
+                        html += '<p style="color: green;">✅ All stats are within acceptable range!</p>';
+                    }
+                    html += '</div>';
+
+                    // Recommendations
+                    html += '<div style="margin-top: 20px; padding: 20px; background-color: #e8f4f8; border-radius: 5px;">';
+                    html += '<h3>💡 Next Steps</h3>';
+                    html += '<ol>';
+                    html += '<li><strong>Identify Patterns</strong>: Look for systematic issues (e.g., all BA values too low)</li>';
+                    html += '<li><strong>Curve Adjustments</strong>: Focus on the most problematic S-curves</li>';
+                    html += '<li><strong>Anchor Tuning</strong>: Adjust specific anchor points for problem areas</li>';
+                    html += '<li><strong>Validation</strong>: Re-test after each major change</li>';
+                    html += '</ol>';
+                    html += '</div>';
+
+                    resultsDiv.innerHTML = html;
+
+                } catch (error) {
+                    resultsDiv.innerHTML = `<div style="color: red; padding: 20px;">❌ Error running analysis: ${error.message}</div>`;
+                }
+            }, 100);
+        }
+
+        // Auto-run after page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                // Auto-run analysis after a short delay
+                // runTargetAnalysis();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

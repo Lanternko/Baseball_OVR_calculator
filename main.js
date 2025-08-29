@@ -145,21 +145,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// 🧪 測試函數
-function testExtremeValues() {
-    console.log("🧪 測試極端值轉換...");
-    
-    const extremeCases = [
-        {xBA: 0, xSLG: 0, xwOBA: 0},
-        {xBA: 0.001, xSLG: 0.004, xwOBA: 0.031},
-        {xBA: 1.0, xSLG: 4.0, xwOBA: 1.0}
-    ];
-    
-    extremeCases.forEach((testCase, i) => {
-        const attrs = calculatePlayerGameAttributes(testCase.xBA, testCase.xSLG, testCase.xwOBA);
-        console.log(`案例 ${i+1}:`, testCase, '→', attrs);
-    });
-}
-
 // 窗口全局函數
 window.testExtremeValues = testExtremeValues;

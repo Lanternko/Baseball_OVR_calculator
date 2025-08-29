@@ -45,9 +45,9 @@ function getAttributeScoreHybrid(metricVal, pr1Benchmark, pr50Benchmark, pr99Ben
         );
         
         if (isExtremeValue) {
-            if (statType === 'BA' && metricVal >= 1.0) return 500;
-            if (statType === 'SLG' && metricVal >= 3.5) return 500;
-            if (statType === 'OBA' && metricVal >= 1.0) return 500;
+            if (statType === 'BA' && metricVal >= 0.99) return 500;
+            if (statType === 'SLG' && metricVal >= 3.99) return 500;
+            if (statType === 'OBA' && metricVal >= 0.99) return 500;
             
             if (statType === 'BA') {
                 return 200 + (metricVal - 0.95) / 0.05 * 300;

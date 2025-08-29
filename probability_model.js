@@ -40,17 +40,21 @@ function getPAEventProbabilitiesNormal(POW, HIT, EYE, playerHBPRate = LEAGUE_AVG
     const pK = Math.max(MIN_K_RATE_CAP, Math.min(MAX_K_RATE_CAP, 
         getRateFromEffectiveness(AVG_K_RATE_AT_MIDPOINT, MIN_K_RATE_CAP, MAX_K_RATE_CAP, combinedKEffect)));
     
-    const pBB = Math.max(0.020, Math.min(0.250, interpolateSCurve(EYE, BB_S_CURVE_EYE_ANCHORS)));
+    const pBB = Math.max(0.020, Math.min(0.500, interpolateSCurve(EYE, BB_S_CURVE_EYE_ANCHORS))); // Increased cap for elite EYE
     const pHBP = Math.max(0.0, Math.min(0.05, playerHBPRate));
     
-    // 計算基礎全壘打率
-    let baseHRRate = interpolateSCurve(POW, HR_S_CURVE_POW_ANCHORS);
+    // 🔥 XBH-First: Calculate total XBH and HR ratio upfront
+    const totalXBHPer600PA = interpolateSCurve(POW, TOTAL_XBH_S_CURVE_POW_ANCHORS);
+    const hrXBHRatio = interpolateSCurve(POW, HR_XBH_RATIO_S_CURVE_POW_ANCHORS);
     
-    // 應用 EYE 和 HIT 修正因子（最小化疊加效應以精確匹配分析表）
-    const eyeHRModifier = 1.0 + scaleAttributeToEffectiveness(EYE, 70.0, 40.0, true) * 0.02; // 進一步降低: 0.04→0.02
-    const hitHRModifier = 1.0 + scaleAttributeToEffectiveness(HIT, 70.0, 40.0, true) * 0.03; // 進一步降低: 0.06→0.03
-    let pHR = baseHRRate * eyeHRModifier * hitHRModifier;
-    pHR = Math.max(0.0, Math.min(pHR, 0.20));
+    // Convert to probabilities per PA
+    const pTotalXBH = Math.min(0.25, totalXBHPer600PA / 600.0); // Cap at 25%
+    let pHR = Math.min(pTotalXBH * hrXBHRatio, 0.15); // Cap HR at 15%
+    
+    // Apply minor HIT/EYE modifiers for interaction effects
+    const eyeHRModifier = 1.0 + scaleAttributeToEffectiveness(EYE, 70.0, 40.0, true) * 0.01;
+    const hitHRModifier = 1.0 + scaleAttributeToEffectiveness(HIT, 70.0, 40.0, true) * 0.005; // 减少HIT对HR的影响
+    pHR = Math.max(0.0, Math.min(pHR * eyeHRModifier * hitHRModifier, 0.15));
     
     // 計算剩餘 BIP 事件
     const probSumNonBIPPlusHR = pK + pBB + pHBP + pHR;
@@ -68,21 +72,17 @@ function getPAEventProbabilitiesNormal(POW, HIT, EYE, playerHBPRate = LEAGUE_AVG
         pIPO = Math.max(0, pBIPForOtherOutcomes * (1.0 - pHitGivenBIPRemaining));
         
         if (pTotalHitsOnRemainingBIP > 0) {
-            // 🔥 NEW: True XBH-First Approach
-            const totalXBHPer600PA = interpolateSCurve(POW, TOTAL_XBH_S_CURVE_POW_ANCHORS);
-            const hrXBHRatio = interpolateSCurve(POW, HR_XBH_RATIO_S_CURVE_POW_ANCHORS);
-            
-            // Convert XBH per 600 PA to probability per PA
-            const pTotalXBH = Math.min(0.25, totalXBHPer600PA / 600.0); // Cap at realistic 25%
-            
-            // Now override HR calculation with XBH-first approach
-            pHR = Math.min(pTotalXBH * hrXBHRatio, 0.15); // Cap HR at 15% max
+            // 🔥 XBH-First: Use pre-calculated values, split doubles from total XBH
             p2B = Math.max(0, pTotalXBH - pHR); // Remaining XBH becomes doubles
             
-            // Singles = remaining hits after XBH
-            p1B = Math.max(0, pTotalHitsOnRemainingBIP - pTotalXBH);
+            // Constrain XBH within available hits
+            const actualXBH = Math.min(pTotalXBH, pTotalHitsOnRemainingBIP * 0.8); // Max 80% of hits can be XBH
+            p2B = Math.max(0, actualXBH - pHR);
             
-            // Recalculate IPO to maintain probability conservation
+            // Singles = remaining hits after actual XBH
+            p1B = Math.max(0, pTotalHitsOnRemainingBIP - pHR - p2B);
+            
+            // Maintain probability conservation
             pIPO = Math.max(0, pBIPForOtherOutcomes - pTotalHitsOnRemainingBIP);
         } else {
             p1B = p2B = 0.0;
