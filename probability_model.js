@@ -66,7 +66,7 @@ function getPAEventProbabilitiesNormal(POW, HIT, EYE, playerHBPRate = LEAGUE_AVG
         p1B = p2B = pIPO = 0.0;
     } else {
         const pBIPForOtherOutcomes = 1.0 - probSumNonBIPPlusHR;
-        const pHitGivenBIPRemaining = Math.max(0.190, Math.min(0.450, 
+        const pHitGivenBIPRemaining = Math.max(0.190, Math.min(0.750, 
             interpolateSCurve(HIT, BABIP_S_CURVE_HIT_ANCHORS)));
         const pTotalHitsOnRemainingBIP = pBIPForOtherOutcomes * pHitGivenBIPRemaining;
         pIPO = Math.max(0, pBIPForOtherOutcomes * (1.0 - pHitGivenBIPRemaining));
@@ -75,8 +75,9 @@ function getPAEventProbabilitiesNormal(POW, HIT, EYE, playerHBPRate = LEAGUE_AVG
             // 🔥 XBH-First: Use pre-calculated values, split doubles from total XBH
             p2B = Math.max(0, pTotalXBH - pHR); // Remaining XBH becomes doubles
             
-            // Constrain XBH within available hits
-            const actualXBH = Math.min(pTotalXBH, pTotalHitsOnRemainingBIP * 0.8); // Max 80% of hits can be XBH
+            // Constrain XBH within available hits (higher limit for elite players)
+            const xbhHitRatio = HIT >= 120 ? 0.95 : HIT >= 100 ? 0.90 : 0.80;
+            const actualXBH = Math.min(pTotalXBH, pTotalHitsOnRemainingBIP * xbhHitRatio);
             p2B = Math.max(0, actualXBH - pHR);
             
             // Singles = remaining hits after actual XBH

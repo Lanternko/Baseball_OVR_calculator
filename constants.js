@@ -11,39 +11,40 @@ const ATTRIBUTE_MAPPING_POINTS = {'pr1': 40, 'pr50': 70, 'pr99': 100};
 const SOFT_CAP_ATTRIBUTE_VALUE = 150.0;
 const ATTR_EFFECT_MIDPOINT = 70.0;
 
-// 🔥 基於分析表精確調整的 HR S-Curve 錨點
+// 🔥 基於10年研究數據的 HR S-Curve 錨點 (Official Targets) - 修正版本
 const HR_S_CURVE_POW_ANCHORS = [
-    [0, 0.008],     // Very low: ~5 HR/600 PA 
-    [30, 0.012],    // 
-    [40, 0.025],    // PR1: 2.5% HR rate (~15 HR/600 PA)
-    [60, 0.035],    // 
-    [70, 0.042],    // PR50: 4.2% HR rate (~25 HR/600 PA)
-    [85, 0.060],    // 平滑過渡
-    [95, 0.065],    // 添加95錨點: 6.5% HR rate
-    [100, 0.070],   // 精確調整: 7.0% HR rate 使 SLG = 0.570 + 50%+ HR/XBH
-    [110, 0.080],   // 平滑增加: 8.0% HR rate (~48 HR)
-    [120, 0.090],   // 平滑增加: 9.0% HR rate (~54 HR)
-    [130, 0.105],   // 史詩級: 10.5% HR rate (~63 HR - Ruth領域)
-    [140, 0.115],   // 傳奇級: 11.5% HR rate (~69 HR - 接近Bonds)
-    [150, 0.120]    // 極限級: 12.0% HR rate (~72 HR - 接近Bonds記錄)
+    [0, 0.003],     // Very low: ~2 HR/600 PA 
+    [30, 0.005],    // Low: ~3 HR
+    [40, 0.0067],   // PR1: 0.67% HR rate (~4 HR/600 PA) - Official Target
+    [50, 0.020],    // 過渡期: 大幅增加
+    [60, 0.030],    // Rising towards average
+    [70, 0.035],    // PR50: 3.5% HR rate (~21 HR/600 PA) - Official Target
+    [85, 0.055],    // 平滑過渡
+    [95, 0.070],    // 添加95錨點: 7.0% HR rate
+    [100, 0.075],   // PR99: 7.5% HR rate (~45 HR/600 PA) - Official Target
+    [110, 0.085],   // 平滑增加: 8.5% HR rate
+    [120, 0.092],   // HOF Peak: 9.2% HR rate (~55 HR) - Official Target
+    [130, 0.105],   // 史詩級: 10.5% HR rate
+    [140, 0.110],   // 傳奇級: 11.0% HR rate
+    [150, 0.117]    // 極限級: 11.7% HR rate (~70 HR) - Official Target
 ];
 
 const BABIP_S_CURVE_HIT_ANCHORS = [
     [0, 0.215],     // 極低水平
     [30, 0.240],    // 低水平
-    [40, 0.320],    // PR1基準: 大幅提高至產生 BA 0.210  
-    [60, 0.360],    // 中等水平: 大幅提高
-    [70, 0.380],    // PR50基準: 大幅提高至產生 BA 0.250
-    [80, 0.400],    // 平滑過渡: 修正单調性
-    [85, 0.410],    // 平滑過渡: 修正单調性
-    [90, 0.420],    // 平滑過渡: 修正单調性
-    [95, 0.430],    // 平滑過渡: 改善95-100轉換
-    [100, 0.450],   // 精確調整: 大幅提高至產生 BA 0.320
-    [110, 0.470],   // 平滑遞增 (+20)
-    [120, 0.490],   // 平滑遞增 (+20)  
-    [130, 0.520],   // 平滑遞增 (+30)
-    [140, 0.540],   // 平滑遞增 (+20)
-    [150, 0.650]    // 大幅提高至README.md: 支援BA .380 (修正Level 150問題)
+    [40, 0.320],    // PR1基準: 產生 BA 0.210 - Official Target
+    [60, 0.375],    // 中等水平: 調整以支援新目標
+    [70, 0.370],    // PR50基準: 產生 BA 0.260 - Official Target (降低)
+    [80, 0.410],    // 平滑過渡
+    [85, 0.425],    // 平滑過渡
+    [90, 0.440],    // 平滑過渡
+    [95, 0.450],    // 平滑過渡: 改善95-100轉換
+    [100, 0.450],   // PR99: 產生 BA 0.320 - Official Target
+    [110, 0.480],   // 平滑遞增
+    [120, 0.480],   // HOF Peak: 產生 BA 0.350 - Official Target (降低)
+    [130, 0.550],   // 平滑遞增
+    [140, 0.590],   // 平滑遞增
+    [150, 0.670]    // Fantasy: 產生 BA 0.400 - Official Target (精準調整)
 ];
 
 const BB_S_CURVE_EYE_ANCHORS = [
@@ -66,7 +67,7 @@ const BB_S_CURVE_EYE_ANCHORS = [
 
 const K_EYE_EFFECTIVENESS_S_CURVE_ANCHORS = [
     [0, 0.8], [30, 0.5], [40, 0.3], [60, 0.1],
-    [70, 0.0], [85, -0.20], [99, -0.40], [115, -0.55],
+    [70, 0.0], [85, -0.20], [100, -0.40], [115, -0.55],
     [130, -0.70], [140, -0.75], [150, -0.80]
 ];
 
@@ -74,7 +75,7 @@ const K_EYE_EFFECTIVENESS_S_CURVE_ANCHORS = [
 const HR_S_CURVE_POW_ANCHORS_EXTREME = [
     // 保持 0-150 的原版數值
     [0, 0.0005], [30, 0.003], [40, 0.0067], [60, 0.020],
-    [70, 0.0333], [85, 0.045], [99, 0.0580], [115, 0.072],
+    [70, 0.0333], [85, 0.045], [100, 0.0580], [115, 0.072],
     [130, 0.0870], [140, 0.098], [150, 0.110],
     // 極端值區間開始
     [200, 0.300], [250, 0.450], [300, 0.600], [350, 0.750], 
@@ -84,7 +85,7 @@ const HR_S_CURVE_POW_ANCHORS_EXTREME = [
 const BABIP_S_CURVE_HIT_ANCHORS_EXTREME = [
     // 保持 0-150 的原版數值
     [0, 0.215], [30, 0.245], [40, 0.270], [60, 0.295],
-    [70, 0.305], [85, 0.330], [99, 0.350], [110, 0.365],
+    [70, 0.305], [85, 0.330], [100, 0.350], [110, 0.365],
     [120, 0.375], [130, 0.385], [140, 0.395], [150, 0.405],
     // 極端值區間開始
     [200, 0.550], [250, 0.650], [300, 0.750], [350, 0.840], 
@@ -94,7 +95,7 @@ const BABIP_S_CURVE_HIT_ANCHORS_EXTREME = [
 const BB_S_CURVE_EYE_ANCHORS_EXTREME = [
     // 保持 0-150 的原版數值
     [0, 0.030], [30, 0.045], [40, 0.062], [60, 0.075],
-    [70, 0.085], [85, 0.105], [99, 0.125], [115, 0.145],
+    [70, 0.085], [85, 0.105], [100, 0.125], [115, 0.145],
     [130, 0.160], [140, 0.170], [150, 0.180],
     // 極端值區間開始
     [200, 0.350], [250, 0.480], [300, 0.600], [350, 0.720],
@@ -104,7 +105,7 @@ const BB_S_CURVE_EYE_ANCHORS_EXTREME = [
 const K_EYE_EFFECTIVENESS_S_CURVE_ANCHORS_EXTREME = [
     // 保持 0-150 的原版數值
     [0, 0.8], [30, 0.5], [40, 0.3], [60, 0.1],
-    [70, 0.0], [85, -0.20], [99, -0.40], [115, -0.55],
+    [70, 0.0], [85, -0.20], [100, -0.40], [115, -0.55],
     [130, -0.70], [140, -0.75], [150, -0.80],
     // 極端值區間開始
     [200, -0.85], [250, -0.88], [300, -0.90], [350, -0.92],
@@ -135,34 +136,34 @@ const DOUBLES_RATE_S_CURVE_POW_ANCHORS = [
     [150, 0.20]     // Mythical: ~20 doubles (max HR conversion)
 ];
 
-// 🔥 NEW: XBH-First Model - Total Extra Base Hits per 600 PA (Reduced for SLG accuracy)
+// 🔥 NEW: XBH-First Model - 基於10年研究數據的 XBH 錨點 (Official Targets)
 const TOTAL_XBH_S_CURVE_POW_ANCHORS = [
-    [0, 22],        // Very low power: ~22 XBH
-    [40, 38],       // PR1: ~38 XBH (reduced from 45 for SLG .320)
-    [70, 55],       // PR50: ~55 XBH (reduced from 65 for SLG .420)
-    [85, 62],       // Good power: ~62 XBH (reduced from 72)
-    [95, 64],       // 添加95錨點: ~64 XBH (reduced from 74)
-    [100, 68],      // Elite power: ~68 XBH (reduced from 78 for SLG .570)
-    [110, 72],      // MVP power: ~72 XBH (reduced from 80)
-    [120, 78],      // HOF power: ~78 XBH (reduced from 85)
-    [130, 84],      // GOAT power: ~84 XBH (reduced from 90)
-    [140, 88],      // Legendary: ~88 XBH (reduced from 94)
-    [150, 95]       // Mythical: ~95 XBH (reduced from 110 for balance)
+    [0, 20],        // Very low power: ~20 XBH
+    [40, 35],       // PR1: ~35 XBH (for SLG .320) - Official Target
+    [70, 60],       // PR50: ~60 XBH (for SLG .440) - Official Target  
+    [85, 68],       // Good power: ~68 XBH
+    [95, 72],       // 添加95錨點: ~72 XBH
+    [100, 78],      // PR99: ~78 XBH (for SLG .600) - Official Target
+    [110, 82],      // MVP power: ~82 XBH
+    [120, 85],      // HOF Peak: ~85 XBH (for SLG .700) - Official Target
+    [130, 90],      // GOAT power: ~90 XBH
+    [140, 95],      // Legendary: ~95 XBH
+    [150, 70]       // Fantasy: ~70 XBH (precision for SLG .900) - Official Target
 ];
 
-// 🔥 NEW: HR/XBH Ratio - Based on real MLB elite performance
+// 🔥 基於10年研究數據的 HR/XBH 比例 (Official Targets)
 const HR_XBH_RATIO_S_CURVE_POW_ANCHORS = [
-    [0, 0.25],      // Very low power: 25% HR/XBH
-    [40, 0.33],     // PR1: 33% HR/XBH (bottom 1%)
-    [70, 0.40],     // PR50: 40% HR/XBH (average power)
-    [85, 0.48],     // Good power: 48% HR/XBH
-    [95, 0.52],     // 添加95錨點: 52% HR/XBH
-    [100, 0.53],    // Elite power: 53% HR/XBH (fine-tuned for .570 SLG)
-    [110, 0.61],    // MVP power: 61% HR/XBH (Judge 2024 level)
-    [120, 0.66],    // HOF power: 66% HR/XBH
-    [130, 0.69],    // GOAT power: 69% HR/XBH (Judge 2022 level)
+    [0, 0.20],      // Very low power: 20% HR/XBH
+    [40, 0.114],    // PR1: 11.4% HR/XBH (4 HR / 35 XBH) - Official Target
+    [70, 0.35],     // PR50: 35% HR/XBH (21 HR / 60 XBH) - Official Target
+    [85, 0.50],     // Good power: 50% HR/XBH
+    [95, 0.55],     // 添加95錨點: 55% HR/XBH
+    [100, 0.577],   // PR99: 57.7% HR/XBH (45 HR / 78 XBH) - Official Target
+    [110, 0.62],    // MVP power: 62% HR/XBH
+    [120, 0.647],   // HOF Peak: 64.7% HR/XBH (55 HR / 85 XBH) - Official Target
+    [130, 0.69],    // GOAT power: 69% HR/XBH
     [140, 0.72],    // Legendary: 72% HR/XBH
-    [150, 0.68]     // Mythical: 68% HR/XBH (~75 HR, 35 2B per README.md)
+    [150, 0.857]    // Fantasy: 85.7% HR/XBH (60 HR / 70 XBH) - Target SLG .900
 ];
 
 const AVG_2B_PER_HIT_BIP_NOT_HR_AT_MIDPOINT = 0.30;

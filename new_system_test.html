@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 新打擊系統驗證測試</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #00ff00;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            margin: 20px 0;
+            padding: 20px;
+        }
+        .test-title {
+            color: #ffff00;
+            font-size: 1.4em;
+            margin-bottom: 15px;
+            border-left: 4px solid #ffff00;
+            padding-left: 10px;
+        }
+        .test-results {
+            background: #0a0a0a;
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            white-space: pre-line;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { color: #00ff88; }
+        .warning { color: #ffaa00; }
+        .error { color: #ff4444; }
+        .info { color: #4488ff; }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        button {
+            background: #333;
+            color: #00ff00;
+            border: 1px solid #555;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        button:hover {
+            background: #444;
+            border-color: #00ff00;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .stat-box {
+            background: #333;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .stat-label {
+            color: #888;
+            font-size: 0.8em;
+        }
+        .stat-value {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        
+        .progress {
+            background: #333;
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            background: linear-gradient(90deg, #00ff00, #ffff00);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚾ 新打擊模擬系統驗證測試</h1>
+            <p>🎯 四象限+兩階段系統 | 📊 Level精確性驗證 | ⚡ 性能測試</p>
+        </div>
+
+        <!-- 控制面板 -->
+        <div class="test-section">
+            <div class="test-title">🎮 測試控制面板</div>
+            <div class="controls">
+                <button onclick="runBasicValidation()">🔍 基礎驗證</button>
+                <button onclick="runLevel100Test()">🎯 Level 100測試</button>
+                <button onclick="runPerformanceTest()">⚡ 性能測試</button>
+                <button onclick="runExtremeCasesTest()">🚀 極端值測試</button>
+                <button onclick="runAllTests()">🔥 全部測試</button>
+                <button onclick="clearResults()">🧹 清除結果</button>
+            </div>
+            <div class="progress" id="testProgress">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+        </div>
+
+        <!-- 基礎驗證結果 -->
+        <div class="test-section">
+            <div class="test-title">🔍 基礎系統驗證</div>
+            <div class="test-results" id="basicValidation">
+                點擊「基礎驗證」開始測試...
+            </div>
+        </div>
+
+        <!-- Level 100精確性測試 -->
+        <div class="test-section">
+            <div class="test-title">🎯 Level 100 精確性測試</div>
+            <div class="test-results" id="level100Test">
+                點擊「Level 100測試」開始測試...
+            </div>
+        </div>
+
+        <!-- 性能測試 -->
+        <div class="test-section">
+            <div class="test-title">⚡ 性能基準測試</div>
+            <div class="test-results" id="performanceTest">
+                點擊「性能測試」開始測試...
+            </div>
+        </div>
+
+        <!-- 極端值測試 -->
+        <div class="test-section">
+            <div class="test-title">🚀 極端值邊界測試</div>
+            <div class="test-results" id="extremeCasesTest">
+                點擊「極端值測試」開始測試...
+            </div>
+        </div>
+
+        <!-- 統計對比 -->
+        <div class="test-section">
+            <div class="test-title">📊 統計數據對比</div>
+            <div class="stats-grid" id="statsComparison">
+                <div class="stat-box">
+                    <div class="stat-label">總測試用例</div>
+                    <div class="stat-value" id="totalTests">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">通過測試</div>
+                    <div class="stat-value success" id="passedTests">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">失敗測試</div>
+                    <div class="stat-value error" id="failedTests">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">平均性能</div>
+                    <div class="stat-value info" id="avgPerformance">-</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 載入新系統 -->
+    <script src="new_constants.js"></script>
+    <script src="new_probability_model.js"></script>
+
+    <script>
+        console.log('🧪 測試系統初始化...');
+        
+        let testStats = {
+            total: 0,
+            passed: 0,
+            failed: 0,
+            avgPerformance: 0
+        };
+
+        // 更新進度條
+        function updateProgress(percent) {
+            const progressBar = document.getElementById('progressBar');
+            progressBar.style.width = percent + '%';
+        }
+
+        // 更新統計顯示
+        function updateStatsDisplay() {
+            document.getElementById('totalTests').textContent = testStats.total;
+            document.getElementById('passedTests').textContent = testStats.passed;
+            document.getElementById('failedTests').textContent = testStats.failed;
+            document.getElementById('avgPerformance').textContent = 
+                testStats.avgPerformance > 0 ? `${testStats.avgPerformance.toFixed(1)}ms` : '-';
+        }
+
+        // 輸出測試結果
+        function outputResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const colorClass = type === 'success' ? 'success' : 
+                              type === 'warning' ? 'warning' : 
+                              type === 'error' ? 'error' : 'info';
+            
+            element.innerHTML += `<span class="${colorClass}">[${timestamp}] ${message}</span>\n`;
+            element.scrollTop = element.scrollHeight;
+        }
+
+        // 基礎驗證測試
+        async function runBasicValidation() {
+            outputResult('basicValidation', '🔍 開始基礎系統驗證...', 'info');
+            updateProgress(10);
+            
+            try {
+                // 1. 驗證插值表
+                outputResult('basicValidation', '📋 驗證插值表...', 'info');
+                if (typeof validateTables === 'function') {
+                    validateTables();
+                    outputResult('basicValidation', '✅ 插值表驗證通過', 'success');
+                    testStats.passed++;
+                } else {
+                    outputResult('basicValidation', '❌ 找不到 validateTables 函數', 'error');
+                    testStats.failed++;
+                }
+                testStats.total++;
+                
+                updateProgress(30);
+                
+                // 2. 測試基本函數
+                outputResult('basicValidation', '🧮 測試核心函數...', 'info');
+                
+                // 測試插值函數
+                const testVal = interpolate(70, EYE_BB_RATE_TABLE);
+                if (testVal >= 0.08 && testVal <= 0.09) {
+                    outputResult('basicValidation', `✅ 插值函數正常: interpolate(70) = ${testVal.toFixed(3)}`, 'success');
+                    testStats.passed++;
+                } else {
+                    outputResult('basicValidation', `❌ 插值函數異常: ${testVal}`, 'error');
+                    testStats.failed++;
+                }
+                testStats.total++;
+                
+                updateProgress(50);
+                
+                // 3. 測試HIT效果函數
+                const hitEffect = applyHITEffect(0.60, 100);
+                if (hitEffect >= 0.15 && hitEffect <= 0.35) {
+                    outputResult('basicValidation', `✅ HIT效果函數正常: ${hitEffect.toFixed(3)}`, 'success');
+                    testStats.passed++;
+                } else {
+                    outputResult('basicValidation', `❌ HIT效果函數異常: ${hitEffect}`, 'error');
+                    testStats.failed++;
+                }
+                testStats.total++;
+                
+                updateProgress(70);
+                
+                // 4. 測試單球模擬
+                const result = simulateAtBat(70, 70, 70, 0.5, 0.5, 0.5);
+                const validResults = ['BB', 'K', 'HR', '2B', '1B', 'OUT'];
+                if (validResults.includes(result)) {
+                    outputResult('basicValidation', `✅ 單球模擬正常: ${result}`, 'success');
+                    testStats.passed++;
+                } else {
+                    outputResult('basicValidation', `❌ 單球模擬異常: ${result}`, 'error');
+                    testStats.failed++;
+                }
+                testStats.total++;
+                
+                updateProgress(100);
+                outputResult('basicValidation', '🎉 基礎驗證完成！', 'success');
+                
+            } catch (error) {
+                outputResult('basicValidation', `❌ 基礎驗證失敗: ${error.message}`, 'error');
+                testStats.failed++;
+                testStats.total++;
+            }
+            
+            updateStatsDisplay();
+        }
+
+        // Level 100精確性測試
+        async function runLevel100Test() {
+            outputResult('level100Test', '🎯 開始Level 100精確性測試...', 'info');
+            updateProgress(10);
+            
+            const testCases = [
+                {name: 'POW 100隔離', EYE: 70, HIT: 70, POW: 100, targetSLG: 0.570, tolerance: 0.050},
+                {name: 'HIT 100隔離', EYE: 70, HIT: 100, POW: 70, targetAVG: 0.320, tolerance: 0.030},
+                {name: 'EYE 100隔離', EYE: 100, HIT: 70, POW: 70, targetOBP: 0.420, tolerance: 0.040},
+                {name: '基準球員', EYE: 70, HIT: 70, POW: 70, targetOPS: 0.740, tolerance: 0.080}
+            ];
+            
+            for (let i = 0; i < testCases.length; i++) {
+                const testCase = testCases[i];
+                updateProgress(20 + i * 20);
+                
+                outputResult('level100Test', `📊 測試 ${testCase.name}...`, 'info');
+                
+                try {
+                    // 運行多次模擬取平均
+                    let totalStats = {AVG: 0, OBP: 0, SLG: 0, OPS: 0};
+                    const iterations = 3;
+                    
+                    for (let j = 0; j < iterations; j++) {
+                        const simResults = simulateMultipleAtBats(testCase.EYE, testCase.HIT, testCase.POW, 2000);
+                        const stats = finalizeStats(calculateStats(simResults, 2000));
+                        
+                        totalStats.AVG += stats.AVG;
+                        totalStats.OBP += stats.OBP;
+                        totalStats.SLG += stats.SLG;
+                        totalStats.OPS += stats.OPS;
+                    }
+                    
+                    // 計算平均值
+                    Object.keys(totalStats).forEach(key => {
+                        totalStats[key] /= iterations;
+                    });
+                    
+                    // 檢查目標達成
+                    let passed = true;
+                    let message = `   結果: AVG=${totalStats.AVG.toFixed(3)} OBP=${totalStats.OBP.toFixed(3)} SLG=${totalStats.SLG.toFixed(3)} OPS=${totalStats.OPS.toFixed(3)}`;
+                    
+                    if (testCase.targetSLG) {
+                        const error = Math.abs(totalStats.SLG - testCase.targetSLG);
+                        if (error > testCase.tolerance) passed = false;
+                        message += `\n   SLG目標: ${testCase.targetSLG} (誤差: ${error.toFixed(3)})`;
+                    }
+                    
+                    if (testCase.targetAVG) {
+                        const error = Math.abs(totalStats.AVG - testCase.targetAVG);
+                        if (error > testCase.tolerance) passed = false;
+                        message += `\n   AVG目標: ${testCase.targetAVG} (誤差: ${error.toFixed(3)})`;
+                    }
+                    
+                    if (testCase.targetOBP) {
+                        const error = Math.abs(totalStats.OBP - testCase.targetOBP);
+                        if (error > testCase.tolerance) passed = false;
+                        message += `\n   OBP目標: ${testCase.targetOBP} (誤差: ${error.toFixed(3)})`;
+                    }
+                    
+                    if (testCase.targetOPS) {
+                        const error = Math.abs(totalStats.OPS - testCase.targetOPS);
+                        if (error > testCase.tolerance) passed = false;
+                        message += `\n   OPS目標: ${testCase.targetOPS} (誤差: ${error.toFixed(3)})`;
+                    }
+                    
+                    if (passed) {
+                        outputResult('level100Test', `✅ ${testCase.name} 通過\n${message}`, 'success');
+                        testStats.passed++;
+                    } else {
+                        outputResult('level100Test', `⚠️ ${testCase.name} 需調整\n${message}`, 'warning');
+                        testStats.failed++;
+                    }
+                    
+                } catch (error) {
+                    outputResult('level100Test', `❌ ${testCase.name} 測試失敗: ${error.message}`, 'error');
+                    testStats.failed++;
+                }
+                
+                testStats.total++;
+            }
+            
+            updateProgress(100);
+            outputResult('level100Test', '🎯 Level 100測試完成！', 'success');
+            updateStatsDisplay();
+        }
+
+        // 性能測試
+        async function runPerformanceTest() {
+            outputResult('performanceTest', '⚡ 開始性能基準測試...', 'info');
+            updateProgress(20);
+            
+            const testCases = [
+                {name: '單球模擬', iterations: 10000, func: () => simulateAtBat(70, 70, 70, Math.random(), Math.random(), Math.random())},
+                {name: '600打席模擬', iterations: 50, func: () => simulateMultipleAtBats(70, 70, 70, 600)},
+                {name: '3000打席模擬', iterations: 10, func: () => simulateMultipleAtBats(70, 70, 70, 3000)},
+                {name: '插值函數', iterations: 100000, func: () => interpolate(Math.random() * 100 + 1, POW_XBH_RATE_TABLE)}
+            ];
+            
+            let totalPerformanceTime = 0;
+            let performanceTests = 0;
+            
+            for (let i = 0; i < testCases.length; i++) {
+                const testCase = testCases[i];
+                updateProgress(20 + i * 20);
+                
+                outputResult('performanceTest', `⏱️ 測試 ${testCase.name} (${testCase.iterations}次)...`, 'info');
+                
+                try {
+                    const startTime = performance.now();
+                    
+                    for (let j = 0; j < testCase.iterations; j++) {
+                        testCase.func();
+                    }
+                    
+                    const endTime = performance.now();
+                    const totalTime = endTime - startTime;
+                    const avgTime = totalTime / testCase.iterations;
+                    
+                    totalPerformanceTime += totalTime;
+                    performanceTests++;
+                    
+                    // 評估性能
+                    let status = 'success';
+                    let statusText = '優秀';
+                    
+                    if (testCase.name.includes('3000打席') && totalTime > 2000) {
+                        status = 'error';
+                        statusText = '不達標';
+                    } else if (testCase.name.includes('600打席') && totalTime > 500) {
+                        status = 'warning';
+                        statusText = '可接受';
+                    }
+                    
+                    outputResult('performanceTest', 
+                        `✅ ${testCase.name}: 總時間=${totalTime.toFixed(1)}ms, 平均=${avgTime.toFixed(3)}ms (${statusText})`, 
+                        status);
+                        
+                    if (status === 'success') {
+                        testStats.passed++;
+                    } else {
+                        testStats.failed++;
+                    }
+                    
+                } catch (error) {
+                    outputResult('performanceTest', `❌ ${testCase.name} 性能測試失敗: ${error.message}`, 'error');
+                    testStats.failed++;
+                }
+                
+                testStats.total++;
+            }
+            
+            // 更新平均性能
+            if (performanceTests > 0) {
+                testStats.avgPerformance = totalPerformanceTime / performanceTests;
+            }
+            
+            updateProgress(100);
+            outputResult('performanceTest', '⚡ 性能測試完成！', 'success');
+            updateStatsDisplay();
+        }
+
+        // 極端值測試
+        async function runExtremeCasesTest() {
+            outputResult('extremeCasesTest', '🚀 開始極端值邊界測試...', 'info');
+            updateProgress(20);
+            
+            const extremeCases = [
+                {name: '最低屬性', EYE: 1, HIT: 1, POW: 1},
+                {name: '最高屬性', EYE: 500, HIT: 500, POW: 500},
+                {name: '極端POW', EYE: 70, HIT: 40, POW: 500},
+                {name: '極端HIT', EYE: 70, HIT: 500, POW: 40},
+                {name: '極端EYE', EYE: 500, HIT: 70, POW: 70}
+            ];
+            
+            for (let i = 0; i < extremeCases.length; i++) {
+                const testCase = extremeCases[i];
+                updateProgress(20 + i * 16);
+                
+                outputResult('extremeCasesTest', `🧪 測試 ${testCase.name}...`, 'info');
+                
+                try {
+                    const simResults = simulateMultipleAtBats(testCase.EYE, testCase.HIT, testCase.POW, 1000);
+                    const stats = finalizeStats(calculateStats(simResults, 1000));
+                    
+                    // 檢查結果合理性
+                    let issues = [];
+                    
+                    if (stats.AVG < 0 || stats.AVG > 1) issues.push(`AVG異常: ${stats.AVG.toFixed(3)}`);
+                    if (stats.OBP < 0 || stats.OBP > 1) issues.push(`OBP異常: ${stats.OBP.toFixed(3)}`);
+                    if (stats.SLG < 0 || stats.SLG > 5) issues.push(`SLG異常: ${stats.SLG.toFixed(3)}`);
+                    if (stats['BB%'] < 0 || stats['BB%'] > 1) issues.push(`BB%異常: ${stats['BB%'].toFixed(3)}`);
+                    
+                    if (issues.length === 0) {
+                        outputResult('extremeCasesTest', 
+                            `✅ ${testCase.name}: AVG=${stats.AVG.toFixed(3)} OBP=${stats.OBP.toFixed(3)} SLG=${stats.SLG.toFixed(3)}`, 
+                            'success');
+                        testStats.passed++;
+                    } else {
+                        outputResult('extremeCasesTest', 
+                            `❌ ${testCase.name}: ${issues.join(', ')}`, 
+                            'error');
+                        testStats.failed++;
+                    }
+                    
+                } catch (error) {
+                    outputResult('extremeCasesTest', `❌ ${testCase.name} 測試失敗: ${error.message}`, 'error');
+                    testStats.failed++;
+                }
+                
+                testStats.total++;
+            }
+            
+            updateProgress(100);
+            outputResult('extremeCasesTest', '🚀 極端值測試完成！', 'success');
+            updateStatsDisplay();
+        }
+
+        // 運行所有測試
+        async function runAllTests() {
+            clearResults();
+            
+            outputResult('basicValidation', '🔥 開始完整測試套件...', 'info');
+            outputResult('level100Test', '🔥 開始完整測試套件...', 'info');
+            outputResult('performanceTest', '🔥 開始完整測試套件...', 'info');
+            outputResult('extremeCasesTest', '🔥 開始完整測試套件...', 'info');
+            
+            await runBasicValidation();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await runLevel100Test();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await runPerformanceTest();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await runExtremeCasesTest();
+            
+            // 最終總結
+            const successRate = testStats.total > 0 ? (testStats.passed / testStats.total * 100) : 0;
+            const summaryMessage = `🎉 完整測試完成！成功率: ${successRate.toFixed(1)}% (${testStats.passed}/${testStats.total})`;
+            
+            ['basicValidation', 'level100Test', 'performanceTest', 'extremeCasesTest'].forEach(id => {
+                outputResult(id, summaryMessage, successRate >= 80 ? 'success' : 'warning');
+            });
+        }
+
+        // 清除結果
+        function clearResults() {
+            ['basicValidation', 'level100Test', 'performanceTest', 'extremeCasesTest'].forEach(id => {
+                document.getElementById(id).innerHTML = '準備開始測試...';
+            });
+            
+            testStats = {
+                total: 0,
+                passed: 0,
+                failed: 0,
+                avgPerformance: 0
+            };
+            
+            updateStatsDisplay();
+            updateProgress(0);
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            outputResult('basicValidation', '🎮 測試系統就緒，選擇要執行的測試...', 'info');
+        });
+    </script>
+</body>
+</html>

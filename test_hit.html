@@ -89,7 +89,7 @@
             <h3>🎯 測試配置</h3>
             <p><strong>固定參數</strong>: POW=70, EYE=70 (聯盟平均)</p>
             <p><strong>變動參數</strong>: HIT 40-150 (每10點)</p>
-            <p><strong>目標驗證</strong>: HIT 40/70/99 是否命中基準 BA 0.210/0.250/0.320</p>
+            <p><strong>目標驗證</strong>: HIT 40/70/100 是否命中基準 BA 0.210/0.250/0.320</p>
         </div>
         
         <div id="results">
@@ -107,7 +107,7 @@
             console.log('Fixed POW=70, EYE=70, varying HIT 40-150');
             
             const results = [];
-            const benchmarks = {'40': 0.210, '70': 0.250, '99': 0.320};
+            const benchmarks = {'40': 0.210, '70': 0.250, '100': 0.320};
             
             for (let hit = 40; hit <= 150; hit += 5) {
                 const stats = simulatePlayerStats(70, hit, 70, 100, 600);
@@ -194,7 +194,7 @@
             const benchmarkTests = [
                 {hit: 40, target: 0.210, desc: 'PR1 基準'},
                 {hit: 70, target: 0.250, desc: 'PR50 基準'},
-                {hit: 99, target: 0.320, desc: 'PR99 基準'}
+                {hit: 100, target: 0.320, desc: 'PR99 基準'}
             ];
             
             const results = [];

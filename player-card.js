@@ -309,21 +309,21 @@ function generatePlayerCardHTML(playerData) {
 
 // 獲取稀有度類別
 function getRarityClass(ovr) {
-    if (ovr >= 95) return 'rarity-godlike';
-    if (ovr >= 90) return 'rarity-mythic';
-    if (ovr >= 85) return 'rarity-legendary';
+    if (ovr >= 110) return 'rarity-godlike';
+    if (ovr >= 100) return 'rarity-mythic';
+    if (ovr >= 90) return 'rarity-legendary';
     if (ovr >= 80) return 'rarity-epic';
-    if (ovr >= 75) return 'rarity-rare';
+    if (ovr >= 70) return 'rarity-rare';
     return 'rarity-common';
 }
 
 // 獲取稀有度標籤
 function getRarityLabel(ovr) {
-    if (ovr >= 95) return '神話';
-    if (ovr >= 90) return '傳說';
-    if (ovr >= 85) return '進化';
+    if (ovr >= 110) return '神話';
+    if (ovr >= 100) return '傳說';
+    if (ovr >= 90) return '進化';
     if (ovr >= 80) return '精英';
-    if (ovr >= 75) return '稀有';
+    if (ovr >= 70) return '稀有';
     return '常見';
 }
 

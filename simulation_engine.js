@@ -1,15 +1,15 @@
-// simulation-engine.js - 模擬引擎
+// simulation-engine.js - 模擬引擎 (更新為新系統)
 
-// 模擬單一賽季
+// 模擬單一賽季 - 新6種結果系統
 function simulateSeason(numPA, probabilities) {
-    const outcomes = {HR: 0, '2B': 0, '1B': 0, BB: 0, HBP: 0, K: 0, IPO: 0, H: 0, AB: 0, PA: 0, OUT: 0};
-    const eventOrder = ['HR', '2B', '1B', 'BB', 'HBP', 'K', 'IPO'];
+    const outcomes = {HR: 0, '2B': 0, '1B': 0, BB: 0, K: 0, OUT: 0, H: 0, AB: 0, PA: 0};
+    const eventOrder = ['BB', 'HR', '2B', '1B', 'K', 'OUT']; // BB優先檢查
     
     for (let i = 0; i < numPA; i++) {
         outcomes.PA += 1;
         const randVal = Math.random();
         let cumulativeProb = 0.0;
-        let chosenEvent = 'IPO';
+        let chosenEvent = 'OUT'; // 默認出局
         
         for (const eventType of eventOrder) {
             const prob = probabilities[eventType] || 0;
@@ -25,27 +25,25 @@ function simulateSeason(numPA, probabilities) {
         if (['HR', '2B', '1B'].includes(chosenEvent)) {
             outcomes.H += 1;
             outcomes.AB += 1;
-        } else if (['K', 'IPO'].includes(chosenEvent)) {
-            outcomes.OUT += 1;
+        } else if (['K', 'OUT'].includes(chosenEvent)) {
             outcomes.AB += 1;
         }
-        // BB 和 HBP 不計入 AB
+        // BB 不計入 AB
     }
     return outcomes;
 }
 
-// 計算模擬統計數據
+// 計算模擬統計數據 - 新系統版本
 function calculateSimStats(simResults) {
     const stats = {};
     const ab = simResults.AB || 0;
     const h = simResults.H || 0;
     const bb = simResults.BB || 0;
-    const hbp = simResults.HBP || 0;
     const pa = simResults.PA || 0;
     const k = simResults.K || 0;
     
     stats.BA = ab > 0 ? h / ab : 0;
-    stats.OBP = pa > 0 ? (h + bb + hbp) / pa : 0;
+    stats.OBP = pa > 0 ? (h + bb) / pa : 0; // 移除HBP
     
     const tb = (simResults['1B'] || 0) * 1 + (simResults['2B'] || 0) * 2 + (simResults.HR || 0) * 4;
     stats.SLG = ab > 0 ? tb / ab : 0;
@@ -67,14 +65,14 @@ function calculateSimStats(simResults) {
     return stats;
 }
 
-// 運行多個賽季的模擬
-function simulatePlayerStats(pow, hit, eye, numSeasons = NUM_SIMULATIONS, paPerSeason = 600) {
-    // 獲取事件概率
+// 運行多個賽季的模擬 - 新系統版本
+function simulatePlayerStats(pow, hit, eye, numSeasons = 10, paPerSeason = 600) {
+    // 獲取事件概率 (使用新系統)
     const probs = getPAEventProbabilities(pow, hit, eye);
     
     let totalStats = {
-        HR: 0, '2B': 0, '1B': 0, BB: 0, HBP: 0, K: 0, IPO: 0,
-        H: 0, AB: 0, PA: 0, OUT: 0
+        HR: 0, '2B': 0, '1B': 0, BB: 0, K: 0, OUT: 0,
+        H: 0, AB: 0, PA: 0
     };
     
     for (let season = 0; season < numSeasons; season++) {
@@ -90,13 +88,26 @@ function simulatePlayerStats(pow, hit, eye, numSeasons = NUM_SIMULATIONS, paPerS
         '2B': totalStats['2B'] / numSeasons,
         '1B': totalStats['1B'] / numSeasons,
         BB: totalStats.BB / numSeasons,
-        HBP: totalStats.HBP / numSeasons,
         K: totalStats.K / numSeasons,
-        IPO: totalStats.IPO / numSeasons,
+        OUT: totalStats.OUT / numSeasons,
         H: totalStats.H / numSeasons,
         AB: totalStats.AB / numSeasons,
         PA: totalStats.PA / numSeasons
     });
     
     return avgStats;
+}
+
+// 模塊導出
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    simulateSeason,
+    calculateSimStats,
+    simulatePlayerStats
+  };
+  
+  // Node.js 環境下也設置全域變數
+  global.simulateSeason = simulateSeason;
+  global.calculateSimStats = calculateSimStats;
+  global.simulatePlayerStats = simulatePlayerStats;
 }
