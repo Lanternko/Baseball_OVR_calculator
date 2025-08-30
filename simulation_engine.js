@@ -65,37 +65,92 @@ function calculateSimStats(simResults) {
     return stats;
 }
 
-// 運行多個賽季的模擬 - 新系統版本
+// 運行多個賽季的模擬 - 直接使用新模擬引擎
 function simulatePlayerStats(pow, hit, eye, numSeasons = 10, paPerSeason = 600) {
-    // 獲取事件概率 (使用新系統)
-    const probs = getPAEventProbabilities(pow, hit, eye);
-    
-    let totalStats = {
-        HR: 0, '2B': 0, '1B': 0, BB: 0, K: 0, OUT: 0,
-        H: 0, AB: 0, PA: 0
-    };
-    
-    for (let season = 0; season < numSeasons; season++) {
-        const seasonResult = simulateSeason(paPerSeason, probs);
-        Object.keys(totalStats).forEach(key => {
-            totalStats[key] += seasonResult[key] || 0;
+    // 使用新的直接模擬方法 - 真正的多季平均
+    if (typeof simulateMultipleAtBats !== 'undefined') {
+        // 新系統可用 - 運行多個獨立賽季並平均
+        let totalStats = {
+            AVG: 0, OBP: 0, SLG: 0, OPS: 0,
+            HR: 0, '2B': 0, '1B': 0, BB: 0, K: 0, H: 0, AB: 0, PA: 0
+        };
+        
+        // 運行 numSeasons 個獨立賽季
+        for (let season = 0; season < numSeasons; season++) {
+            const results = simulateMultipleAtBats(eye, hit, pow, paPerSeason);
+            const stats = calculateStats(results, paPerSeason);
+            const finalStats = finalizeStats(stats);
+            
+            // 累加各賽季統計
+            totalStats.AVG += finalStats.AVG;
+            totalStats.OBP += finalStats.OBP;
+            totalStats.SLG += finalStats.SLG;
+            totalStats.OPS += finalStats.OPS;
+            totalStats.HR += finalStats.HR;
+            totalStats['2B'] += finalStats['2B'];
+            totalStats['1B'] += finalStats['1B'];
+            totalStats.BB += finalStats.BB;
+            totalStats.K += finalStats.K;
+            totalStats.H += finalStats.H;
+            totalStats.AB += finalStats.AB;
+            totalStats.PA += finalStats.PA;
+        }
+        
+        // 計算平均 - 正確的除數
+        console.log(`📊 模擬結果驗證 (${pow}/${hit}/${eye}):`);
+        console.log(`🔢 總PA: ${totalStats.PA} (預期: ${numSeasons * paPerSeason})`);
+        console.log(`⚾ 總HR: ${totalStats.HR} → 平均: ${(totalStats.HR / numSeasons).toFixed(1)}`);
+        console.log(`📈 總2B: ${totalStats['2B']} → 平均: ${(totalStats['2B'] / numSeasons).toFixed(1)}`);
+        console.log(`🎯 總H: ${totalStats.H} → 平均: ${(totalStats.H / numSeasons).toFixed(1)}`);
+        console.log(`🚶 總BB: ${totalStats.BB} → 平均: ${(totalStats.BB / numSeasons).toFixed(1)}`);
+        console.log(`🧮 賽季數: ${numSeasons}, 每季PA: ${paPerSeason}`);
+        console.log(`---`);
+        
+        return {
+            BA: totalStats.AVG / numSeasons,
+            OBP: totalStats.OBP / numSeasons,
+            SLG: totalStats.SLG / numSeasons,
+            OPS: totalStats.OPS / numSeasons,
+            HR_count: totalStats.HR / numSeasons,
+            doubles_count: totalStats['2B'] / numSeasons,
+            singles_count: totalStats['1B'] / numSeasons,
+            BB_count: totalStats.BB / numSeasons,
+            K_count: totalStats.K / numSeasons,
+            H_count: totalStats.H / numSeasons,
+            AB_count: totalStats.AB / numSeasons,
+            PA_count: totalStats.PA / numSeasons
+        };
+    } else {
+        // 回退到舊系統 (如果新函數不可用)
+        const probs = getPAEventProbabilities(pow, hit, eye);
+        
+        let totalStats = {
+            HR: 0, '2B': 0, '1B': 0, BB: 0, K: 0, OUT: 0,
+            H: 0, AB: 0, PA: 0
+        };
+        
+        for (let season = 0; season < numSeasons; season++) {
+            const seasonResult = simulateSeason(paPerSeason, probs);
+            Object.keys(totalStats).forEach(key => {
+                totalStats[key] += seasonResult[key] || 0;
+            });
+        }
+        
+        // 計算平均數據
+        const avgStats = calculateSimStats({
+            HR: totalStats.HR / numSeasons,
+            '2B': totalStats['2B'] / numSeasons,
+            '1B': totalStats['1B'] / numSeasons,
+            BB: totalStats.BB / numSeasons,
+            K: totalStats.K / numSeasons,
+            OUT: totalStats.OUT / numSeasons,
+            H: totalStats.H / numSeasons,
+            AB: totalStats.AB / numSeasons,
+            PA: totalStats.PA / numSeasons
         });
+        
+        return avgStats;
     }
-    
-    // 計算平均數據
-    const avgStats = calculateSimStats({
-        HR: totalStats.HR / numSeasons,
-        '2B': totalStats['2B'] / numSeasons,
-        '1B': totalStats['1B'] / numSeasons,
-        BB: totalStats.BB / numSeasons,
-        K: totalStats.K / numSeasons,
-        OUT: totalStats.OUT / numSeasons,
-        H: totalStats.H / numSeasons,
-        AB: totalStats.AB / numSeasons,
-        PA: totalStats.PA / numSeasons
-    });
-    
-    return avgStats;
 }
 
 // 模塊導出

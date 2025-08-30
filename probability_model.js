@@ -1,211 +1,357 @@
-// probability-model.js - 概率計算模型（強化極端值版）
+// new_probability_model.js - 四象限+兩階段打擊模擬系統
+// 設計理念: 簡化、高效、符合棒球邏輯的單球決勝負系統
 
-// 輔助函數：S-curve 插值
-function interpolateSCurve(value, anchors) {
-    if (!anchors || !anchors.length) return 0.0;
-    if (value <= anchors[0][0]) return anchors[0][1];
-    if (value >= anchors[anchors.length - 1][0]) return anchors[anchors.length - 1][1];
-    
-    for (let i = 0; i < anchors.length - 1; i++) {
-        const [x1, y1] = anchors[i];
-        const [x2, y2] = anchors[i + 1];
-        if (x1 <= value && value < x2) {
-            return (x2 - x1) ? y1 + (y2 - y1) * (value - x1) / (x2 - x1) : y1;
-        }
-    }
-    return anchors[anchors.length - 1][1];
+console.log('⚾ 載入新打擊模擬引擎...');
+
+// 載入常數表 
+if (typeof module !== 'undefined' && module.exports) {
+  // Node.js 環境
+  const constants = require('./constants.js');
+  const {
+    EYE_BB_RATE_TABLE,
+    EYE_EFFECT_TABLE,
+    HIT_CONTACT_RATE_TABLE,
+    HIT_QUALITY_RATIO_TABLE,
+    HIT_EFFECT_TABLE,
+    POW_FLYBALL_RATE_TABLE,
+    POW_XBH_RATE_TABLE,
+    POW_HR_XBH_RATIO_TABLE,
+    interpolate,
+    applyHITEffect
+  } = constants;
+  
+  // 設定全域變數供函數使用
+  global.EYE_BB_RATE_TABLE = EYE_BB_RATE_TABLE;
+  global.EYE_EFFECT_TABLE = EYE_EFFECT_TABLE;
+  global.HIT_CONTACT_RATE_TABLE = HIT_CONTACT_RATE_TABLE;
+  global.HIT_QUALITY_RATIO_TABLE = HIT_QUALITY_RATIO_TABLE;
+  global.HIT_EFFECT_TABLE = HIT_EFFECT_TABLE;
+  global.POW_FLYBALL_RATE_TABLE = POW_FLYBALL_RATE_TABLE;
+  global.POW_XBH_RATE_TABLE = POW_XBH_RATE_TABLE;
+  global.POW_HR_XBH_RATIO_TABLE = POW_HR_XBH_RATIO_TABLE;
+  global.interpolate = interpolate;
+  global.applyHITEffect = applyHITEffect;
+} else if (typeof window !== 'undefined') {
+  // 瀏覽器環境：確保常數表已載入並可用
+  if (typeof interpolate === 'undefined') {
+    console.error('❌ 請先載入 constants.js');
+    throw new Error('constants.js must be loaded before probability_model.js');
+  }
+  // 瀏覽器環境下變數已經是全域的，直接使用
 }
 
-// 輔助函數：屬性值轉換為效果因子
-function scaleAttributeToEffectiveness(attributeValue, midpoint, scale, effectIsPositive = true) {
-    if (scale === 0) return 0.0;
-    const normalizedValue = (attributeValue - midpoint) / scale;
-    const tanhVal = Math.tanh(normalizedValue);
-    return effectIsPositive ? tanhVal : -tanhVal;
+// 核心計算函數
+
+// 計算最終接觸率 (HIT基礎 + EYE磨球效果)
+function calculateFinalContactRate(HIT, EYE) {
+  // 1. HIT決定基礎接觸率
+  const baseContactRate = interpolate(HIT, HIT_CONTACT_RATE_TABLE);
+  
+  // 2. 計算基礎揮空率
+  const baseWhiffRate = 1 - baseContactRate;
+  
+  // 3. EYE減少揮空率 (磨球效果)
+  const eyeEffect = interpolate(EYE, EYE_EFFECT_TABLE);
+  const adjustedWhiffRate = baseWhiffRate * eyeEffect;
+  
+  // 4. 最終接觸率
+  const finalContactRate = 1 - adjustedWhiffRate;
+  
+  return Math.min(0.999, finalContactRate); // 上限99.9%
 }
 
-// 輔助函數：從效果因子計算比率
-function getRateFromEffectiveness(baseRateAtMidpoint, minRate, maxRate, effectivenessFactor) {
-    return effectivenessFactor >= 0 
-        ? baseRateAtMidpoint + effectivenessFactor * (maxRate - baseRateAtMidpoint)
-        : baseRateAtMidpoint + effectivenessFactor * (baseRateAtMidpoint - minRate);
+// 計算接觸品質分配
+function calculateContactQuality(HIT, contactType) {
+  const qualityRatio = interpolate(HIT, HIT_QUALITY_RATIO_TABLE);
+  
+  if (contactType === 'quality') {
+    return qualityRatio;
+  } else {
+    return 1 - qualityRatio; // weak contact
+  }
 }
 
-// 🔥 正常範圍的概率計算（完全保持原版邏輯）
-function getPAEventProbabilitiesNormal(POW, HIT, EYE, playerHBPRate = LEAGUE_AVG_HBP_RATE) {
-    // 計算 K%, BB%, HBP%
-    const eyeKEffect = interpolateSCurve(EYE, K_EYE_EFFECTIVENESS_S_CURVE_ANCHORS);
-    const hitKEffect = scaleAttributeToEffectiveness(HIT, K_HIT_EFFECT_MIDPOINT, K_HIT_EFFECT_SCALE, false);
-    const combinedKEffect = K_RATE_EYE_WEIGHT * eyeKEffect + K_RATE_HIT_WEIGHT * hitKEffect;
-    const pK = Math.max(MIN_K_RATE_CAP, Math.min(MAX_K_RATE_CAP, 
-        getRateFromEffectiveness(AVG_K_RATE_AT_MIDPOINT, MIN_K_RATE_CAP, MAX_K_RATE_CAP, combinedKEffect)));
-    
-    const pBB = Math.max(0.020, Math.min(0.500, interpolateSCurve(EYE, BB_S_CURVE_EYE_ANCHORS))); // Increased cap for elite EYE
-    const pHBP = Math.max(0.0, Math.min(0.05, playerHBPRate));
-    
-    // 🔥 XBH-First: Calculate total XBH and HR ratio upfront
-    const totalXBHPer600PA = interpolateSCurve(POW, TOTAL_XBH_S_CURVE_POW_ANCHORS);
-    const hrXBHRatio = interpolateSCurve(POW, HR_XBH_RATIO_S_CURVE_POW_ANCHORS);
-    
-    // Convert to probabilities per PA
-    const pTotalXBH = Math.min(0.25, totalXBHPer600PA / 600.0); // Cap at 25%
-    let pHR = Math.min(pTotalXBH * hrXBHRatio, 0.15); // Cap HR at 15%
-    
-    // Apply minor HIT/EYE modifiers for interaction effects
-    const eyeHRModifier = 1.0 + scaleAttributeToEffectiveness(EYE, 70.0, 40.0, true) * 0.01;
-    const hitHRModifier = 1.0 + scaleAttributeToEffectiveness(HIT, 70.0, 40.0, true) * 0.005; // 减少HIT对HR的影响
-    pHR = Math.max(0.0, Math.min(pHR * eyeHRModifier * hitHRModifier, 0.15));
-    
-    // 計算剩餘 BIP 事件
-    const probSumNonBIPPlusHR = pK + pBB + pHBP + pHR;
-    
-    let p1B, p2B, pIPO;
-    if (probSumNonBIPPlusHR >= 1.0) {
-        const scaleDown = 1.0 / probSumNonBIPPlusHR;
-        pHR = Math.max(0, 1.0 - (pK * scaleDown + pBB * scaleDown + pHBP * scaleDown));
-        p1B = p2B = pIPO = 0.0;
-    } else {
-        const pBIPForOtherOutcomes = 1.0 - probSumNonBIPPlusHR;
-        const pHitGivenBIPRemaining = Math.max(0.190, Math.min(0.750, 
-            interpolateSCurve(HIT, BABIP_S_CURVE_HIT_ANCHORS)));
-        const pTotalHitsOnRemainingBIP = pBIPForOtherOutcomes * pHitGivenBIPRemaining;
-        pIPO = Math.max(0, pBIPForOtherOutcomes * (1.0 - pHitGivenBIPRemaining));
-        
-        if (pTotalHitsOnRemainingBIP > 0) {
-            // 🔥 XBH-First: Use pre-calculated values, split doubles from total XBH
-            p2B = Math.max(0, pTotalXBH - pHR); // Remaining XBH becomes doubles
-            
-            // Constrain XBH within available hits (higher limit for elite players)
-            const xbhHitRatio = HIT >= 120 ? 0.95 : HIT >= 100 ? 0.90 : 0.80;
-            const actualXBH = Math.min(pTotalXBH, pTotalHitsOnRemainingBIP * xbhHitRatio);
-            p2B = Math.max(0, actualXBH - pHR);
-            
-            // Singles = remaining hits after actual XBH
-            p1B = Math.max(0, pTotalHitsOnRemainingBIP - pHR - p2B);
-            
-            // Maintain probability conservation
-            pIPO = Math.max(0, pBIPForOtherOutcomes - pTotalHitsOnRemainingBIP);
-        } else {
-            p1B = p2B = 0.0;
-        }
-    }
-    
-    return {HR: pHR, '2B': p2B, '1B': p1B, BB: pBB, HBP: pHBP, K: pK, IPO: pIPO};
+// 四象限擊球處理系統
+
+// 決定是否產生XBH (長打) - 第一階段
+function determineXBHChance(HIT, POW, isQualityContact, isFlyball) {
+  // 獲取基礎機率
+  const qualityRatio = interpolate(HIT, HIT_QUALITY_RATIO_TABLE);
+  const flyballRate = interpolate(POW, POW_FLYBALL_RATE_TABLE);
+  const totalXBHRate = interpolate(POW, POW_XBH_RATE_TABLE);
+  
+  // 計算各象限的接觸占比（獨立假設）
+  let quadrantContactRatio;
+  if (isQualityContact && isFlyball) {
+    quadrantContactRatio = qualityRatio * flyballRate;
+  } else if (!isQualityContact && isFlyball) {
+    quadrantContactRatio = (1 - qualityRatio) * flyballRate;
+  } else if (isQualityContact && !isFlyball) {
+    quadrantContactRatio = qualityRatio * (1 - flyballRate);
+  } else {
+    quadrantContactRatio = (1 - qualityRatio) * (1 - flyballRate);
+  }
+  
+  // 各象限在總XBH中的目標占比
+  let xbhShareTarget;
+  if (isQualityContact && isFlyball) {
+    xbhShareTarget = 0.60; // 高品質高飛球：60%的XBH
+  } else if (!isQualityContact && isFlyball) {
+    xbhShareTarget = 0.25; // 低品質高飛球：25%的XBH
+  } else if (isQualityContact && !isFlyball) {
+    xbhShareTarget = 0.12; // 高品質滾地球：12%的XBH
+  } else {
+    xbhShareTarget = 0.03; // 低品質滾地球：3%的XBH
+  }
+  
+  // 計算該象限的XBH機率 = (目標XBH占比 × 總XBH率) ÷ 象限接觸占比
+  const xbhProbability = (xbhShareTarget * totalXBHRate) / Math.max(0.001, quadrantContactRatio);
+  
+  return Math.min(0.95, xbhProbability); // 提高上限至95%
 }
 
-// 🔥 極端值的概率計算（大幅強化）
-function getPAEventProbabilitiesExtreme(POW, HIT, EYE, playerHBPRate = LEAGUE_AVG_HBP_RATE) {
-    console.log(`🔥 極端值計算: POW=${POW}, HIT=${HIT}, EYE=${EYE}`);
-    
-    // 🔥 強化：使用更激進的極端值 S-curves
-    let pHR = interpolateSCurve(POW, HR_S_CURVE_POW_ANCHORS_EXTREME);
-    let babip = interpolateSCurve(HIT, BABIP_S_CURVE_HIT_ANCHORS_EXTREME);
-    let pBB = interpolateSCurve(EYE, BB_S_CURVE_EYE_ANCHORS_EXTREME);
-    
-    // 🔥 強化：極端值時的額外加成
-    if (POW >= 400) {
-        pHR = Math.min(0.99, pHR * 1.2); // 400+ POW 時額外 20% 加成
-    }
-    if (HIT >= 400) {
-        babip = Math.min(0.995, babip * 1.1); // 400+ HIT 時額外 10% 加成
-    }
-    if (EYE >= 400) {
-        pBB = Math.min(0.98, pBB * 1.1); // 400+ EYE 時額外 10% 加成
-    }
-    
-    // 三振率計算 - 極端值時大幅改善
-    const eyeKEffect = interpolateSCurve(EYE, K_EYE_EFFECTIVENESS_S_CURVE_ANCHORS_EXTREME);
-    const hitKEffect = scaleAttributeToEffectiveness(HIT, K_HIT_EFFECT_MIDPOINT, 55.0, false);
-    let kRate = getRateFromEffectiveness(
-        AVG_K_RATE_AT_MIDPOINT, MIN_K_RATE_CAP, MAX_K_RATE_CAP,
-        K_RATE_EYE_WEIGHT * eyeKEffect + K_RATE_HIT_WEIGHT * hitKEffect
-    );
-    
-    // 🔥 強化：極端值時三振率幾乎歸零
-    if (HIT >= 300 || EYE >= 300) {
-        kRate = Math.max(0.001, kRate * 0.05); // 只有 5% 的原三振率
-    }
-    if (HIT >= 450 && EYE >= 450) {
-        kRate = 0.001; // 幾乎不三振
-    }
-    
-    // HBP 極端值時稍微提高
-    let pHBP = LEAGUE_AVG_HBP_RATE;
-    if (EYE >= 350) {
-        pHBP = Math.min(0.050, LEAGUE_AVG_HBP_RATE * 3);
-    }
-    
-    // 🔥 強化：確保極端值時能達到理論極限
-    const basicSum = pHR + pBB + pHBP + kRate;
-    
-    if (basicSum >= 1.0) {
-        // 極端值時優先保證核心表現
-        const totalAvailable = 0.999; // 保留一點給其他事件
-        
-        // 按重要性分配概率
-        if (POW >= 450) pHR = Math.min(0.97, pHR); // 97% 全壘打率
-        if (EYE >= 450) pBB = Math.min(0.95, pBB);  // 95% 保送率
-        
-        // 重新分配
-        const newSum = pHR + pBB + pHBP + kRate;
-        if (newSum > totalAvailable) {
-            const scale = totalAvailable / newSum;
-            pHR *= scale;
-            pBB *= scale;
-            kRate *= scale;
-        }
-        
-        const remainingProb = 1.0 - pHR - pBB - pHBP - kRate;
-        
-        return {
-            HR: pHR,
-            '2B': remainingProb * 0.8, // 極端值時大部分是長打
-            '1B': remainingProb * 0.2,
-            BB: pBB,
-            HBP: pHBP,
-            K: kRate,
-            IPO: 0.001
-        };
-    }
-    
-    // 計算剩餘 BIP 事件
-    const remainingBIP = 1.0 - pHR - pBB - pHBP - kRate;
-    const pHitFromBIP = remainingBIP * babip;
-    const pIPO = remainingBIP * (1.0 - babip);
-    
-    // 🔥 強化：極端值時大幅提高長打比例
-    let extrabaseRatio = 0.3; // 基準比例
-    if (POW >= 300) extrabaseRatio = Math.min(0.85, 0.3 + (POW - 300) / 400);
-    if (HIT >= 300) extrabaseRatio = Math.min(0.90, extrabaseRatio + (HIT - 300) / 500);
-    if (POW >= 450) extrabaseRatio = 0.95; // 450+ POW 時 95% 是長打
-    
-    const p2B = pHitFromBIP * extrabaseRatio;
-    const p1B = pHitFromBIP * (1 - extrabaseRatio);
-    
-    const result = {
-        HR: pHR,
-        '2B': p2B,
-        '1B': p1B,
-        BB: pBB,
-        HBP: pHBP,
-        K: kRate,
-        IPO: pIPO
-    };
-    
-    console.log(`🔥 強化極端值結果:`, result);
-    return result;
+// XBH確定後的HR/2B分配 - 第二階段
+function distributeXBH(POW, xbhContext) {
+  // 使用統一的HR/XBH比例表
+  let hrRatio = interpolate(POW, POW_HR_XBH_RATIO_TABLE);
+  
+  // 根據XBH來源進行微調
+  switch(xbhContext) {
+    case 'quality_flyball':
+      // 高品質高飛球：HR率略高於平均
+      hrRatio = Math.min(0.95, hrRatio * 1.2);
+      break;
+      
+    case 'weak_flyball':
+      // 低品質高飛球：暴力HR，HR率正常
+      hrRatio = hrRatio; // 不調整
+      break;
+      
+    case 'quality_grounder':
+      // 高品質滾地球：主要是2B (穿越外野)
+      hrRatio = Math.max(0.02, hrRatio * 0.2);
+      break;
+      
+    case 'weak_grounder':
+      // 低品質滾地球：幾乎都是2B
+      hrRatio = Math.max(0.01, hrRatio * 0.1);
+      break;
+  }
+  
+  return {
+    hrRatio: hrRatio,
+    doubleRatio: 1 - hrRatio
+  };
 }
 
-// 🔥 主要的概率計算函數（智能判斷使用哪種計算方式）
-function getPAEventProbabilities(POW, HIT, EYE, playerHBPRate = LEAGUE_AVG_HBP_RATE) {
-    // 只有當任一屬性值 >= 200 時才使用極端值計算
-    const isExtreme = POW >= EXTREME_VALUE_THRESHOLD || HIT >= EXTREME_VALUE_THRESHOLD || EYE >= EXTREME_VALUE_THRESHOLD;
+// 非XBH結果分配 (1B/OUT)
+function distributeNonXBH(HIT, isQualityContact, isFlyball) {
+  let baseSingleRate;
+  
+  if (isQualityContact && isFlyball) {
+    // 高品質高飛球未成XBH：多為接殺，少數落地
+    const baseCatchRate = 0.70;
+    const adjustedCatchRate = applyHITEffect(baseCatchRate, HIT);
+    baseSingleRate = 1 - adjustedCatchRate;
     
-    if (isExtreme) {
-        console.log(`🔥 檢測到極端屬性，使用強化極端值計算: POW=${POW}, HIT=${HIT}, EYE=${EYE}`);
-        return getPAEventProbabilitiesExtreme(POW, HIT, EYE, playerHBPRate);
-    }
+  } else if (!isQualityContact && isFlyball) {
+    // 低品質高飛球未成XBH：主要接殺，HIT可救援
+    const baseCatchRate = 0.85;
+    const adjustedCatchRate = applyHITEffect(baseCatchRate, HIT);
+    baseSingleRate = 1 - adjustedCatchRate;
     
-    // 正常值使用原版精確計算
-    return getPAEventProbabilitiesNormal(POW, HIT, EYE, playerHBPRate);
+  } else if (isQualityContact && !isFlyball) {
+    // 高品質滾地球未成XBH：主要安打
+    const baseOutRate = 0.15;
+    const adjustedOutRate = applyHITEffect(baseOutRate, HIT);
+    baseSingleRate = 1 - adjustedOutRate;
+    
+  } else {
+    // 低品質滾地球未成XBH：主要出局，HIT可救援
+    const baseOutRate = 0.80;
+    const adjustedOutRate = applyHITEffect(baseOutRate, HIT);
+    baseSingleRate = 1 - adjustedOutRate;
+  }
+  
+  return {
+    singleRate: Math.min(0.99, baseSingleRate), // 提高上限至99%
+    outRate: 1 - Math.min(0.99, baseSingleRate)
+  };
+}
+
+// 完整單球模擬流程
+function simulateAtBat(EYE, HIT, POW, random1, random2, random3, random4) {
+  // === 第一步：保送檢查 ===
+  const bbRate = interpolate(EYE, EYE_BB_RATE_TABLE);
+  if (random1 < bbRate) {
+    return 'BB';
+  }
+  
+  // === 第二步：接觸檢查 ===
+  const contactRate = calculateFinalContactRate(HIT, EYE);
+  const swingRate = 1 - bbRate; // 揮擊率 = 非保送率
+  const actualContactThreshold = bbRate + (swingRate * contactRate); // 在總PA中的接觸門檻
+  
+  if (random1 >= actualContactThreshold) {
+    return 'K'; // 揮空三振
+  }
+  
+  // === 第三步：四象限分類 ===
+  const qualityRatio = interpolate(HIT, HIT_QUALITY_RATIO_TABLE);
+  const flyballRate = interpolate(POW, POW_FLYBALL_RATE_TABLE);
+  
+  const isQualityContact = random2 < qualityRatio;
+  const isFlyball = (random4 || random3) < flyballRate; // 使用獨立隨機數
+  
+  // 決定XBH來源類型
+  let xbhContext;
+  if (isQualityContact && isFlyball) xbhContext = 'quality_flyball';
+  else if (!isQualityContact && isFlyball) xbhContext = 'weak_flyball';
+  else if (isQualityContact && !isFlyball) xbhContext = 'quality_grounder';
+  else xbhContext = 'weak_grounder';
+  
+  // === 第四步：XBH檢查 ===
+  const xbhProbability = determineXBHChance(HIT, POW, isQualityContact, isFlyball);
+  
+  if (random3 < xbhProbability) {
+    // 產生XBH：分配HR/2B
+    const xbhDistribution = distributeXBH(POW, xbhContext);
+    const xbhRandom = (random3 / xbhProbability); // 重新標準化到0-1
+    
+    return xbhRandom < xbhDistribution.hrRatio ? 'HR' : '2B';
+  }
+  
+  // === 第五步：非XBH分配 ===
+  const nonXBHDistribution = distributeNonXBH(HIT, isQualityContact, isFlyball);
+  const nonXBHRandom = (random3 - xbhProbability) / (1 - xbhProbability); // 重新標準化
+  
+  return nonXBHRandom < nonXBHDistribution.singleRate ? '1B' : 'OUT';
+}
+
+// 批量模擬多個打席 (高性能版本)
+function simulateMultipleAtBats(EYE, HIT, POW, numAtBats = 600) {
+  const results = {
+    BB: 0, K: 0, HR: 0, '2B': 0, '1B': 0, OUT: 0
+  };
+  
+  // 預先生成所有隨機數 (性能優化)
+  const randoms1 = new Array(numAtBats);
+  const randoms2 = new Array(numAtBats);
+  const randoms3 = new Array(numAtBats);
+  const randoms4 = new Array(numAtBats);
+  
+  for (let i = 0; i < numAtBats; i++) {
+    randoms1[i] = Math.random();
+    randoms2[i] = Math.random();
+    randoms3[i] = Math.random();
+    randoms4[i] = Math.random();
+  }
+  
+  // 批量模擬
+  for (let i = 0; i < numAtBats; i++) {
+    const outcome = simulateAtBat(EYE, HIT, POW, randoms1[i], randoms2[i], randoms3[i], randoms4[i]);
+    results[outcome]++;
+  }
+  
+  return results;
+}
+
+// 計算統計數據
+function calculateStats(simulationResults, pa = 600) {
+  const { BB, K, HR, '2B': doubles, '1B': singles, OUT } = simulationResults;
+  
+  // 基礎計算
+  const hits = HR + doubles + singles;
+  const ab = pa - BB; // 假設沒有HBP
+  const totalBases = HR * 4 + doubles * 2 + singles * 1;
+  
+  // 統計數據
+  return {
+    PA: pa,
+    AB: ab,
+    H: hits,
+    HR: HR,
+    '2B': doubles,
+    '1B': singles,
+    BB: BB,
+    K: K,
+    OUT: OUT,
+    
+    // 進階統計
+    AVG: ab > 0 ? hits / ab : 0,
+    OBP: pa > 0 ? (hits + BB) / pa : 0,
+    SLG: ab > 0 ? totalBases / ab : 0,
+    OPS: 0, // 後面計算
+    
+    // 機率統計
+    'BB%': pa > 0 ? BB / pa : 0,
+    'K%': pa > 0 ? K / pa : 0,
+    'HR%': pa > 0 ? HR / pa : 0,
+    'XBH%': pa > 0 ? (HR + doubles) / pa : 0
+  };
+}
+
+// 完善統計計算
+function finalizeStats(stats) {
+  stats.OPS = stats.OBP + stats.SLG;
+  return stats;
+}
+
+// 主要概率計算函數 (替代舊的 getPAEventProbabilities)
+function getPAEventProbabilitiesNew(POW, HIT, EYE, playerHBPRate = 0) {
+  // 使用大樣本模擬計算平均機率
+  const simResults = simulateMultipleAtBats(EYE, HIT, POW, 10000);
+  const total = 10000;
+  
+  return {
+    HR: simResults.HR / total,
+    '2B': simResults['2B'] / total,
+    '1B': simResults['1B'] / total,
+    BB: simResults.BB / total,
+    HBP: playerHBPRate, // 保持兼容性
+    K: simResults.K / total,
+    IPO: simResults.OUT / total // OUT 映射到 IPO
+  };
+}
+
+console.log('✅ 新打擊模擬引擎載入完成！');
+
+// 全域變數導出
+if (typeof module !== 'undefined' && module.exports) {
+  // Node.js 環境
+  module.exports = {
+    simulateAtBat,
+    simulateMultipleAtBats,
+    calculateStats,
+    finalizeStats,
+    getPAEventProbabilitiesNew,
+    calculateFinalContactRate,
+    determineXBHChance,
+    distributeXBH
+  };
+  
+  // Node.js 環境下也設置全域變數 (向下相容)
+  global.getPAEventProbabilities = getPAEventProbabilitiesNew;
+}
+
+// 瀏覽器環境
+if (typeof window !== 'undefined') {
+  window.NEW_PROBABILITY_MODEL = {
+    simulateAtBat,
+    simulateMultipleAtBats,
+    calculateStats,
+    finalizeStats,
+    getPAEventProbabilitiesNew,
+    calculateFinalContactRate,
+    determineXBHChance,
+    distributeXBH
+  };
+  
+  // 向下相容：覆寫舊函數
+  window.getPAEventProbabilities = getPAEventProbabilitiesNew;
+}
+
+// Also support the original function name for backward compatibility
+function getPAEventProbabilities(POW, HIT, EYE, playerHBPRate = 0) {
+  return getPAEventProbabilitiesNew(POW, HIT, EYE, playerHBPRate);
 }

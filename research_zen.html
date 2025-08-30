@@ -358,6 +358,15 @@
                     </button>
                 </div>
                 
+                <!-- Essential Test Button -->
+                <div style="text-align: center; margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px;">
+                    <h3 style="color: white; margin: 0 0 10px 0;">⭐ 核心統計測試</h3>
+                    <p style="color: rgba(255,255,255,0.9); margin: 0 0 15px 0; font-size: 0.9em;">測試關鍵等級 (40/70/100/120/150) 統計準確性 - 高精度 60K 模擬</p>
+                    <button class="test-btn" onclick="runEssentialStatsTest()" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);">
+                        開始核心測試 (60K 模擬)
+                    </button>
+                </div>
+
                 <!-- Scenario Buttons -->
                 <div class="scenario-buttons">
                     <button class="scenario-btn" onclick="runAttributeAnalysis('standard')">
@@ -421,13 +430,6 @@
                     </button>
                 </div>
                 
-                <div class="test-card">
-                    <h3>⭐ 核心統計測試</h3>
-                    <p>測試關鍵等級 (40/70/100/120/150) 和真實球員雙向轉換</p>
-                    <button class="test-btn" onclick="runEssentialStatsTest()">
-                        核心測試
-                    </button>
-                </div>
                 
                 <div class="test-card">
                     <h3>🎮 即時調試控台</h3>
@@ -480,8 +482,8 @@
     </div>
     
     <!-- Import necessary scripts - v2.0 新系統 -->
-    <script src="new_constants.js"></script>
-    <script src="new_probability_model.js"></script>
+    <script src="constants.js"></script>
+    <script src="probability_model.js"></script>
     <script src="simulation_engine.js"></script>
     <script src="ovr_calculator.js"></script>
     
@@ -730,7 +732,7 @@
                 let html = '<div style="font-size: 14px;">';
                 
                 testCases.forEach(test => {
-                    const stats = simulatePlayerStats(test.pow, test.hit, test.eye, 30, 600);
+                    const stats = simulatePlayerStats(test.pow, test.hit, test.eye, 100, 600);
                     const hr = Math.round(stats.HR_count);
                     const doubles = Math.round(stats.doubles_count);
                     const xbh = hr + doubles;
@@ -870,7 +872,7 @@
             };
 
             coreLevels.forEach((level, index) => {
-                const stats = simulatePlayerStats(level.pow, level.hit, level.eye, 30, 600);
+                const stats = simulatePlayerStats(level.pow, level.hit, level.eye, 100, 600);
                 const hr = Math.round(stats.HR_count);
                 const doubles = Math.round(stats.doubles_count);
                 const target = targets[level.pow];
@@ -937,7 +939,7 @@
             html += '<h3 style="color: #2c3e50; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px;">🌟 真實球員雙向測試</h3>';
             
             realPlayers.forEach(player => {
-                const modelStats = simulatePlayerStats(player.estimatedAttrs.pow, player.estimatedAttrs.hit, player.estimatedAttrs.eye, 30, 600);
+                const modelStats = simulatePlayerStats(player.estimatedAttrs.pow, player.estimatedAttrs.hit, player.estimatedAttrs.eye, 100, 600);
                 
                 html += `
                     <div style="margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 12px; border-left: 4px solid #3498db;">
