@@ -486,6 +486,7 @@
     <script src="../src/js/probability_model.js"></script>
     <script src="../src/js/simulation_engine.js"></script>
     <script src="../src/js/ovr_calculator.js"></script>
+    <script src="../src/js/reverse_engineer.js"></script>
     
     <script>
         let currentAttribute = 'pow';
@@ -830,13 +831,11 @@
             const realPlayers = [
                 { 
                     name: 'Aaron Judge 2024', 
-                    realStats: { BA: 0.322, OBP: 0.458, SLG: 0.701, HR: 58 },
-                    estimatedAttrs: { pow: 130, hit: 110, eye: 125 }
+                    realStats: { BA: 0.322, OBP: 0.458, SLG: 0.701, HR: 58 }
                 },
                 {
                     name: 'Shohei Ohtani 2024',
-                    realStats: { BA: 0.310, OBP: 0.390, SLG: 0.646, HR: 54 },
-                    estimatedAttrs: { pow: 125, hit: 105, eye: 95 }
+                    realStats: { BA: 0.310, OBP: 0.390, SLG: 0.646, HR: 54 }
                 }
             ];
             
@@ -939,40 +938,108 @@
             html += '<h3 style="color: #2c3e50; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px;">🌟 真實球員雙向測試</h3>';
             
             realPlayers.forEach(player => {
-                const modelStats = simulatePlayerStats(player.estimatedAttrs.pow, player.estimatedAttrs.hit, player.estimatedAttrs.eye, 100, 600);
-                
-                html += `
-                    <div style="margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 12px; border-left: 4px solid #3498db;">
-                        <h4 style="margin: 0 0 15px 0; color: #2c3e50;">${player.name}</h4>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                            <div>
-                                <strong>真實數據 (2024):</strong><br>
-                                <span style="font-size: 13px;">
-                                    BA: <strong>${player.realStats.BA}</strong> | 
-                                    OBP: <strong>${player.realStats.OBP}</strong> | 
-                                    SLG: <strong>${player.realStats.SLG}</strong><br>
-                                    HR: <strong>${player.realStats.HR}</strong> 支
-                                </span>
+                try {
+                    // 🎯 真正的雙向測試：使用逆向工程計算屬性
+                    const targetStats = {
+                        BA: player.realStats.BA,
+                        OBP: player.realStats.OBP,
+                        SLG: player.realStats.SLG,
+                        PA: 600
+                    };
+                    const reverseResult = window.REVERSE_ENGINEER.reverseEngineerAttributes(targetStats);
+                    const calculatedAttrs = {
+                        POW: reverseResult.attributes.POW,
+                        HIT: reverseResult.attributes.HIT,
+                        EYE: reverseResult.attributes.EYE,
+                        ovr: reverseResult.attributes.OVR
+                    };
+                    
+                    // 使用計算出的屬性來模擬數據
+                    const modelStats = simulatePlayerStats(
+                        calculatedAttrs.POW, 
+                        calculatedAttrs.HIT, 
+                        calculatedAttrs.EYE, 
+                        100, 
+                        600
+                    );
+                    
+                    // 計算準確性指標
+                    const baError = Math.abs(player.realStats.BA - modelStats.BA);
+                    const obpError = Math.abs(player.realStats.OBP - modelStats.OBP);
+                    const slgError = Math.abs(player.realStats.SLG - modelStats.SLG);
+                    const hrError = Math.abs(player.realStats.HR - Math.round(modelStats.HR_count));
+                    
+                    const avgError = (baError/player.realStats.BA + obpError/player.realStats.OBP + slgError/player.realStats.SLG) / 3;
+                    const accuracyPct = Math.max(0, (1 - avgError) * 100);
+                    
+                    // 準確性評級
+                    let accuracyGrade = '';
+                    let gradeBg = '';
+                    if (accuracyPct >= 95) { accuracyGrade = '🎯 優秀'; gradeBg = '#d4edda'; }
+                    else if (accuracyPct >= 90) { accuracyGrade = '✅ 良好'; gradeBg = '#d1ecf1'; }
+                    else if (accuracyPct >= 80) { accuracyGrade = '⚠️ 可接受'; gradeBg = '#fff3cd'; }
+                    else { accuracyGrade = '❌ 需改進'; gradeBg = '#f8d7da'; }
+                    
+                    html += `
+                        <div style="margin: 20px 0; padding: 20px; background: ${gradeBg}; border-radius: 12px; border-left: 4px solid #3498db;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <h4 style="margin: 0; color: #2c3e50;">${player.name}</h4>
+                                <div style="background: rgba(255,255,255,0.8); padding: 5px 12px; border-radius: 15px; font-size: 12px; font-weight: bold;">
+                                    ${accuracyGrade} (${accuracyPct.toFixed(1)}%)
+                                </div>
                             </div>
-                            <div>
-                                <strong>模型預測 (${player.estimatedAttrs.pow}/${player.estimatedAttrs.hit}/${player.estimatedAttrs.eye}):</strong><br>
-                                <span style="font-size: 13px;">
-                                    BA: <strong>${modelStats.BA.toFixed(3)}</strong> | 
-                                    OBP: <strong>${modelStats.OBP.toFixed(3)}</strong> | 
-                                    SLG: <strong>${modelStats.SLG.toFixed(3)}</strong><br>
-                                    HR: <strong>${Math.round(modelStats.HR_count)}</strong> 支
-                                </span>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                                <div>
+                                    <strong style="color: #2c3e50;">真實數據 (2024):</strong><br>
+                                    <span style="font-size: 13px;">
+                                        BA: <strong>${player.realStats.BA}</strong><br>
+                                        OBP: <strong>${player.realStats.OBP}</strong><br>
+                                        SLG: <strong>${player.realStats.SLG}</strong><br>
+                                        HR: <strong>${player.realStats.HR}</strong> 支
+                                    </span>
+                                </div>
+                                
+                                <div>
+                                    <strong style="color: #2c3e50;">逆向計算屬性:</strong><br>
+                                    <span style="font-size: 13px;">
+                                        POW: <strong>${Math.round(calculatedAttrs.POW)}</strong><br>
+                                        HIT: <strong>${Math.round(calculatedAttrs.HIT)}</strong><br>
+                                        EYE: <strong>${Math.round(calculatedAttrs.EYE)}</strong><br>
+                                        OVR: <strong>${Math.round(calculatedAttrs.ovr)}</strong>
+                                    </span>
+                                </div>
+                                
+                                <div>
+                                    <strong style="color: #2c3e50;">模型預測結果:</strong><br>
+                                    <span style="font-size: 13px;">
+                                        BA: <strong>${modelStats.BA.toFixed(3)}</strong><br>
+                                        OBP: <strong>${modelStats.OBP.toFixed(3)}</strong><br>
+                                        SLG: <strong>${modelStats.SLG.toFixed(3)}</strong><br>
+                                        HR: <strong>${Math.round(modelStats.HR_count)}</strong> 支
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div style="background: rgba(255,255,255,0.6); padding: 12px; border-radius: 8px; font-size: 12px;">
+                                <strong style="color: #2c3e50;">雙向轉換誤差:</strong>
+                                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 5px;">
+                                    <span>BA: <strong>${baError.toFixed(3)}</strong></span>
+                                    <span>OBP: <strong>${obpError.toFixed(3)}</strong></span>
+                                    <span>SLG: <strong>${slgError.toFixed(3)}</strong></span>
+                                    <span>HR: <strong>${hrError}</strong> 支</span>
+                                </div>
                             </div>
                         </div>
-                        <div style="margin-top: 10px; font-size: 12px; color: #666;">
-                            <strong>誤差:</strong> 
-                            BA: ${Math.abs(player.realStats.BA - modelStats.BA).toFixed(3)} | 
-                            OBP: ${Math.abs(player.realStats.OBP - modelStats.OBP).toFixed(3)} | 
-                            SLG: ${Math.abs(player.realStats.SLG - modelStats.SLG).toFixed(3)} | 
-                            HR: ${Math.abs(player.realStats.HR - Math.round(modelStats.HR_count))}
+                    `;
+                } catch (error) {
+                    html += `
+                        <div style="margin: 20px 0; padding: 20px; background: #f8d7da; border-radius: 12px; border-left: 4px solid #dc3545;">
+                            <h4 style="margin: 0 0 10px 0; color: #721c24;">${player.name}</h4>
+                            <p style="margin: 0; color: #721c24;">逆向計算失敗: ${error.message}</p>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
             });
             
             // Summary
