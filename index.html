@@ -11,6 +11,7 @@
     <script src="ovr_calculator.js"></script>
     <script src="probability_model.js"></script>
     <script src="simulation_engine.js"></script>
+    <script src="reverse_engineer.js"></script>
     <script src="main.js"></script>
     <script src="player-card.js"></script>
 </head>
@@ -404,23 +405,37 @@
                 const inputs = getCurrentInputs('statsToAttributes');
                 if (!inputs) return;
                 
-                // 計算球員能力值 - 使用正確的函數名
-                const attributes = calculatePlayerGameAttributes(inputs.stats.xBA, inputs.stats.xSLG, inputs.stats.xwOBA);
-                const ovrResult = calculateBatterOVR(attributes.POW, attributes.HIT, attributes.EYE);
-                const result = {
-                    ovr: ovrResult.ovr,
+                // 🔄 使用精確迭代收斂算法計算屬性值 (xBA=BA, xwOBA=OBP, xSLG=SLG)
+                const result = REVERSE_ENGINEER.reverseEngineerAttributes({
+                    BA: inputs.stats.xBA,
+                    OBP: inputs.stats.xwOBA, // 使用wOBA作為OBP近似
+                    SLG: inputs.stats.xSLG,
+                    PA: 600
+                }, 0.005, 25); // 容忍度0.005，最多25次迭代
+                
+                if (!result) {
+                    alert('計算失敗，請檢查輸入數據');
+                    return;
+                }
+                
+                const attributes = {
+                    HIT: result.attributes.HIT,
+                    POW: result.attributes.POW,
+                    EYE: result.attributes.EYE
+                };
+                const finalResult = {
+                    ovr: result.attributes.OVR, // 使用逆向工程計算的OVR
                     HIT: attributes.HIT,
                     POW: attributes.POW,
                     EYE: attributes.EYE
                 };
-                if (!result) return;
                 
                 playerData = {
                     name: inputs.name || '預測球員',
-                    ovr: result.ovr,
-                    HIT: result.HIT,
-                    POW: result.POW,
-                    EYE: result.EYE
+                    ovr: finalResult.ovr,
+                    HIT: finalResult.HIT,
+                    POW: finalResult.POW,
+                    EYE: finalResult.EYE
                 };
                 
                 // 格式化統計數據以符合球員卡格式 (從輸入的統計數據)
@@ -504,14 +519,28 @@
             
             console.log('重新計算數據→三圍...');
             
-            const attributes = calculatePlayerGameAttributes(inputs.xBA, inputs.xSLG, inputs.xwOBA);
+            // 使用精確迭代收斂算法計算屬性值
+            const result = REVERSE_ENGINEER.reverseEngineerAttributes({
+                BA: inputs.xBA,
+                OBP: inputs.xwOBA, // 使用wOBA作為OBP近似  
+                SLG: inputs.xSLG,
+                PA: 600
+            }, 0.005, 25); // 容忍度0.005，最多25次迭代
+            
+            if (!result) return null;
+            
+            const attributes = {
+                HIT: result.attributes.HIT,
+                POW: result.attributes.POW,
+                EYE: result.attributes.EYE
+            };
             const ovrResult = calculateBatterOVR(attributes.POW, attributes.HIT, attributes.EYE);
             
             // 生成球員卡HTML
             const tempDiv = document.createElement('div');
             const displayName = inputs.playerName || '球員';
-            const rarityClass = getRarityClass(ovrResult.ovr);
-            const rarityLabel = getRarityLabel(ovrResult.ovr);
+            const rarityClass = getRarityClass(result.attributes.OVR);
+            const rarityLabel = getRarityLabel(result.attributes.OVR);
             
             tempDiv.innerHTML = `
                 <div class="player-card ${rarityClass}">
@@ -524,7 +553,7 @@
                     </div>
 
                     <div class="ovr-section">
-                        <div class="ovr-number">${ovrResult.ovr}</div>
+                        <div class="ovr-number">${result.attributes.OVR}</div>
                         <div class="ovr-label">Overall</div>
                     </div>
 
@@ -532,15 +561,15 @@
                         <div class="attributes-grid">
                             <div class="attribute-column">
                                 <div class="attr-label">HIT</div>
-                                <div class="attr-value">${Math.round(attributes.HIT)}</div>
+                                <div class="attr-value">${Math.round(result.attributes.HIT)}</div>
                             </div>
                             <div class="attribute-column">
                                 <div class="attr-label">POW</div>
-                                <div class="attr-value">${Math.round(attributes.POW)}</div>
+                                <div class="attr-value">${Math.round(result.attributes.POW)}</div>
                             </div>
                             <div class="attribute-column">
                                 <div class="attr-label">EYE</div>
-                                <div class="attr-value">${Math.round(attributes.EYE)}</div>
+                                <div class="attr-value">${Math.round(result.attributes.EYE)}</div>
                             </div>
                         </div>
                     </div>

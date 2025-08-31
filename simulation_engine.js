@@ -78,8 +78,8 @@ function simulatePlayerStats(pow, hit, eye, numSeasons = 10, paPerSeason = 600) 
         // 運行 numSeasons 個獨立賽季
         for (let season = 0; season < numSeasons; season++) {
             const results = simulateMultipleAtBats(eye, hit, pow, paPerSeason);
-            const stats = calculateStats(results, paPerSeason);
-            const finalStats = finalizeStats(stats);
+            const stats = NEW_PROBABILITY_MODEL.calculateStats(results, paPerSeason);
+            const finalStats = NEW_PROBABILITY_MODEL.finalizeStats(stats);
             
             // 累加各賽季統計
             totalStats.AVG += finalStats.AVG;
@@ -101,6 +101,7 @@ function simulatePlayerStats(pow, hit, eye, numSeasons = 10, paPerSeason = 600) 
         console.log(`🔢 總PA: ${totalStats.PA} (預期: ${numSeasons * paPerSeason})`);
         console.log(`⚾ 總HR: ${totalStats.HR} → 平均: ${(totalStats.HR / numSeasons).toFixed(1)}`);
         console.log(`📈 總2B: ${totalStats['2B']} → 平均: ${(totalStats['2B'] / numSeasons).toFixed(1)}`);
+        console.log(`🎯 總XBH: ${totalStats.HR + totalStats['2B']} → 平均: ${((totalStats.HR + totalStats['2B']) / numSeasons).toFixed(1)}`);
         console.log(`🎯 總H: ${totalStats.H} → 平均: ${(totalStats.H / numSeasons).toFixed(1)}`);
         console.log(`🚶 總BB: ${totalStats.BB} → 平均: ${(totalStats.BB / numSeasons).toFixed(1)}`);
         console.log(`🧮 賽季數: ${numSeasons}, 每季PA: ${paPerSeason}`);

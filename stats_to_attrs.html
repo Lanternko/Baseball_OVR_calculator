@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>逆向工程：統計數據 → 屬性值</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .reverse-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .input-section, .result-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .stat-input {
+            display: inline-block;
+            margin: 10px;
+            text-align: center;
+        }
+        
+        .stat-input label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        
+        .stat-input input {
+            width: 80px;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 16px;
+        }
+        
+        .calculate-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 20px 10px;
+        }
+        
+        .calculate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .result-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: inline-block;
+        }
+        
+        .attr-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            text-align: center;
+        }
+        
+        .ovr-display {
+            font-size: 36px;
+            font-weight: bold;
+            color: #e74c3c;
+            text-align: center;
+            margin: 15px 0;
+        }
+        
+        .verification {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .log-output {
+            background: #2d3748;
+            color: #e2e8f0;
+            border-radius: 6px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 15px 0;
+            white-space: pre-line;
+        }
+        
+        .method-toggle {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .method-toggle button {
+            margin: 0 10px;
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .method-toggle button.active {
+            background: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="reverse-container">
+        <h1>🔄 逆向工程：統計數據 → 屬性值</h1>
+        <p>輸入目標統計數據，系統會計算出對應的屬性值和OVR</p>
+        
+        <div class="input-section">
+            <h3>📊 目標統計數據</h3>
+            <div class="stat-input">
+                <label>打擊率 (BA)</label>
+                <input type="number" id="targetBA" step="0.001" value="0.314" min="0.100" max="0.500">
+            </div>
+            <div class="stat-input">
+                <label>上壘率 (OBP)</label>
+                <input type="number" id="targetOBP" step="0.001" value="0.441" min="0.200" max="0.600">
+            </div>
+            <div class="stat-input">
+                <label>長打率 (SLG)</label>
+                <input type="number" id="targetSLG" step="0.001" value="0.668" min="0.200" max="1.000">
+            </div>
+            <div class="stat-input">
+                <label>打席數 (PA)</label>
+                <input type="number" id="targetPA" value="600" min="100" max="800">
+            </div>
+        </div>
+        
+        <div class="method-toggle">
+            <h3>計算方法</h3>
+            <button id="quickBtn" class="active" onclick="setMethod('quick')">🚀 快速估計</button>
+            <button id="iterativeBtn" onclick="setMethod('iterative')">🎯 迭代收斂</button>
+        </div>
+        
+        <div style="text-align: center;">
+            <button class="calculate-btn" onclick="calculateAttributes()">🧮 計算屬性值</button>
+            <button class="calculate-btn" onclick="clearResults()">🧹 清空結果</button>
+        </div>
+        
+        <div class="result-section" id="resultSection" style="display: none;">
+            <h3>🏆 計算結果</h3>
+            
+            <div class="result-card">
+                <div style="font-weight: bold; margin-bottom: 10px;">📈 屬性值</div>
+                <div class="attr-display">
+                    HIT: <span id="resultHIT">--</span><br>
+                    POW: <span id="resultPOW">--</span><br>
+                    EYE: <span id="resultEYE">--</span>
+                </div>
+            </div>
+            
+            <div class="result-card">
+                <div style="font-weight: bold; margin-bottom: 10px;">⚡ 綜合評價</div>
+                <div class="ovr-display">
+                    OVR <span id="resultOVR">--</span>
+                </div>
+            </div>
+            
+            <div class="verification" id="verification" style="display: none;">
+                <h4>✅ 驗證結果</h4>
+                <div style="display: flex; justify-content: space-between;">
+                    <div>
+                        <strong>目標:</strong><br>
+                        BA: <span id="targetBADisplay">--</span><br>
+                        OBP: <span id="targetOBPDisplay">--</span><br>
+                        SLG: <span id="targetSLGDisplay">--</span>
+                    </div>
+                    <div>
+                        <strong>實際:</strong><br>
+                        BA: <span id="actualBA">--</span><br>
+                        OBP: <span id="actualOBP">--</span><br>
+                        SLG: <span id="actualSLG">--</span>
+                    </div>
+                    <div>
+                        <strong>誤差:</strong><br>
+                        BA: <span id="errorBA">--</span><br>
+                        OBP: <span id="errorOBP">--</span><br>
+                        SLG: <span id="errorSLG">--</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="log-output" id="logOutput" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- 載入相依性 -->
+    <script src="constants.js"></script>
+    <script src="probability_model.js"></script>
+    <script src="simulation_engine.js"></script>
+    <script src="ovr_calculator.js"></script>
+    <script src="reverse_engineer.js"></script>
+    
+    <script>
+        let currentMethod = 'quick';
+        
+        function setMethod(method) {
+            currentMethod = method;
+            document.getElementById('quickBtn').classList.toggle('active', method === 'quick');
+            document.getElementById('iterativeBtn').classList.toggle('active', method === 'iterative');
+        }
+        
+        function calculateAttributes() {
+            const targetStats = {
+                BA: parseFloat(document.getElementById('targetBA').value),
+                OBP: parseFloat(document.getElementById('targetOBP').value),
+                SLG: parseFloat(document.getElementById('targetSLG').value),
+                PA: parseInt(document.getElementById('targetPA').value)
+            };
+            
+            // 驗證輸入
+            if (targetStats.OBP < targetStats.BA) {
+                alert('❌ OBP不能小於BA！');
+                return;
+            }
+            
+            if (targetStats.SLG < targetStats.BA) {
+                alert('❌ SLG不能小於BA！');
+                return;
+            }
+            
+            // 清空之前的console.log並重新收集
+            const originalLog = console.log;
+            let logMessages = [];
+            console.log = function(...args) {
+                logMessages.push(args.join(' '));
+                originalLog.apply(console, arguments);
+            };
+            
+            let result;
+            try {
+                if (currentMethod === 'quick') {
+                    result = REVERSE_ENGINEER.quickEstimateAttributes(targetStats);
+                    // 驗證快速估計結果
+                    const verification = simulatePlayerStats(result.POW, result.HIT, result.EYE, 20, targetStats.PA);
+                    result.finalStats = verification;
+                    result.converged = true;
+                    result.iterations = 1;
+                } else {
+                    result = REVERSE_ENGINEER.reverseEngineerAttributes(targetStats, 0.002, 30);
+                }
+            } catch (error) {
+                console.error('計算錯誤:', error);
+                alert('❌ 計算過程發生錯誤: ' + error.message);
+                return;
+            } finally {
+                // 恢復原始console.log
+                console.log = originalLog;
+            }
+            
+            // 顯示結果
+            displayResults(result, targetStats, logMessages);
+        }
+        
+        function displayResults(result, targetStats, logMessages) {
+            // 顯示屬性值
+            document.getElementById('resultHIT').textContent = result.attributes.HIT;
+            document.getElementById('resultPOW').textContent = result.attributes.POW;
+            document.getElementById('resultEYE').textContent = result.attributes.EYE;
+            document.getElementById('resultOVR').textContent = result.attributes.OVR;
+            
+            // 顯示驗證結果
+            if (result.finalStats) {
+                document.getElementById('targetBADisplay').textContent = targetStats.BA.toFixed(3);
+                document.getElementById('targetOBPDisplay').textContent = targetStats.OBP.toFixed(3);
+                document.getElementById('targetSLGDisplay').textContent = targetStats.SLG.toFixed(3);
+                
+                document.getElementById('actualBA').textContent = result.finalStats.BA.toFixed(3);
+                document.getElementById('actualOBP').textContent = result.finalStats.OBP.toFixed(3);
+                document.getElementById('actualSLG').textContent = result.finalStats.SLG.toFixed(3);
+                
+                const errorBA = Math.abs(targetStats.BA - result.finalStats.BA);
+                const errorOBP = Math.abs(targetStats.OBP - result.finalStats.OBP);
+                const errorSLG = Math.abs(targetStats.SLG - result.finalStats.SLG);
+                
+                document.getElementById('errorBA').textContent = errorBA.toFixed(4);
+                document.getElementById('errorOBP').textContent = errorOBP.toFixed(4);
+                document.getElementById('errorSLG').textContent = errorSLG.toFixed(4);
+                
+                // 錯誤著色
+                document.getElementById('errorBA').style.color = errorBA < 0.01 ? 'green' : errorBA < 0.02 ? 'orange' : 'red';
+                document.getElementById('errorOBP').style.color = errorOBP < 0.01 ? 'green' : errorOBP < 0.02 ? 'orange' : 'red';
+                document.getElementById('errorSLG').style.color = errorSLG < 0.01 ? 'green' : errorSLG < 0.02 ? 'orange' : 'red';
+                
+                document.getElementById('verification').style.display = 'block';
+            }
+            
+            // 顯示日誌（僅迭代方法）
+            if (currentMethod === 'iterative' && logMessages.length > 0) {
+                document.getElementById('logOutput').textContent = logMessages.join('\n');
+                document.getElementById('logOutput').style.display = 'block';
+            } else {
+                document.getElementById('logOutput').style.display = 'none';
+            }
+            
+            document.getElementById('resultSection').style.display = 'block';
+            
+            // 滾動到結果區域
+            document.getElementById('resultSection').scrollIntoView({behavior: 'smooth'});
+        }
+        
+        function clearResults() {
+            document.getElementById('resultSection').style.display = 'none';
+        }
+        
+        // 示例數據按鈕
+        function loadExample(ba, obp, slg) {
+            document.getElementById('targetBA').value = ba;
+            document.getElementById('targetOBP').value = obp;
+            document.getElementById('targetSLG').value = slg;
+        }
+        
+        // 載入完成後的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎯 逆向工程計算器就緒！');
+        });
+    </script>
+</body>
+</html>
