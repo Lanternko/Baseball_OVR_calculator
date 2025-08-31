@@ -76,7 +76,8 @@ function reverseEngineerAttributes(targetStats, tolerance = 0.001, maxIterations
     
     // 最終驗證
     const finalSim = simulatePlayerStats(currentAttrs.POW, currentAttrs.HIT, currentAttrs.EYE, 20, target.PA);
-    const finalOVR = calculateBatterOVR(currentAttrs.POW, currentAttrs.HIT, currentAttrs.EYE);
+    const ovrResult = calculateBatterOVR(currentAttrs.POW, currentAttrs.HIT, currentAttrs.EYE);
+    const finalOVR = ovrResult.ovr;
     
     console.log(`\n🏆 逆向工程結果:`);
     console.log(`屬性: HIT=${Math.round(currentAttrs.HIT)}, POW=${Math.round(currentAttrs.POW)}, EYE=${Math.round(currentAttrs.EYE)}, OVR=${finalOVR}`);
@@ -152,11 +153,12 @@ function quickEstimateAttributes(targetStats) {
         [0.313, 40], [0.464, 70], [0.625, 100], [0.713, 120], [0.884, 150]
     ]);
     
+    const ovrResult = calculateBatterOVR(pow, hit, eye);
     return {
         HIT: Math.round(hit),
         POW: Math.round(pow),
         EYE: Math.round(eye),
-        OVR: calculateBatterOVR(pow, hit, eye)
+        OVR: ovrResult.ovr
     };
 }
 
