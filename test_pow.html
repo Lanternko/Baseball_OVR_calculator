@@ -51,12 +51,12 @@
             // Test key percentiles
             console.log('');
             console.log('🎯 Key Percentile Analysis:');
-            const keyPoints = [40, 70, 99, 115, 130, 150];
+            const keyPoints = [40, 70, 100, 115, 130, 150];
             keyPoints.forEach(pow => {
                 const stats = simulatePlayerStats(pow, 70, 70, 500, 600);
                 const hr = Math.round(stats.HR_count);
                 const doubles = Math.round(stats.doubles_count || 0);
-                const percentile = pow <= 40 ? 'PR1' : pow == 70 ? 'PR50' : pow == 99 ? 'PR99' : pow == 115 ? 'Elite(Ohtani)' : pow == 130 ? 'Super Elite' : 'Max';
+                const percentile = pow <= 40 ? 'PR1' : pow == 70 ? 'PR50' : pow == 100 ? 'PR99' : pow == 115 ? 'Elite(Ohtani)' : pow == 130 ? 'Super Elite' : 'Max';
                 console.log(`POW ${pow} (${percentile}): ${hr} HR, ${doubles} 2B, SLG ${stats.SLG.toFixed(3)}`);
             });
         }

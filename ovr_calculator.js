@@ -45,9 +45,9 @@ function getAttributeScoreHybrid(metricVal, pr1Benchmark, pr50Benchmark, pr99Ben
         );
         
         if (isExtremeValue) {
-            if (statType === 'BA' && metricVal >= 1.0) return 500;
-            if (statType === 'SLG' && metricVal >= 3.5) return 500;
-            if (statType === 'OBA' && metricVal >= 1.0) return 500;
+            if (statType === 'BA' && metricVal >= 0.99) return 500;
+            if (statType === 'SLG' && metricVal >= 3.99) return 500;
+            if (statType === 'OBA' && metricVal >= 0.99) return 500;
             
             if (statType === 'BA') {
                 return 200 + (metricVal - 0.95) / 0.05 * 300;
@@ -113,7 +113,7 @@ function calculatePlayerGameAttributes(xBA, xSLG, xwOBA) {
     };
 }
 
-// 🔧 簡化版 OVR 計算函數（移除雜訊資訊）
+// 🔧 新版 OVR 計算函數 - 以100為基準點，不均衡扣分制
 function calculateBatterOVR(pow, hit, eye) {
     // 🔧 嚴格的輸入驗證
     const safePOW = parseFloat(pow) || 1;
@@ -129,7 +129,7 @@ function calculateBatterOVR(pow, hit, eye) {
             breakdown: { 
                 arithmeticMean: '1.0',
                 baseOVR: '1.0', 
-                eliteBonus: '0.0',
+                unbalancePenalty: '0.0',
                 balanceRatio: '1.00',
                 error: '屬性值無效'
             } 
@@ -137,59 +137,60 @@ function calculateBatterOVR(pow, hit, eye) {
     }
     
     const arithmeticMean = (safePOW + safeHIT + safeEYE) / 3;
-    const geometricMean = Math.pow(safePOW * safeHIT * safeEYE, 1/3);
     
     // 🔧 檢查計算結果有效性
-    if (isNaN(arithmeticMean) || isNaN(geometricMean)) {
-        console.error('OVR計算錯誤：平均值計算失敗', { arithmeticMean, geometricMean });
+    if (isNaN(arithmeticMean)) {
+        console.error('OVR計算錯誤：平均值計算失敗', { arithmeticMean });
         return { 
             ovr: 1, 
             breakdown: { 
                 arithmeticMean: '1.0',
                 baseOVR: '1.0',
-                eliteBonus: '0.0', 
+                unbalancePenalty: '0.0', 
                 balanceRatio: '1.00',
                 error: '計算失敗'
             } 
         };
     }
     
-    let baseOVR = arithmeticMean * 0.8 + geometricMean * 0.2;
-    let eliteBonus = 0;
+    // 🎯 新公式：主要依賴算術平均，100屬性 = 100 OVR
+    let baseOVR = arithmeticMean;
     
-    // 精英加成系統（簡化版，避免複雜計算）
-    if (arithmeticMean > 75) {
-        const factor = Math.min((arithmeticMean - 75) / 25, 1.0);
-        eliteBonus += factor * factor * 2.0;
-    }
-    
-    if (arithmeticMean > 90) {
-        const factor = Math.min((arithmeticMean - 90) / 20, 1.0);
-        eliteBonus += factor * factor * 5.0;
-    }
-    
-    // 極端值特殊處理
-    if (arithmeticMean > 200) {
-        const factor = Math.min((arithmeticMean - 200) / 100, 1.0);
-        eliteBonus += factor * 20.0;
-    }
-    
-    // 均衡度調整
+    // 🎯 不均衡扣分系統
     const maxAttribute = Math.max(safePOW, safeHIT, safeEYE);
     const minAttribute = Math.min(safePOW, safeHIT, safeEYE);
     const balanceRatio = minAttribute / maxAttribute;
     
-    if (balanceRatio > 0.8 && arithmeticMean > 60) {
-        eliteBonus += (balanceRatio - 0.8) * arithmeticMean * 0.02;
+    let unbalancePenalty = 0;
+    
+    // 根據不均衡程度計算扣分
+    if (balanceRatio < 0.8) {
+        // 不均衡程度：1 - balanceRatio (0 = 完全均衡, 1 = 完全不均衡)
+        const unbalanceLevel = 1 - balanceRatio;
+        
+        // 扣分公式：不均衡程度 × 平均值 × 扣分係數
+        const penaltyCoeff = 0.15; // 15%的扣分係數
+        unbalancePenalty = unbalanceLevel * arithmeticMean * penaltyCoeff;
+        
+        // 更嚴重的不均衡有額外懲罰
+        if (balanceRatio < 0.5) {
+            unbalancePenalty += (0.5 - balanceRatio) * arithmeticMean * 0.1;
+        }
+        
+        // 極度不均衡的額外懲罰
+        if (balanceRatio < 0.3) {
+            unbalancePenalty += (0.3 - balanceRatio) * arithmeticMean * 0.2;
+        }
     }
     
-    let finalOVR = baseOVR + eliteBonus;
+    let finalOVR = baseOVR - unbalancePenalty;
     finalOVR = Math.max(1, Math.min(1000, finalOVR));
     
     console.log('OVR計算結果:', { 
         arithmeticMean: arithmeticMean.toFixed(1),
         baseOVR: baseOVR.toFixed(1),
-        eliteBonus: eliteBonus.toFixed(1),
+        unbalancePenalty: unbalancePenalty.toFixed(1),
+        balanceRatio: balanceRatio.toFixed(2),
         finalOVR: finalOVR.toFixed(1)
     });
     
@@ -198,7 +199,7 @@ function calculateBatterOVR(pow, hit, eye) {
         breakdown: {
             arithmeticMean: arithmeticMean.toFixed(1),
             baseOVR: baseOVR.toFixed(1),
-            eliteBonus: eliteBonus.toFixed(1),
+            unbalancePenalty: unbalancePenalty.toFixed(1),
             balanceRatio: balanceRatio.toFixed(2)
         }
     };
@@ -224,7 +225,7 @@ function getBalanceDescription(ratio) {
     return "(明顯偏科)";
 }
 
-// 🎯 精簡版 OVR 分解顯示（移除雜訊）
+// 🎯 精簡版 OVR 分解顯示（新版不均衡扣分制）
 function displayOVRBreakdown(breakdown, targetElement) {
     if (!targetElement) return;
     
@@ -241,7 +242,7 @@ function displayOVRBreakdown(breakdown, targetElement) {
         <strong>評價詳情：</strong><br>
         平均能力值：${breakdown.arithmeticMean}<br>
         基礎評價：${breakdown.baseOVR}<br>
-        精英加成：+${breakdown.eliteBonus}<br>
+        不均衡扣分：-${breakdown.unbalancePenalty}<br>
         均衡度：${breakdown.balanceRatio} ${getBalanceDescription(parseFloat(breakdown.balanceRatio))}<br>
         <strong>聯盟水準：${getLeagueLevel(ovr)}</strong>
         ${breakdown.error ? `<br><span style="color: red;">錯誤: ${breakdown.error}</span>` : ''}

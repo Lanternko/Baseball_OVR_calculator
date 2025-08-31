@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnostic Test</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 20px; line-height: 1.6; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background-color: #f8f9fa; }
+        .issue { background-color: #f8d7da; }
+        .good { background-color: #d4edda; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Diagnostic Test - Probability Analysis</h1>
+    
+    <div id="results"></div>
+
+    <script src="constants.js"></script>
+    <script src="probability_model.js"></script>
+    <script src="simulation_engine.js"></script>
+    
+    <script>
+        function runDiagnostic() {
+            const levels = [40, 70, 100, 150];
+            
+            let html = '<h2>📊 Raw Probability Analysis</h2>';
+            html += '<table>';
+            html += '<thead><tr><th>Level</th><th>HR Prob</th><th>2B Prob</th><th>1B Prob</th><th>BB Prob</th><th>K Prob</th><th>Total</th><th>Issue</th></tr></thead>';
+            html += '<tbody>';
+            
+            levels.forEach(level => {
+                try {
+                    // Get raw probabilities
+                    const probs = getPAEventProbabilities(level, level, level);
+                    const total = probs.HR + probs['2B'] + probs['1B'] + probs.BB + probs.HBP + probs.K + probs.IPO;
+                    
+                    const hrRate = (probs.HR * 600).toFixed(1);
+                    const issue = (total > 1.01 || total < 0.99) ? '⚠️ Sum Issue' : 
+                                 (probs['2B'] === 0) ? '❌ No 2B' :
+                                 (probs.HR > 0.15) ? '⚠️ HR High' : '✅ OK';
+                    
+                    const rowClass = issue.includes('❌') ? 'issue' : issue.includes('✅') ? 'good' : '';
+                    
+                    html += `<tr class="${rowClass}">`;
+                    html += `<td><strong>${level}</strong></td>`;
+                    html += `<td>${probs.HR.toFixed(4)} (${hrRate})</td>`;
+                    html += `<td>${probs['2B'].toFixed(4)}</td>`;
+                    html += `<td>${probs['1B'].toFixed(4)}</td>`;
+                    html += `<td>${probs.BB.toFixed(4)}</td>`;
+                    html += `<td>${probs.K.toFixed(4)}</td>`;
+                    html += `<td>${total.toFixed(4)}</td>`;
+                    html += `<td>${issue}</td>`;
+                    html += '</tr>';
+                    
+                } catch (error) {
+                    html += `<tr class="issue"><td>${level}</td><td colspan="7">Error: ${error.message}</td></tr>`;
+                }
+            });
+            
+            html += '</tbody></table>';
+            
+            // S-curve value inspection
+            html += '<h2>🔧 S-Curve Raw Values</h2>';
+            html += '<table>';
+            html += '<thead><tr><th>Level</th><th>HR Anchor</th><th>BABIP Anchor</th><th>XBH Total</th><th>Notes</th></tr></thead>';
+            html += '<tbody>';
+            
+            levels.forEach(level => {
+                // Manual interpolation check
+                const hrVal = interpolateSCurve(level, HR_S_CURVE_POW_ANCHORS);
+                const babipVal = interpolateSCurve(level, BABIP_S_CURVE_HIT_ANCHORS);
+                const xbhVal = interpolateSCurve(level, TOTAL_XBH_S_CURVE_POW_ANCHORS);
+                
+                html += '<tr>';
+                html += `<td><strong>${level}</strong></td>`;
+                html += `<td>${hrVal.toFixed(4)} (${(hrVal*600).toFixed(1)} HR)</td>`;
+                html += `<td>${babipVal.toFixed(3)}</td>`;
+                html += `<td>${xbhVal.toFixed(1)}</td>`;
+                html += `<td>${level === 150 && babipVal < 0.7 ? '⚠️ Low BABIP' : ''}</td>`;
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            
+            document.getElementById('results').innerHTML = html;
+        }
+        
+        // Run diagnostic on load
+        setTimeout(runDiagnostic, 500);
+    </script>
+</body>
+</html>

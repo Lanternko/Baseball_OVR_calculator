@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>棒球OVR雙向轉換器 v1.3</title>
+    <title>棒球OVR雙向轉換器 v2.0.1</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="player-cards.css">
     <link rel="stylesheet" href="modal.css">
@@ -11,6 +11,7 @@
     <script src="ovr_calculator.js"></script>
     <script src="probability_model.js"></script>
     <script src="simulation_engine.js"></script>
+    <script src="reverse_engineer.js"></script>
     <script src="main.js"></script>
     <script src="player-card.js"></script>
 </head>
@@ -60,28 +61,28 @@
                 
                 <div class="input-row">
                     <div class="input-label-column">
-                        <label for="xBA">預期打擊率 (xBA)</label>
+                        <label for="xBA">打擊率 (BA)</label>
                     </div>
                     <div class="input-field-column">
-                        <input type="number" id="xBA" step="0.001" placeholder="0.314" min="0" max="1">
+                        <input type="number" id="xBA" step="0.001" placeholder="0.310" min="0" max="1">
                     </div>
                 </div>
                 
                 <div class="input-row">
                     <div class="input-label-column">
-                        <label for="xSLG">預期長打率 (xSLG)</label>
+                        <label for="xSLG">長打率 (SLG)</label>
                     </div>
                     <div class="input-field-column">
-                        <input type="number" id="xSLG" step="0.001" placeholder="0.66" min="0" max="4">
+                        <input type="number" id="xSLG" step="0.001" placeholder="0.646" min="0" max="4">
                     </div>
                 </div>
                 
                 <div class="input-row">
                     <div class="input-label-column">
-                        <label for="xwOBA">預期加權上壘率 (xwOBA)</label>
+                        <label for="xwOBA">加權上壘率 (wOBA)</label>
                     </div>
                     <div class="input-field-column">
-                        <input type="number" id="xwOBA" step="0.001" placeholder="0.442" min="0" max="1">
+                        <input type="number" id="xwOBA" step="0.001" placeholder="0.390" min="0" max="1">
                     </div>
                 </div>
                 
@@ -200,9 +201,9 @@
             if (mode === 'statsToAttributes') {
                 const inputs = [
                     {id: 'playerName', defaultVal: '大谷翔平24\''},
-                    {id: 'xBA', defaultVal: 0.314},
-                    {id: 'xSLG', defaultVal: 0.66}, 
-                    {id: 'xwOBA', defaultVal: 0.442}
+                    {id: 'xBA', defaultVal: 0.310},
+                    {id: 'xSLG', defaultVal: 0.646}, 
+                    {id: 'xwOBA', defaultVal: 0.390}
                 ];
                 inputs.forEach(input => {
                     const element = document.getElementById(input.id);
@@ -404,23 +405,37 @@
                 const inputs = getCurrentInputs('statsToAttributes');
                 if (!inputs) return;
                 
-                // 計算球員能力值 - 使用正確的函數名
-                const attributes = calculatePlayerGameAttributes(inputs.stats.xBA, inputs.stats.xSLG, inputs.stats.xwOBA);
-                const ovrResult = calculateBatterOVR(attributes.POW, attributes.HIT, attributes.EYE);
-                const result = {
-                    ovr: ovrResult.ovr,
+                // 🔄 使用精確迭代收斂算法計算屬性值 (BA, wOBA≈OBP, SLG)
+                const result = REVERSE_ENGINEER.reverseEngineerAttributes({
+                    BA: inputs.stats.xBA,
+                    OBP: inputs.stats.xwOBA, // 使用wOBA作為OBP近似
+                    SLG: inputs.stats.xSLG,
+                    PA: 600
+                }, 0.005, 25); // 容忍度0.005，最多25次迭代
+                
+                if (!result) {
+                    alert('計算失敗，請檢查輸入數據');
+                    return;
+                }
+                
+                const attributes = {
+                    HIT: result.attributes.HIT,
+                    POW: result.attributes.POW,
+                    EYE: result.attributes.EYE
+                };
+                const finalResult = {
+                    ovr: result.attributes.OVR, // 使用逆向工程計算的OVR
                     HIT: attributes.HIT,
                     POW: attributes.POW,
                     EYE: attributes.EYE
                 };
-                if (!result) return;
                 
                 playerData = {
                     name: inputs.name || '預測球員',
-                    ovr: result.ovr,
-                    HIT: result.HIT,
-                    POW: result.POW,
-                    EYE: result.EYE
+                    ovr: finalResult.ovr,
+                    HIT: finalResult.HIT,
+                    POW: finalResult.POW,
+                    EYE: finalResult.EYE
                 };
                 
                 // 格式化統計數據以符合球員卡格式 (從輸入的統計數據)
@@ -504,14 +519,28 @@
             
             console.log('重新計算數據→三圍...');
             
-            const attributes = calculatePlayerGameAttributes(inputs.xBA, inputs.xSLG, inputs.xwOBA);
+            // 使用精確迭代收斂算法計算屬性值
+            const result = REVERSE_ENGINEER.reverseEngineerAttributes({
+                BA: inputs.xBA,
+                OBP: inputs.xwOBA, // 使用wOBA作為OBP近似  
+                SLG: inputs.xSLG,
+                PA: 600
+            }, 0.005, 25); // 容忍度0.005，最多25次迭代
+            
+            if (!result) return null;
+            
+            const attributes = {
+                HIT: result.attributes.HIT,
+                POW: result.attributes.POW,
+                EYE: result.attributes.EYE
+            };
             const ovrResult = calculateBatterOVR(attributes.POW, attributes.HIT, attributes.EYE);
             
             // 生成球員卡HTML
             const tempDiv = document.createElement('div');
             const displayName = inputs.playerName || '球員';
-            const rarityClass = getRarityClass(ovrResult.ovr);
-            const rarityLabel = getRarityLabel(ovrResult.ovr);
+            const rarityClass = getRarityClass(result.attributes.OVR);
+            const rarityLabel = getRarityLabel(result.attributes.OVR);
             
             tempDiv.innerHTML = `
                 <div class="player-card ${rarityClass}">
@@ -524,7 +553,7 @@
                     </div>
 
                     <div class="ovr-section">
-                        <div class="ovr-number">${ovrResult.ovr}</div>
+                        <div class="ovr-number">${result.attributes.OVR}</div>
                         <div class="ovr-label">Overall</div>
                     </div>
 
@@ -532,15 +561,15 @@
                         <div class="attributes-grid">
                             <div class="attribute-column">
                                 <div class="attr-label">HIT</div>
-                                <div class="attr-value">${Math.round(attributes.HIT)}</div>
+                                <div class="attr-value">${Math.round(result.attributes.HIT)}</div>
                             </div>
                             <div class="attribute-column">
                                 <div class="attr-label">POW</div>
-                                <div class="attr-value">${Math.round(attributes.POW)}</div>
+                                <div class="attr-value">${Math.round(result.attributes.POW)}</div>
                             </div>
                             <div class="attribute-column">
                                 <div class="attr-label">EYE</div>
-                                <div class="attr-value">${Math.round(attributes.EYE)}</div>
+                                <div class="attr-value">${Math.round(result.attributes.EYE)}</div>
                             </div>
                         </div>
                     </div>
@@ -949,7 +978,7 @@
     
     <!-- 隱藏的研究模式入口 - 小彩蛋 -->
     <div style="position: fixed; bottom: 10px; right: 10px; font-size: 12px; opacity: 0.5; z-index: 100; transition: all 0.3s ease;">
-        <a href="research.html" style="color: #888; text-decoration: none; display: block; padding: 4px;" title="🔬 研究模式" 
+        <a href="research_zen.html" style="color: #888; text-decoration: none; display: block; padding: 4px;" title="🔬 研究模式 (Zen版)" 
            onmouseover="this.parentElement.style.opacity='0.9'; this.parentElement.style.transform='scale(1.3)'" 
            onmouseout="this.parentElement.style.opacity='0.5'; this.parentElement.style.transform='scale(1)'">🔬</a>
     </div>

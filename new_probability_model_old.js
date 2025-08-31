@@ -1,13 +1,13 @@
 // new_probability_model.js - 四象限+兩階段打擊模擬系統
-// 設計理念: 簡化、高效、符合棒球邏輯的單球決勝負系統
+// 🎯 設計理念: 簡化、高效、符合棒球邏輯的單球決勝負系統
 
 console.log('⚾ 載入新打擊模擬引擎...');
 
 // 載入常數表 
 if (typeof module !== 'undefined' && module.exports) {
   // Node.js 環境
-  const constants = require('./constants.js');
-  const {
+  const constants = require('./new_constants.js');
+  var {
     EYE_BB_RATE_TABLE,
     EYE_EFFECT_TABLE,
     HIT_CONTACT_RATE_TABLE,
@@ -19,28 +19,18 @@ if (typeof module !== 'undefined' && module.exports) {
     interpolate,
     applyHITEffect
   } = constants;
-  
-  // 設定全域變數供函數使用
-  global.EYE_BB_RATE_TABLE = EYE_BB_RATE_TABLE;
-  global.EYE_EFFECT_TABLE = EYE_EFFECT_TABLE;
-  global.HIT_CONTACT_RATE_TABLE = HIT_CONTACT_RATE_TABLE;
-  global.HIT_QUALITY_RATIO_TABLE = HIT_QUALITY_RATIO_TABLE;
-  global.HIT_EFFECT_TABLE = HIT_EFFECT_TABLE;
-  global.POW_FLYBALL_RATE_TABLE = POW_FLYBALL_RATE_TABLE;
-  global.POW_XBH_RATE_TABLE = POW_XBH_RATE_TABLE;
-  global.POW_HR_XBH_RATIO_TABLE = POW_HR_XBH_RATIO_TABLE;
-  global.interpolate = interpolate;
-  global.applyHITEffect = applyHITEffect;
 } else if (typeof window !== 'undefined') {
   // 瀏覽器環境：確保常數表已載入並可用
   if (typeof interpolate === 'undefined') {
-    console.error('❌ 請先載入 constants.js');
-    throw new Error('constants.js must be loaded before probability_model.js');
+    console.error('❌ 請先載入 new_constants.js');
+    throw new Error('new_constants.js must be loaded before new_probability_model.js');
   }
-  // 瀏覽器環境下變數已經是全域的，直接使用
+  // 瀏覽器環境下變數已經是全域的，不需要重新宣告
 }
 
-// 核心計算函數
+// ====================================
+// 🧮 核心計算函數
+// ====================================
 
 // 計算最終接觸率 (HIT基礎 + EYE磨球效果)
 function calculateFinalContactRate(HIT, EYE) {
@@ -71,7 +61,9 @@ function calculateContactQuality(HIT, contactType) {
   }
 }
 
-// 四象限擊球處理系統
+// ====================================
+// 🎯 四象限擊球處理系統
+// ====================================
 
 // 決定是否產生XBH (長打) - 第一階段
 function determineXBHChance(HIT, POW, isQualityContact, isFlyball) {
@@ -107,7 +99,7 @@ function determineXBHChance(HIT, POW, isQualityContact, isFlyball) {
   // 計算該象限的XBH機率 = (目標XBH占比 × 總XBH率) ÷ 象限接觸占比
   const xbhProbability = (xbhShareTarget * totalXBHRate) / Math.max(0.001, quadrantContactRatio);
   
-  return Math.min(0.95, xbhProbability); // 提高上限至95%
+  return Math.min(0.85, xbhProbability); // 最多85%XBH機率
 }
 
 // XBH確定後的HR/2B分配 - 第二階段
@@ -174,12 +166,15 @@ function distributeNonXBH(HIT, isQualityContact, isFlyball) {
   }
   
   return {
-    singleRate: Math.min(0.99, baseSingleRate), // 提高上限至99%
-    outRate: 1 - Math.min(0.99, baseSingleRate)
+    singleRate: Math.min(0.90, baseSingleRate),
+    outRate: 1 - baseSingleRate
   };
 }
 
-// 完整單球模擬流程
+// ====================================
+// 🎮 完整單球模擬流程
+// ====================================
+
 function simulateAtBat(EYE, HIT, POW, random1, random2, random3, random4) {
   // === 第一步：保送檢查 ===
   const bbRate = interpolate(EYE, EYE_BB_RATE_TABLE);
@@ -189,10 +184,9 @@ function simulateAtBat(EYE, HIT, POW, random1, random2, random3, random4) {
   
   // === 第二步：接觸檢查 ===
   const contactRate = calculateFinalContactRate(HIT, EYE);
-  const swingRate = 1 - bbRate; // 揮擊率 = 非保送率
-  const actualContactThreshold = bbRate + (swingRate * contactRate); // 在總PA中的接觸門檻
+  const adjustedRandom1 = (random1 - bbRate) / (1 - bbRate); // 重新標準化
   
-  if (random1 >= actualContactThreshold) {
+  if (adjustedRandom1 >= contactRate) {
     return 'K'; // 揮空三振
   }
   
@@ -227,6 +221,10 @@ function simulateAtBat(EYE, HIT, POW, random1, random2, random3, random4) {
   
   return nonXBHRandom < nonXBHDistribution.singleRate ? '1B' : 'OUT';
 }
+
+// ====================================
+// 🚀 高性能批量模擬
+// ====================================
 
 // 批量模擬多個打席 (高性能版本)
 function simulateMultipleAtBats(EYE, HIT, POW, numAtBats = 600) {
@@ -297,6 +295,57 @@ function finalizeStats(stats) {
   return stats;
 }
 
+// ====================================
+// 🧪 Level精確性驗證
+// ====================================
+
+// 驗證Level 100是否達到目標統計
+function validateLevel100(iterations = 10) {
+  console.log('🧪 驗證Level 100精確性...');
+  
+  const testCases = [
+    {name: 'POW 100 隔離測試', EYE: 70, HIT: 70, POW: 100, targetSLG: 0.570},
+    {name: 'HIT 100 隔離測試', EYE: 70, HIT: 100, POW: 70, targetAVG: 0.320},
+    {name: 'EYE 100 隔離測試', EYE: 100, HIT: 70, POW: 70, targetOBP: 0.420},
+    {name: '完美球員', EYE: 100, HIT: 100, POW: 100, targetOPS: 1.310}
+  ];
+  
+  testCases.forEach(testCase => {
+    let totalStats = {AVG: 0, OBP: 0, SLG: 0, OPS: 0, 'HR%': 0, 'XBH%': 0};
+    
+    // 多次模擬取平均
+    for (let i = 0; i < iterations; i++) {
+      const simResults = simulateMultipleAtBats(testCase.EYE, testCase.HIT, testCase.POW, 3000);
+      const stats = finalizeStats(calculateStats(simResults, 3000));
+      
+      totalStats.AVG += stats.AVG;
+      totalStats.OBP += stats.OBP;
+      totalStats.SLG += stats.SLG;
+      totalStats.OPS += stats.OPS;
+      totalStats['HR%'] += stats['HR%'];
+      totalStats['XBH%'] += stats['XBH%'];
+    }
+    
+    // 計算平均值
+    Object.keys(totalStats).forEach(key => {
+      totalStats[key] /= iterations;
+    });
+    
+    console.log(`📊 ${testCase.name}:`);
+    console.log(`   AVG: ${totalStats.AVG.toFixed(3)}`);
+    console.log(`   OBP: ${totalStats.OBP.toFixed(3)} ${testCase.targetOBP ? `(目標: ${testCase.targetOBP})` : ''}`);
+    console.log(`   SLG: ${totalStats.SLG.toFixed(3)} ${testCase.targetSLG ? `(目標: ${testCase.targetSLG})` : ''}`);
+    console.log(`   OPS: ${totalStats.OPS.toFixed(3)} ${testCase.targetOPS ? `(目標: ${testCase.targetOPS})` : ''}`);
+    console.log(`   HR%: ${(totalStats['HR%'] * 100).toFixed(1)}%`);
+    console.log(`   XBH%: ${(totalStats['XBH%'] * 100).toFixed(1)}%`);
+    console.log('');
+  });
+}
+
+// ====================================
+// 🚀 主要API函數 (向下相容)
+// ====================================
+
 // 主要概率計算函數 (替代舊的 getPAEventProbabilities)
 function getPAEventProbabilitiesNew(POW, HIT, EYE, playerHBPRate = 0) {
   // 使用大樣本模擬計算平均機率
@@ -314,6 +363,10 @@ function getPAEventProbabilitiesNew(POW, HIT, EYE, playerHBPRate = 0) {
   };
 }
 
+// ====================================
+// 🚀 模塊導出和初始化
+// ====================================
+
 console.log('✅ 新打擊模擬引擎載入完成！');
 
 // 全域變數導出
@@ -325,6 +378,7 @@ if (typeof module !== 'undefined' && module.exports) {
     calculateStats,
     finalizeStats,
     getPAEventProbabilitiesNew,
+    validateLevel100,
     calculateFinalContactRate,
     determineXBHChance,
     distributeXBH
@@ -342,6 +396,7 @@ if (typeof window !== 'undefined') {
     calculateStats,
     finalizeStats,
     getPAEventProbabilitiesNew,
+    validateLevel100,
     calculateFinalContactRate,
     determineXBHChance,
     distributeXBH
@@ -349,9 +404,4 @@ if (typeof window !== 'undefined') {
   
   // 向下相容：覆寫舊函數
   window.getPAEventProbabilities = getPAEventProbabilitiesNew;
-}
-
-// Also support the original function name for backward compatibility
-function getPAEventProbabilities(POW, HIT, EYE, playerHBPRate = 0) {
-  return getPAEventProbabilitiesNew(POW, HIT, EYE, playerHBPRate);
 }

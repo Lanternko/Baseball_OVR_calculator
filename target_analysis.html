@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Target Stats Analysis</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 20px; line-height: 1.6; }
+        h1, h2 { color: #2c3e50; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+        th { background-color: #f8f9fa; font-weight: bold; }
+        .target { background-color: #e8f5e8; }
+        .current { background-color: #fff3cd; }
+        .gap { background-color: #f8d7da; }
+        .level-40 { background-color: #ffebee; }
+        .level-70 { background-color: #f3e5f5; }
+        .level-100 { background-color: #e8f5e8; }
+        .level-120 { background-color: #e3f2fd; }
+        .level-150 { background-color: #fff8e1; }
+        .note { background-color: #f8f9fa; padding: 15px; border-left: 4px solid #007bff; margin: 20px 0; }
+        .run-test { background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🎯 Key Level Target Stats Analysis</h1>
+    
+    <div class="note">
+        <strong>Analysis Based On:</strong><br>
+        • README.md specifications for each OVR tier<br>
+        • League benchmarks from constants.js<br>
+        • Attribute mapping: 40=PR1, 70=PR50, 100=PR99<br>
+        • Current S-curve anchor points
+    </div>
+
+    <h2>📊 Target Stats by Level</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Level</th>
+                <th>POW/HIT/EYE</th>
+                <th>Target BA</th>
+                <th>Target OBP</th>
+                <th>Target SLG</th>
+                <th>Target OPS</th>
+                <th>Target HR</th>
+                <th>Target XBH</th>
+                <th>MLB Tier</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="level-40">
+                <td><strong>40</strong></td>
+                <td>40/40/40</td>
+                <td class="target">.210</td>
+                <td class="target">.280</td>
+                <td class="target">.320</td>
+                <td class="target">.600</td>
+                <td class="target">15</td>
+                <td class="target">45</td>
+                <td>PR1 - Bottom 1%</td>
+            </tr>
+            <tr class="level-70">
+                <td><strong>70</strong></td>
+                <td>70/70/70</td>
+                <td class="target">.250</td>
+                <td class="target">.320</td>
+                <td class="target">.420</td>
+                <td class="target">.740</td>
+                <td class="target">25</td>
+                <td class="target">65</td>
+                <td>PR50 - League Average</td>
+            </tr>
+            <tr class="level-100">
+                <td><strong>100</strong></td>
+                <td>100/100/100</td>
+                <td class="target">.320</td>
+                <td class="target">.420</td>
+                <td class="target">.570</td>
+                <td class="target">.990</td>
+                <td class="target">40</td>
+                <td class="target">78</td>
+                <td>PR99 - Top 1%</td>
+            </tr>
+            <tr class="level-120">
+                <td><strong>120</strong></td>
+                <td>120/120/120</td>
+                <td class="target">.340</td>
+                <td class="target">.470</td>
+                <td class="target">.720</td>
+                <td class="target">1.190</td>
+                <td class="target">55</td>
+                <td class="target">85</td>
+                <td>HOF Peak Level</td>
+            </tr>
+            <tr class="level-150">
+                <td><strong>150</strong></td>
+                <td>150/150/150</td>
+                <td class="target">.380</td>
+                <td class="target">.570</td>
+                <td class="target">.900</td>
+                <td class="target">1.470</td>
+                <td class="target">75</td>
+                <td class="target">110</td>
+                <td>Fantasy Extreme</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>🎯 Detailed Target Breakdown</h2>
+
+    <h3>Level 40 (40/40/40) - PR1 Bottom 1%</h3>
+    <ul>
+        <li><strong>BA .210</strong> - From constants LEAGUE_BENCHMARKS xBA pr1</li>
+        <li><strong>OBP .280</strong> - From constants LEAGUE_BENCHMARKS xwOBA pr1</li>
+        <li><strong>SLG .320</strong> - From constants LEAGUE_BENCHMARKS xSLG pr1</li>
+        <li><strong>15 HR</strong> - From HR_S_CURVE_POW_ANCHORS [40, 0.025] = 2.5% * 600 PA</li>
+        <li><strong>45 XBH</strong> - From TOTAL_XBH_S_CURVE_POW_ANCHORS [40, 45]</li>
+    </ul>
+
+    <h3>Level 70 (70/70/70) - PR50 League Average</h3>
+    <ul>
+        <li><strong>BA .250</strong> - From constants LEAGUE_BENCHMARKS xBA pr50</li>
+        <li><strong>OBP .320</strong> - From constants LEAGUE_BENCHMARKS xwOBA pr50</li>
+        <li><strong>SLG .420</strong> - From constants LEAGUE_BENCHMARKS xSLG pr50</li>
+        <li><strong>25 HR</strong> - From HR_S_CURVE_POW_ANCHORS [70, 0.042] = 4.2% * 600 PA</li>
+        <li><strong>65 XBH</strong> - From TOTAL_XBH_S_CURVE_POW_ANCHORS [70, 65]</li>
+    </ul>
+
+    <h3>Level 100 (100/100/100) - PR99 Top 1%</h3>
+    <ul>
+        <li><strong>BA .320</strong> - From constants LEAGUE_BENCHMARKS xBA pr99</li>
+        <li><strong>OBP .420</strong> - From constants LEAGUE_BENCHMARKS xwOBA pr99</li>
+        <li><strong>SLG .570</strong> - From constants LEAGUE_BENCHMARKS xSLG pr99</li>
+        <li><strong>40 HR</strong> - From HR_S_CURVE_POW_ANCHORS [100, 0.070] = 7.0% * 600 PA</li>
+        <li><strong>78 XBH</strong> - From TOTAL_XBH_S_CURVE_POW_ANCHORS [100, 78]</li>
+    </ul>
+
+    <h3>Level 120 (120/120/120) - HOF Peak</h3>
+    <ul>
+        <li><strong>BA .340</strong> - Interpolated from README HOF range (.320-.350)</li>
+        <li><strong>OBP .470</strong> - Interpolated from README HOF range (.450-.500)</li>
+        <li><strong>SLG .720</strong> - Interpolated from README HOF range (.650-.750)</li>
+        <li><strong>55 HR</strong> - From HR_S_CURVE_POW_ANCHORS [120, 0.090] = 9.0% * 600 PA</li>
+        <li><strong>85 XBH</strong> - From TOTAL_XBH_S_CURVE_POW_ANCHORS [120, 85]</li>
+    </ul>
+
+    <h3>Level 150 (150/150/150) - Fantasy Extreme</h3>
+    <ul>
+        <li><strong>BA .380</strong> - From README fantasy target</li>
+        <li><strong>OBP .570</strong> - From README fantasy target</li>
+        <li><strong>SLG .900</strong> - From README fantasy target</li>
+        <li><strong>75 HR</strong> - From HR_S_CURVE_POW_ANCHORS [150, 0.120] = 12.0% * 600 PA</li>
+        <li><strong>110 XBH</strong> - From TOTAL_XBH_S_CURVE_POW_ANCHORS [150, 110]</li>
+    </ul>
+
+    <button class="run-test" onclick="runCurrentTest()">🧪 Run Current Performance Test</button>
+    
+    <div id="test-results" style="margin-top: 20px;"></div>
+
+    <script src="constants.js"></script>
+    <script src="probability_model.js"></script>
+    <script src="simulation_engine.js"></script>
+    
+    <script>
+        function runCurrentTest() {
+            const testLevels = [40, 70, 100, 120, 150];
+            const targets = {
+                40: {BA: 0.210, OBP: 0.280, SLG: 0.320, OPS: 0.600, HR: 15, XBH: 45},
+                70: {BA: 0.250, OBP: 0.320, SLG: 0.420, OPS: 0.740, HR: 25, XBH: 65},
+                100: {BA: 0.320, OBP: 0.420, SLG: 0.570, OPS: 0.990, HR: 40, XBH: 78},
+                120: {BA: 0.340, OBP: 0.470, SLG: 0.720, OPS: 1.190, HR: 55, XBH: 85},
+                150: {BA: 0.380, OBP: 0.570, SLG: 0.900, OPS: 1.470, HR: 75, XBH: 110}
+            };
+            
+            let html = '<h3>🧪 Current Performance vs Targets</h3>';
+            html += '<table><thead><tr><th>Level</th><th>Stat</th><th>Target</th><th>Current</th><th>Gap</th><th>Status</th></tr></thead><tbody>';
+            
+            for (let level of testLevels) {
+                const stats = simulatePlayerSeason(level, level, level, 600);
+                const target = targets[level];
+                
+                // Test each stat
+                const testStats = [
+                    {name: 'BA', target: target.BA, current: stats.BA, format: '.3f'},
+                    {name: 'OBP', target: target.OBP, current: stats.OBP, format: '.3f'},
+                    {name: 'SLG', target: target.SLG, current: stats.SLG, format: '.3f'},
+                    {name: 'OPS', target: target.OPS, current: stats.OPS, format: '.3f'},
+                    {name: 'HR', target: target.HR, current: stats.HR, format: '.0f'},
+                    {name: 'XBH', target: target.XBH, current: stats.XBH, format: '.0f'}
+                ];
+                
+                for (let stat of testStats) {
+                    const gap = stat.current - stat.target;
+                    const gapPct = Math.abs(gap / stat.target * 100);
+                    let status = '✅';
+                    let statusColor = '#d4edda';
+                    
+                    if (gapPct > 15) {
+                        status = '❌ Far';
+                        statusColor = '#f8d7da';
+                    } else if (gapPct > 10) {
+                        status = '⚠️ Off';
+                        statusColor = '#fff3cd';
+                    } else if (gapPct > 5) {
+                        status = '🔄 Close';
+                        statusColor = '#d1ecf1';
+                    }
+                    
+                    html += `<tr style="background-color: ${statusColor}">
+                        <td><strong>${level}</strong></td>
+                        <td><strong>${stat.name}</strong></td>
+                        <td>${stat.target.toFixed(stat.format === '.0f' ? 0 : 3)}</td>
+                        <td>${stat.current.toFixed(stat.format === '.0f' ? 0 : 3)}</td>
+                        <td>${gap > 0 ? '+' : ''}${gap.toFixed(stat.format === '.0f' ? 0 : 3)} (${gapPct.toFixed(1)}%)</td>
+                        <td>${status}</td>
+                    </tr>`;
+                }
+            }
+            
+            html += '</tbody></table>';
+            document.getElementById('test-results').innerHTML = html;
+        }
+        
+        // Auto-run test on load
+        setTimeout(runCurrentTest, 1000);
+    </script>
+</body>
+</html>
