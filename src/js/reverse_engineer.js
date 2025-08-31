@@ -115,20 +115,21 @@ function calculateAdjustments(errors, adjustmentFactor) {
         EYE: 0
     };
     
+    // 🎯 調整係數優化 - 減少過度調整
     // 1. BA主要由HIT控制
     if (Math.abs(errors.BA) > 0.001) {
-        adjustments.HIT = errors.BA * adjustmentFactor * 100; // BA誤差轉換為HIT調整
+        adjustments.HIT = errors.BA * adjustmentFactor * 50; // 降低: 100→50
     }
     
     // 2. OBP誤差主要由EYE控制（BB率）
     const obpDiff = errors.OBP - errors.BA; // 去除BA影響的純OBP差異
     if (Math.abs(obpDiff) > 0.001) {
-        adjustments.EYE = obpDiff * adjustmentFactor * 150; // OBP誤差轉換為EYE調整
+        adjustments.EYE = obpDiff * adjustmentFactor * 60; // 降低: 150→60
     }
     
     // 3. SLG主要由POW控制（長打能力）
     if (Math.abs(errors.SLG) > 0.001) {
-        adjustments.POW = errors.SLG * adjustmentFactor * 80; // SLG誤差轉換為POW調整
+        adjustments.POW = errors.SLG * adjustmentFactor * 40; // 降低: 80→40
     }
     
     return adjustments;

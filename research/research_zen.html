@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>研究模式 - 棒球 OVR 計算器</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../src/css/style.css">
     <style>
         /* Zen-like minimalist design */
         body {
@@ -318,7 +318,7 @@
     </style>
 </head>
 <body>
-    <a href="index.html" class="back-link">← 返回主頁</a>
+    <a href="../index.html" class="back-link">← 返回主頁</a>
     
     <div class="research-header">
         <h1>🔬 研究模式</h1>
@@ -393,7 +393,7 @@
                 <div class="test-card">
                     <h3>🔄 標準雙向測試</h3>
                     <p>測試各種屬性組合的轉換一致性，確保模型基礎穩定性</p>
-                    <button class="test-btn" onclick="window.open('bidirectional_fixed.html', '_blank')">
+                    <button class="test-btn" onclick="window.open('../tools/bidirectional_fixed.html', '_blank')">
                         開始測試
                     </button>
                 </div>
@@ -425,7 +425,7 @@
                 <div class="test-card">
                     <h3>🔧 模組載入調試</h3>
                     <p>檢查各個模組的載入狀態和依賴關係</p>
-                    <button class="test-btn" onclick="window.open('test_debug.html', '_blank')">
+                    <button class="test-btn" onclick="window.open('../tests/test_debug.html', '_blank')">
                         調試工具
                     </button>
                 </div>
@@ -442,7 +442,7 @@
                 <div class="test-card">
                     <h3>🎯 EYE 屬性測試</h3>
                     <p>測試 EYE 對保送率和 OBP 的影響效果</p>
-                    <button class="test-btn" onclick="window.open('test_eye.html', '_blank')">
+                    <button class="test-btn" onclick="window.open('../tests/test_eye.html', '_blank')">
                         EYE 測試
                     </button>
                 </div>
@@ -450,7 +450,7 @@
                 <div class="test-card">
                     <h3>🔥 HIT 屬性測試</h3>
                     <p>測試 HIT 對接觸率和 AVG 的影響效果</p>
-                    <button class="test-btn" onclick="window.open('test_hit.html', '_blank')">
+                    <button class="test-btn" onclick="window.open('../tests/test_hit.html', '_blank')">
                         HIT 測試
                     </button>
                 </div>
@@ -458,7 +458,7 @@
                 <div class="test-card">
                     <h3>💥 POW 屬性測試</h3>
                     <p>測試 POW 對長打率和 SLG 的影響效果</p>
-                    <button class="test-btn" onclick="window.open('test_pow.html', '_blank')">
+                    <button class="test-btn" onclick="window.open('../tests/test_pow.html', '_blank')">
                         POW 測試
                     </button>
                 </div>
@@ -482,10 +482,10 @@
     </div>
     
     <!-- Import necessary scripts - v2.0 新系統 -->
-    <script src="constants.js"></script>
-    <script src="probability_model.js"></script>
-    <script src="simulation_engine.js"></script>
-    <script src="ovr_calculator.js"></script>
+    <script src="../src/js/constants.js"></script>
+    <script src="../src/js/probability_model.js"></script>
+    <script src="../src/js/simulation_engine.js"></script>
+    <script src="../src/js/ovr_calculator.js"></script>
     
     <script>
         let currentAttribute = 'pow';
