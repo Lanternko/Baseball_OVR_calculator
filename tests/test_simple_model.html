@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>簡化模型測試</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f7fa;
+        }
+        .test-section {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            font-family: 'Courier New', monospace;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        .comparison-table th,
+        .comparison-table td {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        .comparison-table th {
+            background: #e9ecef;
+            font-weight: 600;
+        }
+        .better {
+            background: #d4edda;
+            font-weight: bold;
+        }
+        .worse {
+            background: #f8d7da;
+        }
+        .button {
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            transition: transform 0.2s;
+        }
+        .button:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 簡化模型 vs 四象限模型對比測試</h1>
+    
+    <div class="test-section">
+        <h2>🚀 快速測試</h2>
+        <button class="button" onclick="runBasicTest()">基礎功能測試</button>
+        <button class="button" onclick="runEffectTests()">關鍵效果驗證</button>
+        <button class="button" onclick="runModelComparison()">模型對比測試</button>
+        <button class="button" onclick="runTargetTest()">目標值測試</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>📊 測試結果</h2>
+        <div id="test-results">
+            <p>點擊上方按鈕開始測試...</p>
+        </div>
+    </div>
+    
+    <!-- 載入必要的腳本 -->
+    <script src="../src/js/constants.js"></script>
+    <script src="../src/js/ovr_calculator.js"></script>
+    <script src="../src/js/probability_model.js"></script>
+    <script src="../src/js/simulation_engine.js"></script>
+    <script src="../src/js/simple_model.js"></script>
+    
+    <script>
+        // 測試結果顯示函數
+        function showResult(title, content) {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML += `
+                <h3>${title}</h3>
+                <div class="test-result">${content}</div>
+            `;
+        }
+        
+        // 基礎功能測試
+        function runBasicTest() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<h3>🧪 基礎功能測試</h3>';
+            
+            console.log('🧪 開始基礎功能測試...');
+            
+            // 測試標準配置
+            const testConfig = { POW: 100, HIT: 100, EYE: 100, pa: 600 };
+            
+            try {
+                // 測試簡化模型
+                const simpleStats = simulatePlayerStatsSimple(
+                    testConfig.POW, testConfig.HIT, testConfig.EYE, 1000, testConfig.pa
+                );
+                
+                let result = `✅ 簡化模型基礎測試通過\n`;
+                result += `配置: POW=${testConfig.POW}, HIT=${testConfig.HIT}, EYE=${testConfig.EYE}\n`;
+                result += `結果: BA=${simpleStats.BA.toFixed(3)}, OBP=${simpleStats.OBP.toFixed(3)}, SLG=${simpleStats.SLG.toFixed(3)}\n`;
+                result += `     HR=${simpleStats.HR}, 2B=${simpleStats['2B']}, BB=${simpleStats.BB}\n`;
+                
+                showResult('基礎功能測試', result);
+                
+            } catch (error) {
+                showResult('基礎功能測試', `❌ 測試失敗: ${error.message}`);
+            }
+        }
+        
+        // 關鍵效果驗證
+        function runEffectTests() {
+            console.log('🧪 開始關鍵效果驗證...');
+            
+            let allResults = '';
+            
+            // 1. HIT增加 → HR增加測試
+            allResults += '📈 測試 HIT↑ → HR↑ (HR是安打子集)\n';
+            allResults += '固定 POW=100, EYE=100\n\n';
+            
+            const hitLevels = [40, 70, 100, 130];
+            const hitResults = [];
+            
+            hitLevels.forEach(hit => {
+                const stats = simulatePlayerStatsSimple(100, hit, 100, 1000, 600);
+                hitResults.push({
+                    hit: hit,
+                    ba: stats.BA,
+                    hr: stats.HR,
+                    hits: stats.H
+                });
+                allResults += `HIT ${hit}: BA=${stats.BA.toFixed(3)}, HR=${stats.HR}, 總安打=${stats.H}\n`;
+            });
+            
+            // 檢查是否HIT增加時HR也增加
+            let hitToHrCheck = true;
+            for (let i = 1; i < hitResults.length; i++) {
+                if (hitResults[i].hr < hitResults[i-1].hr) {
+                    hitToHrCheck = false;
+                    break;
+                }
+            }
+            allResults += hitToHrCheck ? '✅ HIT↑ → HR↑ 效果確認\n\n' : '❌ HIT↑ → HR↑ 效果失效\n\n';
+            
+            // 2. EYE增加 → BA小幅增加測試
+            allResults += '👁️ 測試 EYE↑ → BA小幅↑\n';
+            allResults += '固定 POW=100, HIT=100\n\n';
+            
+            const eyeLevels = [40, 70, 100, 130];
+            const eyeResults = [];
+            
+            eyeLevels.forEach(eye => {
+                const stats = simulatePlayerStatsSimple(100, 100, eye, 1000, 600);
+                eyeResults.push({
+                    eye: eye,
+                    ba: stats.BA,
+                    obp: stats.OBP,
+                    bb: stats.BB
+                });
+                allResults += `EYE ${eye}: BA=${stats.BA.toFixed(3)}, OBP=${stats.OBP.toFixed(3)}, BB=${stats.BB}\n`;
+            });
+            
+            // 檢查EYE增加時BA是否有小幅提升
+            let eyeToBACheck = true;
+            for (let i = 1; i < eyeResults.length; i++) {
+                if (eyeResults[i].ba <= eyeResults[i-1].ba) {
+                    eyeToBACheck = false;
+                    break;
+                }
+            }
+            allResults += eyeToBACheck ? '✅ EYE↑ → BA小幅↑ 效果確認\n\n' : '❌ EYE↑ → BA小幅↑ 效果失效\n\n';
+            
+            // 3. POW增加 → HR大幅增加測試
+            allResults += '💥 測試 POW↑ → HR大幅↑\n';
+            allResults += '固定 HIT=100, EYE=100\n\n';
+            
+            const powLevels = [40, 70, 100, 130];
+            const powResults = [];
+            
+            powLevels.forEach(pow => {
+                const stats = simulatePlayerStatsSimple(pow, 100, 100, 1000, 600);
+                const xbh = stats.HR + stats['2B'];
+                powResults.push({
+                    pow: pow,
+                    slg: stats.SLG,
+                    hr: stats.HR,
+                    xbh: xbh
+                });
+                allResults += `POW ${pow}: SLG=${stats.SLG.toFixed(3)}, HR=${stats.HR}, XBH=${xbh}\n`;
+            });
+            
+            // 檢查POW增加時HR是否大幅增加
+            let powToHRCheck = true;
+            for (let i = 1; i < powResults.length; i++) {
+                if (powResults[i].hr <= powResults[i-1].hr) {
+                    powToHRCheck = false;
+                    break;
+                }
+            }
+            allResults += powToHRCheck ? '✅ POW↑ → HR大幅↑ 效果確認\n' : '❌ POW↑ → HR大幅↑ 效果失效\n';
+            
+            showResult('關鍵效果驗證', allResults);
+        }
+        
+        // 模型對比測試
+        function runModelComparison() {
+            console.log('🧪 開始模型對比測試...');
+            
+            const testCases = [
+                { name: 'Level 40', pow: 40, hit: 40, eye: 40 },
+                { name: 'Level 70', pow: 70, hit: 70, eye: 70 },
+                { name: 'Level 100', pow: 100, hit: 100, eye: 100 },
+                { name: '高POW組合', pow: 130, hit: 80, eye: 80 },
+                { name: '高HIT組合', pow: 80, hit: 130, eye: 80 },
+                { name: '高EYE組合', pow: 80, hit: 80, eye: 130 }
+            ];
+            
+            let comparisonHTML = `
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>測試組合</th>
+                            <th>模型</th>
+                            <th>BA</th>
+                            <th>OBP</th>
+                            <th>SLG</th>
+                            <th>HR</th>
+                            <th>2B</th>
+                            <th>BB</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            testCases.forEach(testCase => {
+                try {
+                    // 舊模型
+                    const oldStats = simulatePlayerStats(testCase.pow, testCase.hit, testCase.eye, 100, 600);
+                    
+                    // 新模型
+                    const newStats = simulatePlayerStatsSimple(testCase.pow, testCase.hit, testCase.eye, 1000, 600);
+                    
+                    comparisonHTML += `
+                        <tr>
+                            <td rowspan="2">${testCase.name}<br>(${testCase.pow}/${testCase.hit}/${testCase.eye})</td>
+                            <td>四象限</td>
+                            <td>${oldStats.BA.toFixed(3)}</td>
+                            <td>${oldStats.OBP.toFixed(3)}</td>
+                            <td>${oldStats.SLG.toFixed(3)}</td>
+                            <td>${Math.round(oldStats.HR_count)}</td>
+                            <td>${Math.round(oldStats.doubles_count)}</td>
+                            <td>${Math.round(oldStats.BB_rate * 600)}</td>
+                        </tr>
+                        <tr>
+                            <td>簡化</td>
+                            <td>${newStats.BA.toFixed(3)}</td>
+                            <td>${newStats.OBP.toFixed(3)}</td>
+                            <td>${newStats.SLG.toFixed(3)}</td>
+                            <td>${newStats.HR}</td>
+                            <td>${newStats['2B']}</td>
+                            <td>${newStats.BB}</td>
+                        </tr>
+                    `;
+                } catch (error) {
+                    comparisonHTML += `
+                        <tr>
+                            <td colspan="8">❌ ${testCase.name} 測試失敗: ${error.message}</td>
+                        </tr>
+                    `;
+                }
+            });
+            
+            comparisonHTML += `
+                    </tbody>
+                </table>
+            `;
+            
+            showResult('模型對比測試', comparisonHTML);
+        }
+        
+        // 目標值測試
+        function runTargetTest() {
+            console.log('🧪 開始目標值測試...');
+            
+            const targets = [
+                { level: 40, pow: 40, hit: 40, eye: 40, targetBA: 0.225, targetOBP: 0.264, targetSLG: 0.313 },
+                { level: 70, pow: 70, hit: 70, eye: 70, targetBA: 0.284, targetOBP: 0.347, targetSLG: 0.464 },
+                { level: 100, pow: 100, hit: 100, eye: 100, targetBA: 0.343, targetOBP: 0.455, targetSLG: 0.625 }
+            ];
+            
+            let targetHTML = `
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Level</th>
+                            <th>統計</th>
+                            <th>目標值</th>
+                            <th>簡化模型</th>
+                            <th>誤差</th>
+                            <th>狀態</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            targets.forEach(target => {
+                const stats = simulatePlayerStatsSimple(target.pow, target.hit, target.eye, 2000, 600);
+                
+                const baError = Math.abs(stats.BA - target.targetBA);
+                const obpError = Math.abs(stats.OBP - target.targetOBP);
+                const slgError = Math.abs(stats.SLG - target.targetSLG);
+                
+                const baStatus = baError < 0.020 ? '✅' : baError < 0.050 ? '⚠️' : '❌';
+                const obpStatus = obpError < 0.020 ? '✅' : obpError < 0.050 ? '⚠️' : '❌';
+                const slgStatus = slgError < 0.050 ? '✅' : slgError < 0.100 ? '⚠️' : '❌';
+                
+                targetHTML += `
+                    <tr>
+                        <td rowspan="3">Level ${target.level}</td>
+                        <td>BA</td>
+                        <td>${target.targetBA.toFixed(3)}</td>
+                        <td>${stats.BA.toFixed(3)}</td>
+                        <td>${baError.toFixed(3)}</td>
+                        <td>${baStatus}</td>
+                    </tr>
+                    <tr>
+                        <td>OBP</td>
+                        <td>${target.targetOBP.toFixed(3)}</td>
+                        <td>${stats.OBP.toFixed(3)}</td>
+                        <td>${obpError.toFixed(3)}</td>
+                        <td>${obpStatus}</td>
+                    </tr>
+                    <tr>
+                        <td>SLG</td>
+                        <td>${target.targetSLG.toFixed(3)}</td>
+                        <td>${stats.SLG.toFixed(3)}</td>
+                        <td>${slgError.toFixed(3)}</td>
+                        <td>${slgStatus}</td>
+                    </tr>
+                `;
+            });
+            
+            targetHTML += `
+                    </tbody>
+                </table>
+                <p><strong>狀態說明:</strong> ✅ 優秀(<2%), ⚠️ 可接受(2-5%), ❌ 需調整(>5%)</p>
+            `;
+            
+            showResult('目標值測試', targetHTML);
+        }
+        
+        // 頁面加載完成
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🧪 簡化模型測試頁面已載入');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quick New Model Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-result { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; }
+        .error { background: #f8d7da; }
+    </style>
+</head>
+<body>
+    <h1>🚀 New Simplified Model Browser Test</h1>
+    <div id="results"></div>
+
+    <!-- Load scripts in correct order -->
+    <script src="src/js/constants.js"></script>
+    <script src="src/js/probability_model.js"></script>
+
+    <script>
+        function addResult(title, content, isSuccess = true) {
+            const div = document.createElement('div');
+            div.className = `test-result ${isSuccess ? 'success' : 'error'}`;
+            div.innerHTML = `<h3>${title}</h3><pre>${content}</pre>`;
+            document.getElementById('results').appendChild(div);
+        }
+
+        // Test 1: Basic constants loading
+        try {
+            if (typeof EYE_BB_RATE_TABLE !== 'undefined' && typeof interpolate !== 'undefined') {
+                addResult('✅ Constants Loading', 'Constants loaded successfully');
+            } else {
+                throw new Error('Constants not found');
+            }
+        } catch (e) {
+            addResult('❌ Constants Loading', e.message, false);
+        }
+
+        // Test 2: Basic simulation
+        try {
+            if (typeof simulateSimpleAtBat !== 'undefined') {
+                const result = simulateSimpleAtBat(100, 100, 100, 0.1, 0.3, 0.5, 0.7);
+                addResult('✅ Single At-Bat Simulation', `Result: ${result}`);
+            } else {
+                throw new Error('simulateSimpleAtBat not found');
+            }
+        } catch (e) {
+            addResult('❌ Single At-Bat Simulation', e.message, false);
+        }
+
+        // Test 3: Batch simulation
+        try {
+            if (typeof simulateMultipleAtBats !== 'undefined') {
+                const results = simulateMultipleAtBats(100, 100, 100, 100);
+                const stats = calculateStats(results, 100);
+                const finalStats = finalizeStats(stats);
+                
+                const content = `100 PA simulation:
+BA: ${finalStats.BA.toFixed(3)}
+OBP: ${finalStats.OBP.toFixed(3)}  
+SLG: ${finalStats.SLG.toFixed(3)}
+HR: ${finalStats.HR}
+2B: ${finalStats['2B']}
+1B: ${finalStats['1B']}
+BB: ${finalStats.BB}
+K: ${finalStats.K}`;
+                
+                addResult('✅ Batch Simulation', content);
+            } else {
+                throw new Error('simulateMultipleAtBats not found');
+            }
+        } catch (e) {
+            addResult('❌ Batch Simulation', e.message, false);
+        }
+
+        // Test 4: Compatibility functions
+        try {
+            if (typeof getPAEventProbabilities !== 'undefined') {
+                const probs = getPAEventProbabilities(100, 100, 100);
+                const content = `Event probabilities:
+HR: ${(probs.HR * 100).toFixed(1)}%
+2B: ${(probs['2B'] * 100).toFixed(1)}%
+1B: ${(probs['1B'] * 100).toFixed(1)}%
+BB: ${(probs.BB * 100).toFixed(1)}%
+K: ${(probs.K * 100).toFixed(1)}%`;
+                
+                addResult('✅ Backward Compatibility', content);
+            } else {
+                throw new Error('getPAEventProbabilities not found');
+            }
+        } catch (e) {
+            addResult('❌ Backward Compatibility', e.message, false);
+        }
+
+        // Test 5: HIT→HR relationship
+        try {
+            let hitToHRTest = 'HIT vs HR test:\n';
+            const hitLevels = [40, 70, 100, 130];
+            
+            hitLevels.forEach(hit => {
+                const results = simulateMultipleAtBats(100, hit, 100, 600);
+                const stats = calculateStats(results, 600);
+                const finalStats = finalizeStats(stats);
+                hitToHRTest += `HIT ${hit}: BA=${finalStats.BA.toFixed(3)}, HR=${finalStats.HR}\n`;
+            });
+            
+            addResult('✅ HIT→HR Relationship', hitToHRTest);
+        } catch (e) {
+            addResult('❌ HIT→HR Relationship', e.message, false);
+        }
+
+        console.log('🎉 Browser test completed!');
+    </script>
+</body>
+</html>
