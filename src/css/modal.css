@@ -512,7 +512,7 @@
     50% { opacity: 1; }
     100% { opacity: 0.7; }
   }
-}
+
 
 /* 桌面版特定樣式 - 兩欄佈局 */
 @media (min-width: 769px) {
