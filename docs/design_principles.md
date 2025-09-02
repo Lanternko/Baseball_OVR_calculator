@@ -19,7 +19,7 @@
 Must follow this exact sequence when debugging bidirectional conversion:
 
 #### Phase 1: Foundation Validation
-1. **Test isolated attributes** (70/99/70, 99/70/70, 70/70/99)
+1. **Test isolated attributes** (70/100/70, 100/70/70, 70/70/100)
    - Verify each attribute produces its benchmark target
    - Adjust anchor points if needed
 2. **Test league average** (70/70/70)
@@ -27,12 +27,12 @@ Must follow this exact sequence when debugging bidirectional conversion:
    - This is the calibration cornerstone
 
 #### Phase 2: Homogeneous Groups
-3. **Test same-level combinations** (40/40/40, 99/99/99)
+3. **Test same-level combinations** (40/40/40, 100/100/100)
    - Acceptable bidirectional error: <10 total
    - If fails, check attribute interaction effects
 
 #### Phase 3: Mixed Combinations
-4. **Test mixed combinations** (40/70/99, etc.)
+4. **Test mixed combinations** (40/70/100, etc.)
    - Expected higher error due to interaction complexity
    - Use iterative optimization if needed
 
@@ -40,7 +40,7 @@ Must follow this exact sequence when debugging bidirectional conversion:
 - **Accept that mixed attributes are inherently difficult**
 - Don't over-optimize for mixed combinations at the expense of foundation
 - Attribute effects are multiplicative, not additive
-- Example: HIT 99 performs differently with EYE 40 vs EYE 99
+- Example: HIT 100 performs differently with EYE 40 vs EYE 100
 
 ### 4. **Model Parameter Hierarchy**
 When adjusting model parameters, follow this order:
@@ -76,12 +76,12 @@ Every parameter change must include:
 ### Core Test Cases (Must Always Pass)
 1. **70/70/70**: Total error <10 (Foundation test)
 2. **40/40/40**: Total error <15 (Low-end stability)
-3. **99/99/99**: Total error <20 (High-end acceptable given complexity)
+3. **100/100/100**: Total error <20 (High-end acceptable given complexity)
 
 ### Benchmark Validation Tests
-- **POW 99** with HIT=70, EYE=70 → SLG ~0.570 ±0.030
-- **HIT 99** with POW=70, EYE=70 → BA ~0.320 ±0.020
-- **EYE 99** with POW=70, HIT=70 → OBP ~0.420 ±0.025
+- **POW 100** with HIT=70, EYE=70 → SLG ~0.570 ±0.030
+- **HIT 100** with POW=70, EYE=70 → BA ~0.320 ±0.020
+- **EYE 100** with POW=70, HIT=70 → OBP ~0.420 ±0.025
 
 ## 🚫 Anti-Patterns to Avoid
 
@@ -98,7 +98,7 @@ Every parameter change must include:
 - ✅ Systematic, single-parameter adjustments
 
 ### 4. **Extreme Value Focus**
-- ❌ Optimizing only for 99/99/99 combinations
+- ❌ Optimizing only for 100/100/100 combinations
 - ✅ Balanced approach across all ranges
 
 ## 🛠️ Implementation Guidelines
@@ -123,7 +123,7 @@ For stat-to-attribute conversion accuracy:
 
 ### System Health Indicators
 1. **Foundation Stability**: 70/70/70 consistently <10 error
-2. **Range Coverage**: All 40-99 combinations show reasonable accuracy
+2. **Range Coverage**: All 40-100 combinations show reasonable accuracy
 3. **MLB Compliance**: Isolated attributes hit benchmark targets
 4. **Bidirectional Consistency**: Conversion cycles maintain <15% drift
 
