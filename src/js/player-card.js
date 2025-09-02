@@ -227,14 +227,21 @@ function updatePlayerCardContent(modal, playerData, statsData, mode = 'attribute
 }
 
 
-// 從三圍計算OVR（如果沒有直接提供OVR值）
+// 從三圍計算OVR（使用wOBA-based系統）
 function calculateOVRFromAttributes(data) {
     const hit = data.HIT || 75;
     const pow = data.POW || 75;
     const eye = data.EYE || 75;
     
-    // 簡單的OVR計算公式
-    return Math.round((hit * 0.35) + (pow * 0.35) + (eye * 0.30));
+    try {
+        // 使用真正的OVR計算系統
+        const ovrResult = calculateBatterOVR(pow, hit, eye);
+        return ovrResult.ovr;
+    } catch (error) {
+        console.warn('OVR計算失敗，使用備用公式:', error);
+        // 備用：簡單加權平均
+        return Math.round((hit * 0.35) + (pow * 0.35) + (eye * 0.30));
+    }
 }
 
 // 統計數據標籤映射
@@ -306,6 +313,7 @@ function generatePlayerCardHTML(playerData) {
         </div>
     `;
 }
+
 
 // 獲取稀有度類別
 function getRarityClass(ovr) {

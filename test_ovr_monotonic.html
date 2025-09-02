@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OVR Monotonic Validation Test</title>
+    <script src="src/js/constants.js"></script>
+    <script src="src/js/probability_model.js"></script>
+    <script src="src/js/simulation_engine.js"></script>
+    <script src="src/js/ovr_calculator.js"></script>
+    <style>
+        body { font-family: monospace; margin: 20px; }
+        table { border-collapse: collapse; margin: 10px 0; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        th { background-color: #f5f5f5; }
+        .pass { color: green; }
+        .fail { color: red; }
+        .section { margin: 30px 0; border: 1px solid #ddd; padding: 20px; }
+    </style>
+</head>
+<body>
+    <h1>OVR Monotonic Validation Test</h1>
+    <p>Testing: Higher OVR should correlate with better offensive production (OPS/wOBA simulation)</p>
+    
+    <div id="results"></div>
+
+    <script>
+        function runMonotonicTest() {
+            const results = [];
+            
+            console.log('🧪 Starting OVR Monotonic Validation Test...');
+            
+            // Test 1: Single Attribute Monotonic Test
+            console.log('\n📊 Test 1: Single Attribute Monotonic Test');
+            results.push('<div class="section"><h2>Test 1: Single Attribute Monotonic Test</h2>');
+            
+            const baseAttrs = [70, 70, 70]; // POW, HIT, EYE
+            const testValues = [50, 60, 70, 80, 90, 100, 110, 120, 130];
+            
+            // Test POW monotonic
+            results.push('<h3>POW Monotonic Test (HIT=70, EYE=70):</h3>');
+            results.push('<table><tr><th>POW</th><th>OVR</th><th>Sim OPS</th><th>Sim wOBA</th><th>OVR ↑?</th><th>OPS ↑?</th></tr>');
+            
+            let prevOVR_pow = 0, prevOPS_pow = 0;
+            testValues.forEach(pow => {
+                const ovrResult = calculateBatterOVR(pow, 70, 70);
+                const ovr = ovrResult.ovr;
+                
+                // Simulate performance
+                const simStats = simulatePlayerStats(pow, 70, 70, 10, 600);
+                const simOPS = simStats.OBP + simStats.SLG;
+                const simWOBA = simStats.OBP * 0.69 + simStats.SLG * 0.72; // Rough wOBA approximation
+                
+                const ovrUp = ovr >= prevOVR_pow;
+                const opsUp = simOPS >= prevOPS_pow;
+                
+                results.push(
+                    `<tr><td>${pow}</td><td>${ovr}</td><td>${simOPS.toFixed(3)}</td><td>${simWOBA.toFixed(3)}</td>` +
+                    `<td class="${ovrUp ? 'pass' : 'fail'}">${ovrUp ? '✓' : '✗'}</td>` +
+                    `<td class="${opsUp ? 'pass' : 'fail'}">${opsUp ? '✓' : '✗'}</td></tr>`
+                );
+                
+                prevOVR_pow = ovr;
+                prevOPS_pow = simOPS;
+            });
+            results.push('</table>');
+            
+            // Test HIT monotonic
+            results.push('<h3>HIT Monotonic Test (POW=70, EYE=70):</h3>');
+            results.push('<table><tr><th>HIT</th><th>OVR</th><th>Sim OPS</th><th>Sim wOBA</th><th>OVR ↑?</th><th>OPS ↑?</th></tr>');
+            
+            let prevOVR_hit = 0, prevOPS_hit = 0;
+            testValues.forEach(hit => {
+                const ovrResult = calculateBatterOVR(70, hit, 70);
+                const ovr = ovrResult.ovr;
+                
+                const simStats = simulatePlayerStats(70, hit, 70, 10, 600);
+                const simOPS = simStats.OBP + simStats.SLG;
+                const simWOBA = simStats.OBP * 0.69 + simStats.SLG * 0.72;
+                
+                const ovrUp = ovr >= prevOVR_hit;
+                const opsUp = simOPS >= prevOPS_hit;
+                
+                results.push(
+                    `<tr><td>${hit}</td><td>${ovr}</td><td>${simOPS.toFixed(3)}</td><td>${simWOBA.toFixed(3)}</td>` +
+                    `<td class="${ovrUp ? 'pass' : 'fail'}">${ovrUp ? '✓' : '✗'}</td>` +
+                    `<td class="${opsUp ? 'pass' : 'fail'}">${opsUp ? '✓' : '✗'}</td></tr>`
+                );
+                
+                prevOVR_hit = ovr;
+                prevOPS_hit = simOPS;
+            });
+            results.push('</table>');
+            
+            // Test EYE monotonic
+            results.push('<h3>EYE Monotonic Test (POW=70, HIT=70):</h3>');
+            results.push('<table><tr><th>EYE</th><th>OVR</th><th>Sim OPS</th><th>Sim wOBA</th><th>OVR ↑?</th><th>OPS ↑?</th></tr>');
+            
+            let prevOVR_eye = 0, prevOPS_eye = 0;
+            testValues.forEach(eye => {
+                const ovrResult = calculateBatterOVR(70, 70, eye);
+                const ovr = ovrResult.ovr;
+                
+                const simStats = simulatePlayerStats(70, 70, eye, 10, 600);
+                const simOPS = simStats.OBP + simStats.SLG;
+                const simWOBA = simStats.OBP * 0.69 + simStats.SLG * 0.72;
+                
+                const ovrUp = ovr >= prevOVR_eye;
+                const opsUp = simOPS >= prevOPS_eye;
+                
+                results.push(
+                    `<tr><td>${eye}</td><td>${ovr}</td><td>${simOPS.toFixed(3)}</td><td>${simWOBA.toFixed(3)}</td>` +
+                    `<td class="${ovrUp ? 'pass' : 'fail'}">${ovrUp ? '✓' : '✗'}</td>` +
+                    `<td class="${opsUp ? 'pass' : 'fail'}">${opsUp ? '✓' : '✗'}</td></tr>`
+                );
+                
+                prevOVR_eye = ovr;
+                prevOPS_eye = simOPS;
+            });
+            results.push('</table></div>');
+            
+            // Test 2: Real Player Comparison Test
+            results.push('<div class="section"><h2>Test 2: Real Player OVR vs Simulated Production</h2>');
+            
+            const realPlayers = [
+                { name: 'Aaron Judge 2024', pow: 134, hit: 81, eye: 80, realOPS: 1.159 },
+                { name: 'Shohei Ohtani 2024', pow: 137, hit: 82, eye: 80, realOPS: 1.036 },
+                { name: 'Juan Soto 2024', pow: 127, hit: 65, eye: 108, realOPS: 0.988 },
+                { name: 'Mookie Betts 2024', pow: 105, hit: 85, eye: 95, realOPS: 0.863 },
+                { name: 'Average Player', pow: 70, hit: 70, eye: 70, realOPS: 0.750 }
+            ];
+            
+            results.push('<table><tr><th>Player</th><th>Attributes</th><th>OVR</th><th>Sim OPS</th><th>Real OPS</th><th>Sim vs Real</th></tr>');
+            
+            const playerData = realPlayers.map(player => {
+                const ovrResult = calculateBatterOVR(player.pow, player.hit, player.eye);
+                const simStats = simulatePlayerStats(player.pow, player.hit, player.eye, 50, 600);
+                const simOPS = simStats.OBP + simStats.SLG;
+                const diff = Math.abs(simOPS - player.realOPS);
+                const close = diff < 0.100; // Within 0.100 OPS is reasonable
+                
+                results.push(
+                    `<tr><td>${player.name}</td>` +
+                    `<td>${player.pow}/${player.hit}/${player.eye}</td>` +
+                    `<td>${ovrResult.ovr}</td>` +
+                    `<td>${simOPS.toFixed(3)}</td>` +
+                    `<td>${player.realOPS.toFixed(3)}</td>` +
+                    `<td class="${close ? 'pass' : 'fail'}">±${diff.toFixed(3)}</td></tr>`
+                );
+                
+                return {
+                    name: player.name,
+                    ovr: ovrResult.ovr,
+                    simOPS,
+                    realOPS: player.realOPS
+                };
+            });
+            results.push('</table>');
+            
+            // Correlation test
+            const ovrs = playerData.map(p => p.ovr);
+            const simOPSs = playerData.map(p => p.simOPS);
+            const realOPSs = playerData.map(p => p.realOPS);
+            
+            const ovrSimCorr = calculateCorrelation(ovrs, simOPSs);
+            const ovrRealCorr = calculateCorrelation(ovrs, realOPSs);
+            
+            results.push(`<h3>Correlation Analysis:</h3>`);
+            results.push(`<p>OVR vs Simulated OPS: <strong>${ovrSimCorr.toFixed(3)}</strong></p>`);
+            results.push(`<p>OVR vs Real OPS: <strong>${ovrRealCorr.toFixed(3)}</strong></p>`);
+            results.push(`<p>Target: Both should be > 0.900 for good correlation</p></div>`);
+            
+            // Test 3: Extreme Cases
+            results.push('<div class="section"><h2>Test 3: Extreme Cases</h2>');
+            
+            const extremeCases = [
+                { name: 'Extreme Power Specialist', pow: 150, hit: 50, eye: 50 },
+                { name: 'Extreme Contact Hitter', pow: 50, hit: 150, eye: 50 },
+                { name: 'Extreme Plate Discipline', pow: 50, hit: 50, eye: 150 },
+                { name: 'Balanced Elite', pow: 100, hit: 100, eye: 100 },
+                { name: 'Balanced Good', pow: 85, hit: 85, eye: 85 }
+            ];
+            
+            results.push('<table><tr><th>Player Type</th><th>Attributes</th><th>OVR</th><th>Sim OPS</th><th>Note</th></tr>');
+            
+            extremeCases.forEach(player => {
+                const ovrResult = calculateBatterOVR(player.pow, player.hit, player.eye);
+                const simStats = simulatePlayerStats(player.pow, player.hit, player.eye, 20, 600);
+                const simOPS = simStats.OBP + simStats.SLG;
+                
+                let note = '';
+                if (player.name.includes('Power') && simOPS > 0.800) note = 'Power produces decent offense';
+                else if (player.name.includes('Contact') && simStats.BA > 0.300) note = 'High BA specialist';
+                else if (player.name.includes('Discipline') && simStats.OBP > 0.400) note = 'OBP specialist';
+                else if (player.name.includes('Balanced')) note = 'Well-rounded player';
+                
+                results.push(
+                    `<tr><td>${player.name}</td>` +
+                    `<td>${player.pow}/${player.hit}/${player.eye}</td>` +
+                    `<td>${ovrResult.ovr}</td>` +
+                    `<td>${simOPS.toFixed(3)}</td>` +
+                    `<td>${note}</td></tr>`
+                );
+            });
+            results.push('</table></div>');
+            
+            document.getElementById('results').innerHTML = results.join('');
+            console.log('✅ OVR Monotonic Validation Test Complete');
+        }
+        
+        function calculateCorrelation(x, y) {
+            const n = x.length;
+            const sumX = x.reduce((a, b) => a + b, 0);
+            const sumY = y.reduce((a, b) => a + b, 0);
+            const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
+            const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
+            const sumY2 = y.reduce((sum, yi) => sum + yi * yi, 0);
+            
+            return (n * sumXY - sumX * sumY) / 
+                Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+        }
+        
+        // Run test when page loads
+        window.addEventListener('load', runMonotonicTest);
+    </script>
+</body>
+</html>

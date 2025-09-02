@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="src/css/player-cards.css">
     <link rel="stylesheet" href="src/css/modal.css">
     <script src="src/js/constants.js"></script>
+    <script src="src/js/woba_ovr_mapping.js"></script>
     <script src="src/js/ovr_calculator.js"></script>
     <script src="src/js/probability_model.js"></script>
     <script src="src/js/simulation_engine.js"></script>
@@ -117,7 +118,7 @@
                         <label for="inputHIT">HIT (Hit Tool)</label>
                     </div>
                     <div class="input-field-column">
-                        <input type="number" id="inputHIT" placeholder="93" min="0" max="500">
+                        <input type="number" id="inputHIT" placeholder="83" min="0" max="500">
                     </div>
                 </div>
 
@@ -126,7 +127,7 @@
                         <label for="inputPOW">POW (Power)</label>
                     </div>
                     <div class="input-field-column">
-                        <input type="number" id="inputPOW" placeholder="108" min="0" max="500">
+                        <input type="number" id="inputPOW" placeholder="136" min="0" max="500">
                     </div>
                 </div>
                 
@@ -135,7 +136,7 @@
                         <label for="inputEYE">EYE (Plate Discipline)</label>
                     </div>
                     <div class="input-field-column">
-                        <input type="number" id="inputEYE" placeholder="109" min="0" max="500">
+                        <input type="number" id="inputEYE" placeholder="80" min="0" max="500">
                     </div>
                 </div>
                 
@@ -355,9 +356,9 @@
                 const playerName = document.getElementById('playerName').value;
                 
                 // 使用輸入值或預設值（對應placeholder）
-                const xBA = parseFloat(xBAInput) || 0.314;
-                const xSLG = parseFloat(xSLGInput) || 0.66;
-                const xwOBA = parseFloat(xwOBAInput) || 0.442;
+                const xBA = parseFloat(xBAInput) || 0.310;
+                const xSLG = parseFloat(xSLGInput) || 0.646;
+                const xwOBA = parseFloat(xwOBAInput) || 0.390;
                 
                 return {
                     name: playerName || '大谷翔平24\'',
