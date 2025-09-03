@@ -218,10 +218,6 @@ if (typeof window !== 'undefined') {
   // 向下相容：覆寫舊函數
   window.getPAEventProbabilities = getPAEventProbabilitiesNew;
   
-  // 全域函數導出 (供 calculateBatterOVR 使用)
-  window.simulateMultipleAtBats = simulateMultipleAtBats;
-  window.calculateStats = calculateStats;
-  
   // 新簡化模型函數
   window.simulateSimpleAtBat = simulateSimpleAtBat;
   window.simulateSimpleMultipleBats = simulateSimpleMultipleBats;

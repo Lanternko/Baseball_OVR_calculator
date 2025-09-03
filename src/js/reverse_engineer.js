@@ -6,9 +6,9 @@ console.log('🔄 載入逆向工程計算器...');
 // 逆向工程主函數
 function reverseEngineerAttributes(targetStats, tolerance = 0.001, maxIterations = 50) {
     const target = {
-        BA: targetStats.BA || 0.310,
-        OBP: targetStats.OBP || 0.390, 
-        SLG: targetStats.SLG || 0.646,
+        BA: targetStats.BA || 0.300,
+        OBP: targetStats.OBP || 0.370, 
+        SLG: targetStats.SLG || 0.500,
         PA: targetStats.PA || 600
     };
     
@@ -137,9 +137,9 @@ function calculateAdjustments(errors, adjustmentFactor) {
 
 // 簡化的屬性預測（快速估計）
 function quickEstimateAttributes(targetStats) {
-    const ba = targetStats.BA || 0.310;
-    const obp = targetStats.OBP || 0.390;
-    const slg = targetStats.SLG || 0.646;
+    const ba = targetStats.BA || 0.300;
+    const obp = targetStats.OBP || 0.370;
+    const slg = targetStats.SLG || 0.500;
     
     // 基於實測數據的線性插值估計
     const hit = interpolateAttribute(ba, [

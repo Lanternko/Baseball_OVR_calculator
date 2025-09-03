@@ -113,123 +113,107 @@ function calculatePlayerGameAttributes(xBA, xSLG, xwOBA) {
     };
 }
 
-// 防止無限迴圈的全域鎖
-let isCalculatingOVR = false;
-
-// 🎯 wOBA-Based OVR System
-// OVR determined purely by simulated wOBA with anchor point calibration
-// Principles: Higher wOBA = Higher OVR, Anchored to level standards
+// 🔧 新版 OVR 計算函數 - 以100為基準點，不均衡扣分制
 function calculateBatterOVR(pow, hit, eye) {
-    // 防止無限遞歸
-    if (isCalculatingOVR) {
-        console.warn('檢測到遞歸調用 calculateBatterOVR，使用備用計算');
-        return {
-            ovr: Math.round((parseFloat(hit) || 75) * 0.35 + (parseFloat(pow) || 75) * 0.35 + (parseFloat(eye) || 75) * 0.30),
-            breakdown: { error: '遞歸調用，使用備用計算' }
+    // 🔧 嚴格的輸入驗證
+    const safePOW = parseFloat(pow) || 1;
+    const safeHIT = parseFloat(hit) || 1;
+    const safeEYE = parseFloat(eye) || 1;
+    
+    console.log('OVR計算輸入:', { pow: safePOW, hit: safeHIT, eye: safeEYE });
+    
+    if (safePOW <= 0 || safeHIT <= 0 || safeEYE <= 0) {
+        console.error('OVR計算錯誤：屬性值必須為正數');
+        return { 
+            ovr: 1, 
+            breakdown: { 
+                arithmeticMean: '1.0',
+                baseOVR: '1.0', 
+                unbalancePenalty: '0.0',
+                balanceRatio: '1.00',
+                error: '屬性值無效'
+            } 
         };
     }
     
-    isCalculatingOVR = true;
+    const arithmeticMean = (safePOW + safeHIT + safeEYE) / 3;
     
-    try {
-        // 輸入驗證
-        const safePOW = Math.max(1, parseFloat(pow) || 1);
-        const safeHIT = Math.max(1, parseFloat(hit) || 1);
-        const safeEYE = Math.max(1, parseFloat(eye) || 1);
+    // 🔧 檢查計算結果有效性
+    if (isNaN(arithmeticMean)) {
+        console.error('OVR計算錯誤：平均值計算失敗', { arithmeticMean });
+        return { 
+            ovr: 1, 
+            breakdown: { 
+                arithmeticMean: '1.0',
+                baseOVR: '1.0',
+                unbalancePenalty: '0.0', 
+                balanceRatio: '1.00',
+                error: '計算失敗'
+            } 
+        };
+    }
+    
+    // 🎯 新公式：主要依賴算術平均，100屬性 = 100 OVR
+    let baseOVR = arithmeticMean;
+    
+    // 🎯 不均衡扣分系統
+    const maxAttribute = Math.max(safePOW, safeHIT, safeEYE);
+    const minAttribute = Math.min(safePOW, safeHIT, safeEYE);
+    const balanceRatio = minAttribute / maxAttribute;
+    
+    let unbalancePenalty = 0;
+    
+    // 根據不均衡程度計算扣分
+    if (balanceRatio < 0.8) {
+        // 不均衡程度：1 - balanceRatio (0 = 完全均衡, 1 = 完全不均衡)
+        const unbalanceLevel = 1 - balanceRatio;
         
-        console.log('OVR計算輸入:', { pow: safePOW, hit: safeHIT, eye: safeEYE });
+        // 扣分公式：不均衡程度 × 平均值 × 扣分係數
+        const penaltyCoeff = 0.15; // 15%的扣分係數
+        unbalancePenalty = unbalanceLevel * arithmeticMean * penaltyCoeff;
+        
+        // 更嚴重的不均衡有額外懲罰
+        if (balanceRatio < 0.5) {
+            unbalancePenalty += (0.5 - balanceRatio) * arithmeticMean * 0.1;
+        }
+        
+        // 極度不均衡的額外懲罰
+        if (balanceRatio < 0.3) {
+            unbalancePenalty += (0.3 - balanceRatio) * arithmeticMean * 0.2;
+        }
+    }
     
-    // 🎯 Step 1: 模擬球員表現獲得 wOBA
-    const simResults = simulateMultipleAtBats(safeEYE, safeHIT, safePOW, 600);
-    const simStats = calculateStats(simResults, 600);
-    const woba = calculateWOBAFromStats(simStats);
+    let finalOVR = baseOVR - unbalancePenalty;
+    finalOVR = Math.max(1, Math.min(1000, finalOVR));
     
-    // 🎯 Step 2: 使用新的映射系統 wOBA → OVR
-    const ovr = (typeof WOBAOVRMapping !== 'undefined') ? 
-                WOBAOVRMapping.findOVRFromWOBA(woba) : 
-                calculateOVRFromWOBA(woba); // 備用
-    
-    console.log('wOBA-based OVR計算結果:', {
-        simulatedWOBA: woba.toFixed(3),
-        mappedOVR: ovr.toFixed(1),
-        pow: safePOW,
-        hit: safeHIT,
-        eye: safeEYE
+    console.log('OVR計算結果:', { 
+        arithmeticMean: arithmeticMean.toFixed(1),
+        baseOVR: baseOVR.toFixed(1),
+        unbalancePenalty: unbalancePenalty.toFixed(1),
+        balanceRatio: balanceRatio.toFixed(2),
+        finalOVR: finalOVR.toFixed(1)
     });
     
-        return {
-            ovr: Math.round(ovr),
-            breakdown: {
-                simulatedWOBA: woba.toFixed(3),
-                rawOVR: ovr.toFixed(1),
-                balanceRatio: (Math.min(safePOW, safeHIT, safeEYE) / Math.max(safePOW, safeHIT, safeEYE)).toFixed(3)
-            }
-        };
-    } catch (error) {
-        console.error('OVR計算過程中發生錯誤:', error);
-        return {
-            ovr: Math.round((parseFloat(hit) || 75) * 0.35 + (parseFloat(pow) || 75) * 0.35 + (parseFloat(eye) || 75) * 0.30),
-            breakdown: { error: error.message }
-        };
-    } finally {
-        isCalculatingOVR = false;
-    }
-}
-
-// 🎯 從模擬統計計算 wOBA
-function calculateWOBAFromStats(stats) {
-    // MLB 2019-2021 average weights
-    const weights = {
-        BB: 0.692,
-        '1B': 0.879, 
-        '2B': 1.242,
-        '3B': 1.568,
-        HR: 2.081
+    return {
+        ovr: Math.round(finalOVR),
+        breakdown: {
+            arithmeticMean: arithmeticMean.toFixed(1),
+            baseOVR: baseOVR.toFixed(1),
+            unbalancePenalty: unbalancePenalty.toFixed(1),
+            balanceRatio: balanceRatio.toFixed(2)
+        }
     };
-    
-    const plateAppearances = stats.AB + stats.BB + (stats.HBP || 0);
-    if (plateAppearances === 0) return 0;
-    
-    // 從模擬結果計算各種安打類型
-    const hits = Math.round(stats.H || 0);
-    const doubles = Math.round(stats['2B'] || 0);
-    const triples = Math.round(stats['3B'] || 0);  
-    const homers = Math.round(stats.HR_count || 0);
-    const singles = Math.max(0, hits - doubles - triples - homers);
-    const walks = Math.round(stats.BB || 0);
-    
-    const woba = (walks * weights.BB + 
-                 singles * weights['1B'] + 
-                 doubles * weights['2B'] + 
-                 triples * weights['3B'] + 
-                 homers * weights.HR) / plateAppearances;
-                 
-    return woba;
 }
 
-// 🎯 廢棄：硬編碼錨點映射函數（僅作為備用）
-function calculateOVRFromWOBA(woba) {
-    // 備用：簡化版本，僅在新映射系統不可用時使用
-    console.warn('使用備用OVR映射系統，建議檢查 WOBAOVRMapping 載入狀況');
-    
-    // 簡化線性映射：wOBA 0.3-0.6 → OVR 40-150
-    if (woba <= 0.3) return Math.max(1, 40 * (woba / 0.3));
-    if (woba >= 0.6) return Math.min(200, 150 + (woba - 0.6) * 100);
-    
-    // 線性插值 0.3-0.6 → 40-150
-    return 40 + (woba - 0.3) / (0.6 - 0.3) * (150 - 40);
-}
-
-// 🎯 聯盟水準判定函數 (基於總和實力標準)
+// 🎯 聯盟水準判定函數
 function getLeagueLevel(ovr) {
-    if (ovr >= 140) return "歷史傳奇 🐐";
-    if (ovr >= 120) return "名人堂級 👑";
-    if (ovr >= 100) return "精英球員 🔥";
-    if (ovr >= 85) return "優質先發 ⭐";
-    if (ovr >= 70) return "聯盟平均 📈";
-    if (ovr >= 55) return "大聯盟替補 ⚾";
-    if (ovr >= 40) return "邊緣球員 📉";
-    return "小聯盟水準 🏃";
+    if (ovr >= 110) return "歷史最強 🐐";
+    if (ovr >= 99) return "當代最強 👑";
+    if (ovr >= 95) return "頂尖選手 🔥";
+    if (ovr >= 85) return "可靠主力 ⭐";
+    if (ovr >= 70) return "平均先發 📈";
+    if (ovr >= 40) return "大聯盟替補 ⚾";
+    return "小聯盟水準 📉";
 }
 
 // 🎯 均衡度描述函數
@@ -241,11 +225,11 @@ function getBalanceDescription(ratio) {
     return "(明顯偏科)";
 }
 
-// 🎯 wOBA-Based OVR分解顯示
+// 🎯 精簡版 OVR 分解顯示（新版不均衡扣分制）
 function displayOVRBreakdown(breakdown, targetElement) {
     if (!targetElement) return;
     
-    // 獲取 OVR 值
+    // 🔧 更安全的 OVR 獲取方式
     let ovr = 1;
     try {
         const ovrElement = targetElement.parentElement.querySelector('.ovr-number');
@@ -255,10 +239,11 @@ function displayOVRBreakdown(breakdown, targetElement) {
     }
     
     const html = `
-        <strong>wOBA-Based OVR分析：</strong><br>
-        模擬 wOBA：${breakdown.simulatedWOBA}<br>
-        映射 OVR：${breakdown.rawOVR}<br>
-        均衡比例：${breakdown.balanceRatio} ${getBalanceDescription(parseFloat(breakdown.balanceRatio))}<br>
+        <strong>評價詳情：</strong><br>
+        平均能力值：${breakdown.arithmeticMean}<br>
+        基礎評價：${breakdown.baseOVR}<br>
+        不均衡扣分：-${breakdown.unbalancePenalty}<br>
+        均衡度：${breakdown.balanceRatio} ${getBalanceDescription(parseFloat(breakdown.balanceRatio))}<br>
         <strong>聯盟水準：${getLeagueLevel(ovr)}</strong>
         ${breakdown.error ? `<br><span style="color: red;">錯誤: ${breakdown.error}</span>` : ''}
     `;
@@ -266,3 +251,22 @@ function displayOVRBreakdown(breakdown, targetElement) {
     targetElement.innerHTML = html;
 }
 
+// 🧪 測試混合系統（可選）
+function testHybridSystem() {
+    console.log('🧪 測試混合轉換系統...');
+    
+    const testCases = [
+        {name: '極低值', xBA: 0.001, xSLG: 0.004, xwOBA: 0.031},
+        {name: 'PR1 邊界', xBA: 0.200, xSLG: 0.310, xwOBA: 0.260},
+        {name: 'Judge 2024', xBA: 0.322, xSLG: 0.701, xwOBA: 0.458},
+        {name: 'Ohtani 2024', xBA: 0.310, xSLG: 0.646, xwOBA: 0.390}
+    ];
+    
+    testCases.forEach(testCase => {
+        const result = calculatePlayerGameAttributes(testCase.xBA, testCase.xSLG, testCase.xwOBA);
+        console.log(`${testCase.name}: POW=${result.POW.toFixed(1)}, HIT=${result.HIT.toFixed(1)}, EYE=${result.EYE.toFixed(1)}`);
+    });
+}
+
+// 運行測試（可選）
+// testHybridSystem();
