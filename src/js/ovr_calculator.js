@@ -1,5 +1,31 @@
 // ovr-calculator.js - 混合轉換版 OVR 計算器
 
+// 🎯 屬性映射點位
+const ATTRIBUTE_MAPPING_POINTS = {
+    'pr1': 40,   // 1%排名對應40屬性
+    'pr50': 70,  // 50%排名對應70屬性  
+    'pr99': 99   // 99%排名對應99屬性
+};
+
+// 🎯 聯盟基準數據 (精細調整以匹配大谷翔平 83/136/80)
+const LEAGUE_BENCHMARKS = {
+    'xBA': {
+        'pr1': 0.210,   // 1%排名打擊率
+        'pr50': 0.265,  // 50%排名打擊率 
+        'pr99': 0.340   // 99%排名打擊率
+    },
+    'xSLG': {
+        'pr1': 0.320,   // 1%排名長打率
+        'pr50': 0.450,  // 50%排名長打率
+        'pr99': 0.620   // 99%排名長打率 (0.646應該是超越99%的水準)
+    },
+    'xOBP': {
+        'pr1': 0.260,   // 1%排名OBP  
+        'pr50': 0.320,  // 50%排名OBP
+        'pr99': 0.380   // 99%排名OBP (0.390應該是超越99%的水準)
+    }
+};
+
 // 🔥 混合轉換函數：PR1 以下對數平滑，PR1 以上保持原版
 function getAttributeScoreHybrid(metricVal, pr1Benchmark, pr50Benchmark, pr99Benchmark, statType) {
     const pr1_map = ATTRIBUTE_MAPPING_POINTS['pr1']; // 40
@@ -90,27 +116,44 @@ function getAttributeScoreHybrid(metricVal, pr1Benchmark, pr50Benchmark, pr99Ben
     }
 }
 
-// 🔥 數據轉三圍主函數（使用混合轉換）
-function calculatePlayerGameAttributes(xBA, xSLG, xwOBA) {
+// 🔥 數據轉三圍主函數（使用逆向工程）
+function calculatePlayerGameAttributes(xBA, xSLG, xOBP) {
     // 輸入處理
     const safeXBA = parseFloat(xBA) || 0;
     const safeXSLG = parseFloat(xSLG) || 0;
-    const safeXwOBA = parseFloat(xwOBA) || 0;
+    const safeXOBP = parseFloat(xOBP) || 0;
     
-    console.log('混合轉換輸入:', { xBA: safeXBA, xSLG: safeXSLG, xwOBA: safeXwOBA });
+    console.log('逆向工程輸入:', { xBA: safeXBA, xSLG: safeXSLG, xOBP: safeXOBP });
     
-    // 🔥 使用混合轉換函數
-    const powScore = getAttributeScoreHybrid(safeXSLG, LEAGUE_BENCHMARKS['xSLG']['pr1'], LEAGUE_BENCHMARKS['xSLG']['pr50'], LEAGUE_BENCHMARKS['xSLG']['pr99'], 'SLG');
-    const hitScore = getAttributeScoreHybrid(safeXBA, LEAGUE_BENCHMARKS['xBA']['pr1'], LEAGUE_BENCHMARKS['xBA']['pr50'], LEAGUE_BENCHMARKS['xBA']['pr99'], 'BA');
-    const eyeScore = getAttributeScoreHybrid(safeXwOBA, LEAGUE_BENCHMARKS['xwOBA']['pr1'], LEAGUE_BENCHMARKS['xwOBA']['pr50'], LEAGUE_BENCHMARKS['xwOBA']['pr99'], 'OBA');
-    
-    console.log('混合轉換結果:', { POW: powScore, HIT: hitScore, EYE: eyeScore });
-    
-    return {
-        POW: powScore,
-        HIT: hitScore,
-        EYE: eyeScore
+    // 🔥 使用逆向工程快速估計
+    const targetStats = {
+        BA: safeXBA,
+        SLG: safeXSLG,
+        OBP: safeXOBP  // 第三個輸入實際上是 OBP
     };
+    
+    // 使用快速估計方法
+    if (typeof quickEstimateAttributes !== 'undefined') {
+        const result = quickEstimateAttributes(targetStats);
+        console.log('逆向工程結果:', result);
+        return {
+            POW: result.POW,
+            HIT: result.HIT,
+            EYE: result.EYE
+        };
+    } else {
+        // 備用：簡化線性映射
+        console.warn('quickEstimateAttributes 不可用，使用備用映射');
+        const hitScore = Math.max(1, Math.min(150, 40 + (safeXBA - 0.225) / (0.431 - 0.225) * 110));
+        const powScore = Math.max(1, Math.min(150, 40 + (safeXSLG - 0.313) / (0.884 - 0.313) * 110)); 
+        const eyeScore = Math.max(1, Math.min(150, 40 + (safeXOBP - 0.264) / (0.584 - 0.264) * 110));
+        
+        return {
+            POW: Math.round(powScore),
+            HIT: Math.round(hitScore),
+            EYE: Math.round(eyeScore)
+        };
+    }
 }
 
 // 防止無限迴圈的全域鎖

@@ -316,6 +316,11 @@
             filter: invert(1);
         }
         
+        /* 移除研究模式中的標籤分隔線 */
+        .tab-buttons::after {
+            display: none;
+        }
+        
     </style>
 </head>
 <body>
@@ -324,7 +329,7 @@
         <div class="header-content">
             <h1 class="full-title">研究模式</h1>
             <h1 class="mobile-title">研究模式</h1>
-            <p>深度數據分析與模型探索工具 | <a href="../index.html" style="color: var(--accent-primary); text-decoration: none;">返回主頁 →</a></p>
+            <p>深度數據分析與模型探索工具</p>
             <div class="header-buttons">
                 <button class="header-btn home-btn" onclick="goToMainPage()" title="返回主頁">
                     <img src="../src/icons/home.png" alt="返回主頁" class="home-icon">
@@ -339,6 +344,9 @@
                 </button>
                 <button class="tab-btn" id="tabValidation" onclick="switchTab('validation')">
                     模型驗證
+                </button>
+                <button class="tab-btn" id="tabIsolation" onclick="switchTab('isolation')">
+                    屬性隔離
                 </button>
                 <button class="tab-btn" id="tabComparison" onclick="switchTab('comparison')">
                     真實對比
@@ -362,10 +370,6 @@
                             <h4>🎯 核心等級測試</h4>
                             <p>驗證 5 個關鍵能力等級的統計準確性</p>
                         </div>
-                        <div class="quick-test-btn" onclick="runAttributeIsolationTest()">
-                            <h4>🔍 屬性隔離測試</h4>
-                            <p>測試單一屬性對統計數據的影響</p>
-                        </div>
                         <div class="quick-test-btn" onclick="runPerformanceTest()">
                             <h4>⚡ 性能基準測試</h4>
                             <p>評估模型執行速度和穩定性</p>
@@ -378,16 +382,21 @@
                 </div>
             </div>
 
+            <!-- 結果顯示區域 -->
+            <div id="analysisResults"></div>
+        </div>
+
+        <!-- 屬性隔離標籤 -->
+        <div id="isolation" class="tab-content" style="display: none;">
             <!-- 屬性分析控制台 -->
             <div class="test-section">
                 <div class="test-section-header">
-                    <h2>📊 屬性模型分析</h2>
-                    <p>選擇屬性和環境，查看其在不同條件下的表現曲線</p>
+                    <h2>🔍 屬性隔離分析</h2>
+                    <p>選擇單一屬性進行深度分析，其他屬性保持固定，觀察該屬性對統計數據的獨立影響</p>
                 </div>
                 <div class="test-section-content">
                     <div class="control-panel">
                         <div class="control-group">
-                            <h3>屬性選擇</h3>
                             <div class="attribute-selector">
                                 <button class="attribute-btn active" data-attr="pow" onclick="selectAttribute('pow')">
                                     💪 POW
@@ -401,7 +410,6 @@
                             </div>
                         </div>
                         <div class="control-group">
-                            <h3>測試環境</h3>
                             <div class="attribute-selector">
                                 <button class="attribute-btn" onclick="runAttributeAnalysis('bottom')">
                                     底線 (40/40)
@@ -419,7 +427,7 @@
             </div>
 
             <!-- 結果顯示區域 -->
-            <div id="analysisResults"></div>
+            <div id="isolationResults"></div>
         </div>
 
         <!-- 模型驗證標籤 -->
@@ -627,11 +635,11 @@
         // 屬性分析
         // ==================================
         function runAttributeAnalysis(scenario) {
-            showLoadingResults('analysisResults', `正在分析 ${currentAttribute.toUpperCase()} 屬性在${getScenarioName(scenario)}環境下的表現...`);
+            showLoadingResults('isolationResults', `正在分析 ${currentAttribute.toUpperCase()} 屬性在${getScenarioName(scenario)}環境下的表現...`);
             
             setTimeout(() => {
                 const results = performAttributeAnalysis(currentAttribute, scenario);
-                displayResults('analysisResults', results);
+                displayResults('isolationResults', results);
             }, 800);
         }
         
@@ -843,10 +851,19 @@
         }
         
         function performRealPlayerAnalysis(player) {
-            // 簡化的屬性估算公式
-            const estimatedPow = Math.round(Math.max(40, Math.min(150, 30 + (player.SLG - 0.350) * 120)));
-            const estimatedHit = Math.round(Math.max(40, Math.min(150, 20 + (player.BA - 0.200) * 220)));
-            const estimatedEye = Math.round(Math.max(40, Math.min(150, 40 + (player.OBP - player.BA - 0.040) * 250)));
+            // 使用主系統的逆向工程進行屬性估算
+            const targetStats = {
+                BA: player.BA,
+                OBP: player.OBP, 
+                SLG: player.SLG,
+                PA: 600
+            };
+            
+            // 調用主系統的逆向工程函數
+            const engineeredResult = reverseEngineerAttributes(targetStats);
+            const estimatedPow = engineeredResult.attributes.POW;
+            const estimatedHit = engineeredResult.attributes.HIT;
+            const estimatedEye = engineeredResult.attributes.EYE;
             
             // 使用估算屬性進行模擬驗證
             const modelStats = simulatePlayerStats(estimatedPow, estimatedHit, estimatedEye, 100, 600);
@@ -865,8 +882,9 @@
             const hrAccuracy = Math.max(0, 100 - (hrError / player.HR * 100));
             const overallAccuracy = (baAccuracy + obpAccuracy + slgAccuracy + hrAccuracy) / 4;
             
-            // 計算估算OVR
-            const estimatedOVR = Math.round((estimatedPow + estimatedHit + estimatedEye) / 3);
+            // 使用新的總和實力OVR計算
+            const ovrResult = calculateBatterOVR(estimatedPow, estimatedHit, estimatedEye);
+            const estimatedOVR = ovrResult.ovr;
             
             // 球員類型分析
             let playerType = '';
@@ -920,6 +938,11 @@
                                 <div>HIT: <strong>${estimatedHit}</strong></div>
                                 <div>EYE: <strong>${estimatedEye}</strong></div>
                                 <div>OVR: <strong>${estimatedOVR}</strong></div>
+                            </div>
+                            <div style="margin-top: 8px; font-size: 0.8em;">
+                                <div>模擬 wOBA: ${ovrResult.breakdown.simulatedWOBA}</div>
+                                <div>映射 OVR: ${ovrResult.breakdown.rawOVR}</div>
+                                <div>均衡比例: ${ovrResult.breakdown.balanceRatio}</div>
                             </div>
                             <div style="margin-top: 12px; padding: 8px; background: white; border-radius: var(--radius-sm); text-align: center;">
                                 <strong>${playerType}</strong>
@@ -1037,93 +1060,6 @@
         // ================================== 
         // 完整測試函數實現
         // ==================================
-        
-        function runAttributeIsolationTest() {
-            showLoadingResults('analysisResults', '正在運行屬性隔離測試...');
-            setTimeout(() => {
-                const results = performAttributeIsolationTest();
-                displayResults('analysisResults', results);
-            }, 1200);
-        }
-        
-        function performAttributeIsolationTest() {
-            // 測試各屬性在固定基準下的獨立影響
-            const isolationTests = [
-                { name: 'POW 隔離測試', attr: 'pow', fixed: { hit: 70, eye: 70 }, values: [40, 70, 100, 130], focus: 'SLG' },
-                { name: 'HIT 隔離測試', attr: 'hit', fixed: { pow: 70, eye: 70 }, values: [40, 70, 100, 130], focus: 'BA' },
-                { name: 'EYE 隔離測試', attr: 'eye', fixed: { pow: 70, hit: 70 }, values: [40, 70, 100, 130], focus: 'OBP' }
-            ];
-            
-            let resultHTML = `
-                <div class="results-container">
-                    <h3>🔍 屬性隔離測試結果</h3>
-                    <p>測試各屬性的獨立影響效果，其他屬性固定為 70</p>
-            `;
-            
-            isolationTests.forEach(test => {
-                resultHTML += `
-                    <h4 style="margin-top: 24px; color: var(--accent-primary);">${test.name}</h4>
-                    <table class="results-table" style="margin-bottom: 16px;">
-                        <thead>
-                            <tr>
-                                <th>${test.attr.toUpperCase()}</th>
-                                <th>BA</th>
-                                <th>OBP</th>
-                                <th>SLG</th>
-                                <th>HR</th>
-                                <th>主要指標</th>
-                                <th>變化率</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-                
-                let previousValue = null;
-                test.values.forEach((value, index) => {
-                    let pow = test.fixed.pow;
-                    let hit = test.fixed.hit;
-                    let eye = test.fixed.eye;
-                    
-                    if (test.attr === 'pow') pow = value;
-                    else if (test.attr === 'hit') hit = value;
-                    else eye = value;
-                    
-                    const stats = simulatePlayerStats(pow, hit, eye, 30, 600);
-                    const focusValue = stats[test.focus];
-                    const changeRate = previousValue ? ((focusValue - previousValue) / previousValue * 100).toFixed(1) : '--';
-                    
-                    const isBaseline = value === 70;
-                    
-                    resultHTML += `
-                        <tr ${isBaseline ? 'class="highlight-row"' : ''}>
-                            <td><strong>${value}</strong></td>
-                            <td>${stats.BA.toFixed(3)}</td>
-                            <td>${stats.OBP.toFixed(3)}</td>
-                            <td>${stats.SLG.toFixed(3)}</td>
-                            <td>${Math.round(stats.HR_count)}</td>
-                            <td><strong style="color: var(--accent-primary);">${focusValue.toFixed(3)}</strong></td>
-                            <td>${changeRate === '--' ? '--' : (changeRate > 0 ? '+' : '') + changeRate + '%'}</td>
-                        </tr>
-                    `;
-                    
-                    previousValue = focusValue;
-                });
-                
-                resultHTML += `
-                        </tbody>
-                    </table>
-                `;
-            });
-            
-            resultHTML += `
-                    <div style="margin-top: 16px; padding: 16px; background: var(--accent-light); border-radius: var(--radius-md);">
-                        <strong>分析說明:</strong> 綠色行為基準值 (70)，主要指標欄顯示該屬性最直接影響的統計項目，變化率顯示相對於前一個等級的提升幅度。
-                    </div>
-                </div>
-            `;
-            
-            return resultHTML;
-        }
         
         function runPerformanceTest() {
             showLoadingResults('analysisResults', '正在運行性能基準測試...');

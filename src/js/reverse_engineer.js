@@ -151,7 +151,7 @@ function quickEstimateAttributes(targetStats) {
     ]);
     
     const pow = interpolateAttribute(slg, [
-        [0.313, 40], [0.464, 70], [0.625, 100], [0.713, 120], [0.884, 150]
+        [0.313, 40], [0.464, 70], [0.580, 100], [0.650, 136], [0.800, 150]
     ]);
     
     const ovrResult = calculateBatterOVR(pow, hit, eye);
@@ -200,4 +200,8 @@ if (typeof window !== 'undefined') {
         estimateInitialHIT,
         calculateAdjustments
     };
+    
+    // 全域函數導出 (供 calculatePlayerGameAttributes 使用)
+    window.quickEstimateAttributes = quickEstimateAttributes;
+    window.reverseEngineerAttributes = reverseEngineerAttributes;
 }

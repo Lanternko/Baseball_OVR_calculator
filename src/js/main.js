@@ -5,24 +5,24 @@ function calculateAttributes() {
     // 🔧 允許 0 值輸入
     const xBA = parseFloat(document.getElementById('xBA').value);
     const xSLG = parseFloat(document.getElementById('xSLG').value);
-    const xwOBA = parseFloat(document.getElementById('xwOBA').value);
+    const xOBP = parseFloat(document.getElementById('xOBP').value);
     
-    console.log('原始輸入:', { xBA, xSLG, xwOBA });
+    console.log('原始輸入:', { xBA, xSLG, xOBP });
     
     // 🔧 處理 0 值和 NaN
     const safeXBA = isNaN(xBA) ? 0 : Math.max(0, xBA);
     const safeXSLG = isNaN(xSLG) ? 0 : Math.max(0, xSLG);
-    const safeXwOBA = isNaN(xwOBA) ? 0 : Math.max(0, xwOBA);
+    const safeXOBP = isNaN(xOBP) ? 0 : Math.max(0, xOBP);
     
-    console.log('安全輸入:', { safeXBA, safeXSLG, safeXwOBA });
+    console.log('安全輸入:', { safeXBA, safeXSLG, safeXOBP });
     
     // 基本範圍驗證
-    if (safeXBA > 1 || safeXSLG > 4 || safeXwOBA > 1) {
+    if (safeXBA > 1 || safeXSLG > 4 || safeXOBP > 1) {
         alert('請確保數據在合理範圍內！BA/OBP ≤ 1.0, SLG ≤ 4.0');
         return;
     }
     
-    const attributes = calculatePlayerGameAttributes(safeXBA, safeXSLG, safeXwOBA);
+    const attributes = calculatePlayerGameAttributes(safeXBA, safeXSLG, safeXOBP);
     console.log('轉換結果:', attributes);
     
     const ovrResult = calculateBatterOVR(attributes.POW, attributes.HIT, attributes.EYE);
@@ -84,7 +84,7 @@ function setDefaultValues() {
     const inputs = [
         {id: 'xBA', defaultVal: 0.280},
         {id: 'xSLG', defaultVal: 0.450}, 
-        {id: 'xwOBA', defaultVal: 0.350},
+        {id: 'xOBP', defaultVal: 0.350},
         {id: 'inputPOW', defaultVal: 85},
         {id: 'inputHIT', defaultVal: 75},
         {id: 'inputEYE', defaultVal: 80},
@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 不自動設定預設值，讓用戶看到 placeholder 顏色
     
     // 🔧 修正輸入驗證：允許 0 值
-    ['xBA', 'xSLG', 'xwOBA'].forEach(id => {
+    ['xBA', 'xSLG', 'xOBP'].forEach(id => {
         const input = document.getElementById(id);
         if (input) {
             // 🔧 修改 step 屬性允許更精細輸入

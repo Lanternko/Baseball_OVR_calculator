@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="src/css/player-cards.css">
     <link rel="stylesheet" href="src/css/modal.css">
     <script src="src/js/constants.js"></script>
+    <script src="src/js/woba_ovr_mapping.js"></script>
     <script src="src/js/ovr_calculator.js"></script>
     <script src="src/js/probability_model.js"></script>
     <script src="src/js/simulation_engine.js"></script>
@@ -79,10 +80,10 @@
                 
                 <div class="input-row">
                     <div class="input-label-column">
-                        <label for="xwOBA">加權上壘率 (wOBA)</label>
+                        <label for="xOBP">上壘率 (OBP)</label>
                     </div>
                     <div class="input-field-column">
-                        <input type="number" id="xwOBA" step="0.001" placeholder="0.390" min="0" max="1">
+                        <input type="number" id="xOBP" step="0.001" placeholder="0.390" min="0" max="1">
                     </div>
                 </div>
                 
@@ -117,7 +118,7 @@
                         <label for="inputHIT">HIT (Hit Tool)</label>
                     </div>
                     <div class="input-field-column">
-                        <input type="number" id="inputHIT" placeholder="93" min="0" max="500">
+                        <input type="number" id="inputHIT" placeholder="83" min="0" max="500">
                     </div>
                 </div>
 
@@ -126,7 +127,7 @@
                         <label for="inputPOW">POW (Power)</label>
                     </div>
                     <div class="input-field-column">
-                        <input type="number" id="inputPOW" placeholder="108" min="0" max="500">
+                        <input type="number" id="inputPOW" placeholder="136" min="0" max="500">
                     </div>
                 </div>
                 
@@ -135,7 +136,7 @@
                         <label for="inputEYE">EYE (Plate Discipline)</label>
                     </div>
                     <div class="input-field-column">
-                        <input type="number" id="inputEYE" placeholder="109" min="0" max="500">
+                        <input type="number" id="inputEYE" placeholder="80" min="0" max="500">
                     </div>
                 </div>
                 
@@ -203,7 +204,7 @@
                     {id: 'playerName', defaultVal: '大谷翔平24\''},
                     {id: 'xBA', defaultVal: 0.310},
                     {id: 'xSLG', defaultVal: 0.646}, 
-                    {id: 'xwOBA', defaultVal: 0.390}
+                    {id: 'xOBP', defaultVal: 0.390}
                 ];
                 inputs.forEach(input => {
                     const element = document.getElementById(input.id);
@@ -214,9 +215,9 @@
             } else if (mode === 'attributesToStats') {
                 const inputs = [
                     {id: 'playerNameAttributes', defaultVal: '先發打者'},
-                    {id: 'inputHIT', defaultVal: 93},
-                    {id: 'inputPOW', defaultVal: 108},
-                    {id: 'inputEYE', defaultVal: 109},
+                    {id: 'inputHIT', defaultVal: 83},
+                    {id: 'inputPOW', defaultVal: 136},
+                    {id: 'inputEYE', defaultVal: 80},
                     {id: 'inputPA', defaultVal: 600}
                 ];
                 inputs.forEach(input => {
@@ -277,21 +278,21 @@
             if (mode === 'statsToAttributes') {
                 const xBAElement = document.getElementById('xBA');
                 const xSLGElement = document.getElementById('xSLG');
-                const xwOBAElement = document.getElementById('xwOBA');
+                const xOBPElement = document.getElementById('xOBP');
                 const nameElement = document.getElementById('playerName');
                 
                 const xBA = parseFloat(getInputValueWithDefault(xBAElement)) || 0;
                 const xSLG = parseFloat(getInputValueWithDefault(xSLGElement)) || 0;
-                const xwOBA = parseFloat(getInputValueWithDefault(xwOBAElement)) || 0;
+                const xOBP = parseFloat(getInputValueWithDefault(xOBPElement)) || 0;
                 const name = getInputValueWithDefault(nameElement) || '預測球員';
                 
-                if (xBA === 0 && xSLG === 0 && xwOBA === 0) {
+                if (xBA === 0 && xSLG === 0 && xOBP === 0) {
                     alert('請至少輸入一個統計數據或使用預設值');
                     return null;
                 }
                 
                 return {
-                    stats: { xBA, xSLG, xwOBA },
+                    stats: { xBA, xSLG, xOBP },
                     name: name
                 };
             } else {
@@ -330,7 +331,7 @@
                 document.getElementById('playerName').value = '';
                 document.getElementById('xBA').value = '';
                 document.getElementById('xSLG').value = '';
-                document.getElementById('xwOBA').value = '';
+                document.getElementById('xOBP').value = '';
             } else {
                 // 清空輸入框，顯示placeholder
                 document.getElementById('playerNameAttributes').value = '';
@@ -351,20 +352,20 @@
             if (mode === 'statsToAttributes') {
                 const xBAInput = document.getElementById('xBA').value;
                 const xSLGInput = document.getElementById('xSLG').value;
-                const xwOBAInput = document.getElementById('xwOBA').value;
+                const xOBPInput = document.getElementById('xOBP').value;
                 const playerName = document.getElementById('playerName').value;
                 
                 // 使用輸入值或預設值（對應placeholder）
-                const xBA = parseFloat(xBAInput) || 0.314;
-                const xSLG = parseFloat(xSLGInput) || 0.66;
-                const xwOBA = parseFloat(xwOBAInput) || 0.442;
+                const xBA = parseFloat(xBAInput) || 0.310;
+                const xSLG = parseFloat(xSLGInput) || 0.646;
+                const xOBP = parseFloat(xOBPInput) || 0.390;
                 
                 return {
                     name: playerName || '大谷翔平24\'',
                     stats: {
                         xBA: Math.max(0, xBA),
                         xSLG: Math.max(0, xSLG),
-                        xwOBA: Math.max(0, xwOBA)
+                        xOBP: Math.max(0, xOBP)
                     }
                 };
             } else if (mode === 'attributesToStats') {
@@ -375,9 +376,9 @@
                 const playerName = document.getElementById('playerNameAttributes').value;
                 
                 // 使用輸入值或預設值（對應placeholder）
-                const hit = parseFloat(hitInput) || 93;
-                const pow = parseFloat(powInput) || 108;
-                const eye = parseFloat(eyeInput) || 109;
+                const hit = parseFloat(hitInput) || 83;
+                const pow = parseFloat(powInput) || 136;
+                const eye = parseFloat(eyeInput) || 80;
                 const pa = parseInt(paInput) || 600;
                 
                 const ovrResult = calculateBatterOVR(pow, hit, eye);
@@ -408,7 +409,7 @@
                 // 🔄 使用精確迭代收斂算法計算屬性值 (BA, wOBA≈OBP, SLG)
                 const result = REVERSE_ENGINEER.reverseEngineerAttributes({
                     BA: inputs.stats.xBA,
-                    OBP: inputs.stats.xwOBA, // 使用wOBA作為OBP近似
+                    OBP: inputs.stats.xOBP, // 實際就是OBP
                     SLG: inputs.stats.xSLG,
                     PA: 600
                 }, 0.005, 25); // 容忍度0.005，最多25次迭代
@@ -441,10 +442,10 @@
                 // 格式化統計數據以符合球員卡格式 (從輸入的統計數據)
                 statsData = {
                     'BA': inputs.stats.xBA,
-                    'OBP': inputs.stats.xwOBA, // 使用wOBA作為近似OBP
+                    'OBP': inputs.stats.xOBP, // 實際就是OBP
                     'SLG': inputs.stats.xSLG,
-                    'OPS': inputs.stats.xSLG + inputs.stats.xwOBA, // 近似計算
-                    'wOBA': inputs.stats.xwOBA
+                    'OPS': inputs.stats.xSLG + inputs.stats.xOBP, // OPS = SLG + OBP
+                    'wOBA': inputs.stats.xOBP // 使用OBP作為wOBA近似值顯示
                 };
             } else {
                 const inputs = getCurrentInputs('attributesToStats');
@@ -502,7 +503,7 @@
         // 生成輸入雜湊值以檢查是否需要重新計算
         function generateInputHash(inputs, mode) {
             if (mode === 'statsToAttributes') {
-                return `${inputs.xBA}-${inputs.xSLG}-${inputs.xwOBA}-${inputs.playerName}`;
+                return `${inputs.xBA}-${inputs.xSLG}-${inputs.xOBP}-${inputs.playerName}`;
             } else {
                 return `${inputs.pow}-${inputs.hit}-${inputs.eye}-${inputs.pa}-${inputs.playerName}`;
             }
@@ -522,7 +523,7 @@
             // 使用精確迭代收斂算法計算屬性值
             const result = REVERSE_ENGINEER.reverseEngineerAttributes({
                 BA: inputs.xBA,
-                OBP: inputs.xwOBA, // 使用wOBA作為OBP近似  
+                OBP: inputs.xOBP, // 實際就是OBP  
                 SLG: inputs.xSLG,
                 PA: 600
             }, 0.005, 25); // 容忍度0.005，最多25次迭代
@@ -808,7 +809,7 @@
 
         // 輸入驗證設置（通用）
         function setupInputValidation() {            
-            ['xBA', 'xSLG', 'xwOBA'].forEach(id => {
+            ['xBA', 'xSLG', 'xOBP'].forEach(id => {
                 const input = document.getElementById(id);
                 if (input) {
                     input.step = '0.001';
@@ -902,13 +903,13 @@
             console.log("🧪 測試極端值轉換...");
             
             const extremeCases = [
-                {xBA: 0, xSLG: 0, xwOBA: 0},
-                {xBA: 0.001, xSLG: 0.004, xwOBA: 0.031},
-                {xBA: 1.0, xSLG: 4.0, xwOBA: 1.0}
+                {xBA: 0, xSLG: 0, xOBP: 0},
+                {xBA: 0.001, xSLG: 0.004, xOBP: 0.031},
+                {xBA: 1.0, xSLG: 4.0, xOBP: 1.0}
             ];
             
             extremeCases.forEach((testCase, i) => {
-                const attrs = calculatePlayerGameAttributes(testCase.xBA, testCase.xSLG, testCase.xwOBA);
+                const attrs = calculatePlayerGameAttributes(testCase.xBA, testCase.xSLG, testCase.xOBP);
                 console.log(`案例 ${i+1}:`, testCase, '→', attrs);
             });
         }
