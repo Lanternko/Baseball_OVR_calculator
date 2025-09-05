@@ -25,6 +25,14 @@
             <p>基於HIT/POW/EYE的球員卡數據預測</p>
             <!-- 右上角按鈕區域 -->
             <div class="header-buttons">
+                <!-- 抽卡功能暫時隱藏，將在測試分支中配置
+                <button class="header-btn" onclick="goToGacha()" title="球員抽卡">
+                    🎴 抽卡
+                </button>
+                -->
+                <button class="header-btn" onclick="goToResearch()" title="研究模式">
+                    <img src="src/icons/research.png" alt="研究模式" class="btn-icon">
+                </button>
                 <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="切換深淺模式">
                     ◐
                 </button>
@@ -971,8 +979,23 @@
             initTheme();
         });
 
-        // 點擊模態外部關閉
-
+        // ================================== 
+        // 導航功能
+        // ==================================
+        
+        // 前往抽卡頁面
+        function goToGacha() {
+            window.location.href = 'gacha.html';
+        }
+        
+        // 前往研究模式
+        function goToResearch() {
+            window.location.href = 'research/research_zen.html';
+        }
+        
+        // 導出導航功能到全域
+        window.goToGacha = goToGacha;
+        window.goToResearch = goToResearch;
 
         window.testExtremeValues = testExtremeValues;
     </script>

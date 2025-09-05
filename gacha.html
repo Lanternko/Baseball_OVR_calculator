@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>球員抽卡 - 棒球能力值計算器</title>
+    <link rel="stylesheet" href="src/css/style.css">
+    <link rel="stylesheet" href="src/css/player-cards.css">
+    <link rel="stylesheet" href="src/css/modal.css">
+    <style>
+        /* ================================== */
+        /* 抽卡系統 - 乾淨整潔版面 (Shadowverse Style) */
+        /* ================================== */
+        
+        body {
+            background: var(--bg-primary);
+            min-height: 100vh;
+        }
+        
+        .gacha-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* 頂部資訊欄 */
+        .top-info-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-surface);
+            border-radius: var(--radius-lg);
+            padding: 20px 30px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow-card);
+        }
+        
+        .pack-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .pack-image img {
+            width: 60px;
+            height: 60px;
+            border-radius: var(--radius-md);
+        }
+        
+        .pack-details h2 {
+            margin: 0 0 5px 0;
+            font-size: 1.5em;
+            color: var(--text-primary);
+        }
+        
+        .pack-details p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 0.9em;
+        }
+        
+        .currency-display {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg-tertiary);
+            padding: 15px 25px;
+            border-radius: var(--radius-md);
+            border: 2px solid var(--accent-primary);
+            font-size: 1.3em;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+        
+        .currency-icon {
+            font-size: 1.2em;
+        }
+        
+        /* 主要內容區域 */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 30px;
+        }
+        
+        /* 抽卡面板 */
+        .gacha-panel {
+            background: var(--bg-surface);
+            border-radius: var(--radius-lg);
+            padding: 30px;
+            box-shadow: var(--shadow-card);
+        }
+        
+        .gacha-options {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .gacha-option {
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-primary);
+            border-radius: var(--radius-md);
+            padding: 25px;
+            transition: all 0.3s ease;
+        }
+        
+        .gacha-option:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+        }
+        
+        .gacha-option.premium {
+            border-color: var(--accent-secondary);
+            background: linear-gradient(135deg, var(--bg-tertiary), rgba(139, 92, 246, 0.1));
+        }
+        
+        .option-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .option-header h3 {
+            margin: 0;
+            font-size: 1.2em;
+            color: var(--text-primary);
+        }
+        
+        .cost {
+            font-weight: bold;
+            color: var(--accent-primary);
+            font-size: 1.1em;
+        }
+        
+        .guarantee-text {
+            color: var(--accent-secondary);
+            font-size: 0.9em;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+        
+        .pull-btn {
+            width: 100%;
+            padding: 15px;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .pull-btn:hover {
+            background: var(--accent-secondary);
+            transform: translateY(-2px);
+        }
+        
+        .pull-btn.premium {
+            background: linear-gradient(135deg, #8B5CF6, #A855F7);
+        }
+        
+        .pull-btn:disabled {
+            background: var(--text-muted);
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* 機率說明 */
+        .rates-info {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            margin-top: 30px;
+        }
+        
+        .rates-info h4 {
+            margin: 0 0 15px 0;
+            color: var(--text-primary);
+            text-align: center;
+        }
+        
+        .rate-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .rate-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        
+        .rate-item:last-child {
+            border-bottom: none;
+        }
+        
+        .rarity-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .rarity-dot.common { background: #94A3B8; }
+        .rarity-dot.rare { background: #3B82F6; }
+        .rarity-dot.epic { background: #8B5CF6; }
+        .rarity-dot.legendary { background: #F59E0B; }
+        .rarity-dot.mythic { background: #EF4444; }
+        .rarity-dot.godlike { background: linear-gradient(45deg, #FFD700, #FF6B6B); }
+        
+        .rate {
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+        
+        /* 收藏面板 */
+        .collection-panel {
+            background: var(--bg-surface);
+            border-radius: var(--radius-lg);
+            padding: 30px;
+            box-shadow: var(--shadow-card);
+            height: fit-content;
+        }
+        
+        .collection-panel h3 {
+            margin: 0 0 20px 0;
+            color: var(--text-primary);
+            text-align: center;
+            font-size: 1.3em;
+        }
+        
+        .collection-summary {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .collection-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-tertiary);
+            padding: 15px;
+            border-radius: var(--radius-md);
+        }
+        
+        .stat-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: var(--accent-primary);
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+        }
+        
+        .collection-btn {
+            width: 100%;
+            padding: 15px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-primary);
+            color: var(--text-primary);
+            border-radius: var(--radius-md);
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 25px;
+        }
+        
+        .collection-btn:hover {
+            border-color: var(--accent-primary);
+            background: var(--bg-surface);
+        }
+        
+        /* 每日簽到按鈕 */
+        .daily-checkin-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #FF6B6B, #FFE66D);
+            border: none;
+            color: white;
+            border-radius: var(--radius-md);
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 25px;
+            font-size: 1em;
+        }
+        
+        .daily-checkin-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+        
+        .daily-checkin-btn:disabled {
+            background: var(--text-muted);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .daily-checkin-btn.checked-in {
+            background: var(--text-muted);
+            cursor: not-allowed;
+        }
+        
+        /* 最近獲得 */
+        .recent-cards h4 {
+            margin: 0 0 15px 0;
+            color: var(--text-primary);
+            font-size: 1.1em;
+        }
+        
+        .recent-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-secondary);
+            font-style: italic;
+            padding: 20px;
+        }
+        
+        /* 覆蓋層 */
+        .pull-overlay, .results-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+        
+        /* 抽卡動畫 */
+        .pack-opening-animation {
+            text-align: center;
+            color: white;
+        }
+        
+        .pack-container {
+            position: relative;
+            margin-bottom: 30px;
+        }
+        
+        .pack-box {
+            font-size: 100px;
+            animation: packShake 0.5s infinite;
+        }
+        
+        @keyframes packShake {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-5deg); }
+            75% { transform: rotate(5deg); }
+        }
+        
+        .opening-text {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: var(--accent-primary);
+        }
+        
+        /* 結果顯示 */
+        .results-container {
+            background: var(--bg-surface);
+            border-radius: var(--radius-lg);
+            padding: 30px;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .results-header h2 {
+            margin: 0;
+            color: var(--text-primary);
+        }
+        
+        .results-close {
+            background: none;
+            border: none;
+            font-size: 2em;
+            cursor: pointer;
+            color: var(--text-secondary);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+        
+        .results-close:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .results-footer {
+            text-align: center;
+        }
+        
+        .continue-btn {
+            padding: 15px 30px;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .continue-btn:hover {
+            background: var(--accent-secondary);
+        }
+        
+        /* 稀有度指示器 */
+        .rarity-indicator {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .rarity-common { background: #94A3B8; color: white; }
+        .rarity-rare { background: #3B82F6; color: white; }
+        .rarity-epic { background: #8B5CF6; color: white; }
+        .rarity-legendary { background: #F59E0B; color: white; }
+        .rarity-mythic { background: #EF4444; color: white; }
+        .rarity-godlike { background: linear-gradient(45deg, #FFD700, #FF6B6B); color: white; }
+        
+        /* 響應式設計 */
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .collection-panel {
+                order: -1;
+            }
+            
+            .collection-summary {
+                flex-direction: row;
+                justify-content: space-around;
+            }
+            
+            .collection-stat {
+                flex-direction: column;
+                text-align: center;
+                flex: 1;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .gacha-container {
+                padding: 15px;
+            }
+            
+            .top-info-bar {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .pack-info {
+                justify-content: center;
+            }
+            
+            .gacha-panel, .collection-panel {
+                padding: 20px;
+            }
+            
+            .results-container {
+                margin: 10px;
+                padding: 20px;
+            }
+            
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 使用主頁面相同的頭部設計 -->
+    <div class="header">
+        <div class="header-content">
+            <h1 class="full-title">🎴 球員抽卡</h1>
+            <h1 class="mobile-title">抽卡</h1>
+            <p>收集你的夢幻球員陣容</p>
+            <!-- 右上角按鈕區域 -->
+            <div class="header-buttons">
+                <button class="header-btn" onclick="goToMainPage()" title="返回主頁">
+                    🏠 主頁
+                </button>
+                <button class="header-btn" onclick="goToResearch()" title="研究模式">
+                    🔬 研究
+                </button>
+                <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="切換深淺模式">
+                    ◐
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="gacha-container">
+        <!-- 頂部資訊欄 -->
+        <div class="top-info-bar">
+            <div class="pack-info">
+                <div class="pack-image">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%234ECDC4' width='100' height='100' rx='10'/%3E%3Ctext x='50' y='55' text-anchor='middle' font-size='20' fill='white'%3E⚾%3C/text%3E%3C/svg%3E" alt="球員卡包">
+                </div>
+                <div class="pack-details">
+                    <h2>⭐ 球員卡包</h2>
+                    <p>收集你的夢幻球員陣容</p>
+                </div>
+            </div>
+            
+            <div class="currency-display">
+                <span class="currency-icon">💎</span>
+                <span id="userCurrency">10000</span>
+            </div>
+        </div>
+
+        <!-- 主要內容區域 -->
+        <div class="main-content">
+            <!-- 左側：抽卡選項 -->
+            <div class="gacha-panel">
+                <div class="gacha-options">
+                    <div class="gacha-option" id="singleOption">
+                        <div class="option-header">
+                            <h3>單張抽取</h3>
+                            <div class="cost">100 💎</div>
+                        </div>
+                        <button class="pull-btn" id="singlePullBtn" onclick="performGachaPull(1)">
+                            抽 1 張
+                        </button>
+                    </div>
+                    
+                    <div class="gacha-option premium" id="multiOption">
+                        <div class="option-header">
+                            <h3>十連抽取</h3>
+                            <div class="cost">900 💎 <small>(省100💎)</small></div>
+                        </div>
+                        <div class="guarantee-text">★ 保證至少1張稀有卡</div>
+                        <button class="pull-btn premium" id="multiPullBtn" onclick="performGachaPull(10)">
+                            抽 10 張
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 機率說明 -->
+                <div class="rates-info">
+                    <h4>📊 出現機率</h4>
+                    <div class="rate-list">
+                        <div class="rate-item">
+                            <span class="rarity-dot godlike"></span>
+                            <span>神話 (110+)</span>
+                            <span class="rate">0.1%</span>
+                        </div>
+                        <div class="rate-item">
+                            <span class="rarity-dot mythic"></span>
+                            <span>進化 (100-109)</span>
+                            <span class="rate">0.9%</span>
+                        </div>
+                        <div class="rate-item">
+                            <span class="rarity-dot legendary"></span>
+                            <span>傳說 (90-99)</span>
+                            <span class="rate">4%</span>
+                        </div>
+                        <div class="rate-item">
+                            <span class="rarity-dot epic"></span>
+                            <span>精英 (80-89)</span>
+                            <span class="rate">10%</span>
+                        </div>
+                        <div class="rate-item">
+                            <span class="rarity-dot rare"></span>
+                            <span>稀有 (70-79)</span>
+                            <span class="rate">25%</span>
+                        </div>
+                        <div class="rate-item">
+                            <span class="rarity-dot common"></span>
+                            <span>常見 (40-69)</span>
+                            <span class="rate">60%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右側：收藏狀態 -->
+            <div class="collection-panel">
+                <h3>📚 我的收藏</h3>
+                
+                <div class="collection-summary">
+                    <div class="collection-stat">
+                        <div class="stat-number" id="totalCards">0</div>
+                        <div class="stat-label">總卡片</div>
+                    </div>
+                    <div class="collection-stat">
+                        <div class="stat-number" id="legendaryCards">0</div>
+                        <div class="stat-label">高稀有度</div>
+                    </div>
+                    <div class="collection-stat">
+                        <div class="stat-number" id="completionRate">0%</div>
+                        <div class="stat-label">完成度</div>
+                    </div>
+                </div>
+                
+                <button class="collection-btn" onclick="viewFullCollection()">
+                    查看完整收藏
+                </button>
+                
+                <!-- 每日簽到按鈕 -->
+                <button class="daily-checkin-btn" onclick="performDailyCheckIn()" id="checkInBtn">
+                    📅 每日簽到
+                </button>
+                
+                <!-- 最近獲得 -->
+                <div class="recent-cards">
+                    <h4>最近獲得</h4>
+                    <div class="recent-list" id="recentList">
+                        <div class="empty-state">尚未獲得任何卡片</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 抽卡動畫覆蓋層 -->
+        <div class="pull-overlay" id="pullAnimation">
+            <div class="pack-opening-animation">
+                <div class="pack-container">
+                    <div class="pack-glow"></div>
+                    <div class="pack-box">📦</div>
+                </div>
+                <div class="opening-text">開包中...</div>
+            </div>
+        </div>
+
+        <!-- 結果顯示 -->
+        <div class="results-overlay" id="pullResults">
+            <div class="results-container">
+                <div class="results-header">
+                    <h2>🎊 獲得卡片</h2>
+                    <button class="results-close" onclick="closePullResults()">×</button>
+                </div>
+                <div class="results-grid" id="resultGrid"></div>
+                <div class="results-footer">
+                    <button class="continue-btn" onclick="closePullResults()">繼續抽卡</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 腳本載入 -->
+    <script src="src/js/theme.js"></script>
+    <script src="src/js/ovr_calculator.js"></script>
+    <script src="src/js/reverse_engineer.js"></script>
+    <script src="src/js/player-card.js"></script>
+    <script src="src/data/players.js"></script>
+    <script src="src/js/gacha.js"></script>
+    
+    <script>
+        // 導航功能
+        function goToMainPage() {
+            window.location.href = 'index.html';
+        }
+        
+        function goToResearch() {
+            window.location.href = 'research/research_zen.html';
+        }
+        
+        // 頁面載入時初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎴 抽卡系統載入完成');
+            initializeGacha();
+        });
+    </script>
+</body>
+</html>
