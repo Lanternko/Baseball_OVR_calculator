@@ -228,3 +228,82 @@ if (typeof window !== 'undefined') {
   window.calculateSimpleStats = calculateSimpleStats;
   window.finalizeSimpleStats = finalizeSimpleStats;
 }
+
+// ====================================
+// 對戰：打者 vs 投手（機率融合）
+// - BB、K 以 logit 權重合成（穩定不越界）
+// - STUFF 僅調整「接觸→安打率」
+// - SUPPRESSION 調整長打傾向（XBH/HR）
+// ====================================
+
+(function(){
+  if (typeof window === 'undefined' && typeof global === 'undefined') return;
+
+  function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
+  function logit(p){ p = clamp(p, 1e-6, 1-1e-6); return Math.log(p/(1-p)); }
+  function sigmoid(x){ return 1/(1+Math.exp(-x)); }
+
+  function getPAEventProbabilitiesVsPitcher(POW, HIT, EYE, pitcherAttrs, opt){
+    opt = opt || {}; const wb = opt.wb ?? 0.55, wp = opt.wp ?? 0.45;
+
+    // 打者端基礎
+    const bb_b = interpolate(EYE, EYE_BB_RATE_TABLE);
+    const contact_b = clamp(interpolate(HIT, HIT_CONTACT_RATE_TABLE) + interpolate(EYE, EYE_CONTACT_BONUS_TABLE), 0, 0.99);
+    const k_b = clamp(1 - contact_b, 0, 0.99);
+    const hit_on_contact_b = interpolate(HIT, HIT_SUCCESS_RATE_TABLE);
+    const xbh_b = interpolate(POW, POW_XBH_RATE_TABLE);
+    const hr_ratio_b = interpolate(POW, POW_HR_RATIO_TABLE);
+
+    // 投手端（attr→stat）
+    const bb_p = (typeof controlToBB !== 'undefined') ? controlToBB(pitcherAttrs.CONTROL) : 0.085;
+    const k_p = (typeof strikeoutToK !== 'undefined') ? strikeoutToK(pitcherAttrs.STRIKEOUT) : 0.225;
+
+    // 合成 BB 與 K
+    const bb = sigmoid(wb*logit(bb_b) + wp*logit(bb_p));
+    const k = sigmoid(wb*logit(k_b) + wp*logit(k_p));
+
+    const afterBB = 1 - bb;
+    const contact_eff = afterBB * (1 - k); // 這裡的 k 為每 PA 概率
+
+    // STUFF 對接觸轉安打率
+    let hoc = hit_on_contact_b;
+    if (typeof adjustHitOnContactByStuff !== 'undefined') {
+      hoc = adjustHitOnContactByStuff(hit_on_contact_b, pitcherAttrs.STUFF);
+    }
+
+    // 最終安打率（每 PA）
+    const h_rate = clamp(contact_eff * hoc, 0, 0.99);
+
+    // 長打傾向壓制
+    let suppressF = 1;
+    if (typeof suppressionFactor !== 'undefined') {
+      suppressF = suppressionFactor(pitcherAttrs.SUPPRESSION);
+    }
+    const xbh_rate_eff = clamp(xbh_b * suppressF, 0, 0.99);
+    const hr_ratio_eff = clamp(hr_ratio_b * suppressF, 0, 0.99);
+
+    const xbh_pa = h_rate * xbh_rate_eff;
+    const hr_pa = xbh_pa * hr_ratio_eff;
+    const doubles_pa = xbh_pa * (1 - hr_ratio_eff); // 2B 視為非 HR 的長打
+    const singles_pa = h_rate * (1 - xbh_rate_eff);
+
+    let remaining = 1 - (bb + k + hr_pa + doubles_pa + singles_pa);
+    if (remaining < 0) remaining = 0; // 避免負值
+
+    return {
+      BB: bb,
+      HR: hr_pa,
+      '2B': doubles_pa,
+      '1B': singles_pa,
+      K: k,
+      OUT: remaining
+    };
+  }
+
+  if (typeof window !== 'undefined') {
+    window.getPAEventProbabilitiesVsPitcher = getPAEventProbabilitiesVsPitcher;
+  }
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports.getPAEventProbabilitiesVsPitcher = getPAEventProbabilitiesVsPitcher;
+  }
+})();

@@ -38,14 +38,10 @@
                 </button>
             </div>
             
-            <!-- 分頁按鈕 -->
+            <!-- 分頁按鈕（上層） -->
             <div class="tab-buttons">
-                <button class="tab-btn active" id="tabOVR" onclick="switchToMode('statsToAttributes')">
-                    計算OVR
-                </button>
-                <button class="tab-btn" id="tabSimulate" onclick="switchToMode('attributesToStats')">
-                    模擬數據
-                </button>
+                <button class="tab-btn active" id="tabBatter" onclick="showTopTab('batter')">打者</button>
+                <button class="tab-btn" id="tabPitcher" onclick="showTopTab('pitcher')">投手</button>
             </div>
         </div>
     </div>
@@ -55,7 +51,7 @@
         
         <div class="main-content">
             <!-- 數據轉三圍 -->
-            <div class="calculator-section" id="statsToAttributesCalculator">
+            <div class="calculator-section panel-batter" id="statsToAttributesCalculator">
                 
                 <div class="input-row">
                     <div class="input-label-column">
@@ -108,7 +104,7 @@
             </div>
             
             <!-- 三圍轉數據 -->
-            <div class="calculator-section" id="attributesToStatsCalculator" style="display: none;">
+            <div class="calculator-section panel-batter" id="attributesToStatsCalculator">
                 
                 <div class="input-row">
                     <div class="input-label-column">
@@ -167,6 +163,38 @@
                 </div>
                 
                 <!-- 移除中間結果顯示，直接顯示模態 -->
+            </div>
+
+            <!-- 投手：左（計算OVR，輸入為 BB% / K% / 被BA / 被SLG） -->
+            <div class="calculator-section panel-pitcher" id="pitcherOVRSection" style="display: none;">
+                <div class="input-row">
+                    <div class="input-label-column"><label for="p1Name">球員名稱</label></div>
+                    <div class="input-field-column"><input type="text" id="p1Name" placeholder="例如：山本由伸" maxlength="20"></div>
+                </div>
+                <div class="input-row"><div class="input-label-column"><label for="p1BB">BB%（保送率，小數）</label></div><div class="input-field-column"><input type="number" id="p1BB" placeholder="0.085" step="0.001" min="0" max="1"></div></div>
+                <div class="input-row"><div class="input-label-column"><label for="p1Kp">K%（三振率，小數）</label></div><div class="input-field-column"><input type="number" id="p1Kp" placeholder="0.225" step="0.001" min="0" max="1"></div></div>
+                <div class="input-row"><div class="input-label-column"><label for="p1BA">被BA（被打擊率）</label></div><div class="input-field-column"><input type="number" id="p1BA" placeholder="0.242" step="0.001" min="0" max="1"></div></div>
+                <div class="input-row"><div class="input-label-column"><label for="p1SLG">被SLG（被長打率）</label></div><div class="input-field-column"><input type="number" id="p1SLG" placeholder="0.385" step="0.001" min="0" max="4"></div></div>
+                <div class="button-group">
+                    <button class="button secondary-button" onclick="useDefaultPitcherStatDefaults('p1')">使用預設值</button>
+                    <button class="button" onclick="calculateAndShowPitcherCard('p1')">計算OVR</button>
+                </div>
+            </div>
+
+            <!-- 投手：右（模擬數據/速算） -->
+            <div class="calculator-section panel-pitcher" id="pitcherSimSection" style="display: none;">
+                <div class="input-row">
+                    <div class="input-label-column"><label for="p2Name">球員名稱</label></div>
+                    <div class="input-field-column"><input type="text" id="p2Name" placeholder="例如：山本由伸" maxlength="20"></div>
+                </div>
+                <div class="input-row"><div class="input-label-column"><label for="p2CTRL">CONTROL（控球）</label></div><div class="input-field-column"><input type="number" id="p2CTRL" placeholder="70" min="0" max="500"></div></div>
+                <div class="input-row"><div class="input-label-column"><label for="p2K">STRIKEOUT（空揮）</label></div><div class="input-field-column"><input type="number" id="p2K" placeholder="85" min="0" max="500"></div></div>
+                <div class="input-row"><div class="input-label-column"><label for="p2STUFF">STUFF（球威）</label></div><div class="input-field-column"><input type="number" id="p2STUFF" placeholder="85" min="0" max="500"></div></div>
+                <div class="input-row"><div class="input-label-column"><label for="p2SUPP">SUPPRESSION（壓制）</label></div><div class="input-field-column"><input type="number" id="p2SUPP" placeholder="70" min="0" max="500"></div></div>
+                <div class="button-group">
+                    <button class="button secondary-button" onclick="useDefaultPitcherValues('p2')">使用預設值</button>
+                    <button class="button" onclick="calculateAndShowPitcherCard('p2')">模擬數據</button>
+                </div>
             </div>
         </div>
     </div>
@@ -764,6 +792,10 @@
             
             showDefaultValues();
             setupInputValidation();
+            if (typeof showTopTab === 'function') {
+                // 預設顯示「打者」分頁
+                showTopTab('batter');
+            }
         });
 
         // 頁面載入時顯示預設值（作為placeholder樣式）

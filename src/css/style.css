@@ -1,42 +1,42 @@
-/* ================================== */
-/* 棒球OVR計算器 - 主題系統架構 */
+﻿/* ================================== */
+/* 璉?OVR閮???- 銝駁?蝟餌絞?嗆? */
 /* ================================== */
 
-/* CSS 變數定義 - 現代極簡風格 */
+/* CSS 霈摰儔 - ?曆誨璆萇陛憸冽 */
 :root {
-  /* === 淺色模式 (預設) === */
+  /* === 瘛箄璅∪? (?身) === */
   --theme-name: 'modern-minimal-light';
   
-  /* 背景系統 - 無邊框極簡 */
-  --bg-header: #FFFFFF;                 /* 純白頂部區域 */
-  --bg-main: #F5F5F5;                  /* 米白色主內容區 */
-  --bg-card: #FFFFFF;                  /* 純白輸入框/卡片背景 */
-  --bg-surface: #FFFFFF;               /* 表面顏色 */
+  /* ?蝟餌絞 - ?⊿?獢扔蝪?*/
+  --bg-header: #FFFFFF;                 /* 蝝????*/
+  --bg-main: #F5F5F5;                  /* 蝐喟?脖蜓?批捆? */
+  --bg-card: #FFFFFF;                  /* 蝝頛詨獢??∠?? */
+  --bg-surface: #FFFFFF;               /* 銵券憿 */
   
-  /* 文字色彩 */
-  --text-primary: #333333;             /* 深灰色內文 */
-  --text-secondary: #666666;           /* 輔助文字 */
-  --text-placeholder: #999999;         /* 灰色placeholder */
-  --text-disabled: #CCCCCC;            /* 禁用文字 */
+  /* ???脣蔗 */
+  --text-primary: #333333;             /* 瘛梁?脣??*/
+  --text-secondary: #666666;           /* 頛?? */
+  --text-placeholder: #999999;         /* ?啗placeholder */
+  --text-disabled: #CCCCCC;            /* 蝳?? */
   
-  /* 主色調 - 薄荷綠系 */
-  --accent-primary: #00875F;           /* 薄荷綠 - 標題/底線 */
-  --accent-secondary: #006B4C;         /* 深薄荷綠 */
+  /* 銝餉隤?- ?蝬頂 */
+  --accent-primary: #00875F;           /* ?蝬?- 璅?/摨? */
+  --accent-secondary: #006B4C;         /* 瘛梯??瑞? */
   --accent-light: rgba(0, 135, 95, 0.08);
   
-  /* 主題切換按鈕顏色 */
-  --theme-icon-color: #333333;         /* 深灰色月亮圖標 */
+  /* 銝駁?????憿 */
+  --theme-icon-color: #333333;         /* 瘛梁?脫?鈭桀?璅?*/
   
-  /* 狀態顏色 */
+  /* ?????*/
   --success: #10B981;
   --warning: #F59E0B;
   --error: #EF4444;
   --info: #3B82F6;
   
-  /* 無陰影系統 - 極簡設計 */
+  /* ?⊿敶梁頂蝯?- 璆萇陛閮剛? */
   --shadow-none: none;
   
-  /* 間距系統 - 緊湊優化 */
+  /* ??蝟餌絞 - 蝺??芸? */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 12px;
@@ -45,52 +45,52 @@
   --spacing-2xl: 24px;
   --spacing-3xl: 32px;
   
-  /* 圓角系統 */
+  /* ??蝟餌絞 */
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
   
-  /* 字體權重 */
+  /* 摮?甈? */
   --font-light: 300;
   --font-normal: 400;
   --font-medium: 500;
   --font-semibold: 600;
   --font-bold: 700;
   
-  /* 行高和字距 */
+  /* 銵???頝?*/
   --line-height-relaxed: 1.6;
   --line-height-loose: 1.7;
   --letter-spacing-wide: 0.02em;
 }
 
-/* === 深色模式變數 === */
+/* === 瘛梯璅∪?霈 === */
 [data-theme="dark"] {
   --theme-name: 'modern-minimal-dark';
   
-  /* 背景系統 - 深色模式 */
-  --bg-header: #121212;                 /* 炭灰黑頂部區域 */
-  --bg-main: #121212;                   /* 炭灰黑主內容區 */
-  --bg-card: #1E1E1E;                   /* 深灰色輸入框/卡片 */
-  --bg-surface: #1E1E1E;               /* 深灰表面顏色 */
+  /* ?蝟餌絞 - 瘛梯璅∪? */
+  --bg-header: #121212;                 /* ?剔暺??典???*/
+  --bg-main: #121212;                   /* ?剔暺蜓?批捆? */
+  --bg-card: #1E1E1E;                   /* 瘛梁?脰撓?交?/?∠? */
+  --bg-surface: #1E1E1E;               /* 瘛梁銵券憿 */
   
-  /* 文字色彩 - 深色模式 */
-  --text-primary: #E0E0E0;             /* 霧白色主要文字 */
-  --text-secondary: #8A8A8A;           /* 中灰色輔助文字 */
-  --text-placeholder: #8A8A8A;         /* 中灰色placeholder */
-  --text-disabled: #6A6A6A;            /* 禁用文字 */
+  /* ???脣蔗 - 瘛梯璅∪? */
+  --text-primary: #E0E0E0;             /* ?抒?脖蜓閬?摮?*/
+  --text-secondary: #8A8A8A;           /* 銝剔?脰??拇?摮?*/
+  --text-placeholder: #8A8A8A;         /* 銝剔?犁laceholder */
+  --text-disabled: #6A6A6A;            /* 蝳?? */
   
-  /* 主色調 - 深色模式薄荷綠 */
-  --accent-primary: #00A97F;           /* 亮薄荷綠 */
-  --accent-secondary: #00C792;         /* 更亮薄荷綠 */
+  /* 銝餉隤?- 瘛梯璅∪??蝬?*/
+  --accent-primary: #00A97F;           /* 鈭株??瑞? */
+  --accent-secondary: #00C792;         /* ?港漁?蝬?*/
   --accent-light: rgba(0, 169, 127, 0.15);
   
-  /* 主題切換按鈕顏色 - 深色模式 */
-  --theme-icon-color: #E0E0E0;         /* 霧白色太陽圖標 */
+  /* 銝駁?????憿 - 瘛梯璅∪? */
+  --theme-icon-color: #E0E0E0;         /* ?抒?脣云?賢?璅?*/
 }
 
 /* ================================== */
-/* 基礎樣式系統 */
+/* ?箇?璅??蝟餌絞 */
 /* ================================== */
 
 * {
@@ -116,7 +116,7 @@ body {
   transition: all 0.3s ease;
 }
 
-/* 頂層導航區域 - 全寬度無邊框設計 */
+/* ?惜撠???- ?典祝摨衣??閮剛? */
 .header {
   background: var(--bg-header);
   width: 100%;
@@ -126,7 +126,7 @@ body {
   margin-bottom: 0;
 }
 
-/* 移動端頭部陰影分隔效果 */
+/* 蝘餃?蝡舫?券敶勗?????*/
 @media (max-width: 768px) {
   .header {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
@@ -162,11 +162,11 @@ body {
 }
 
 /* ================================== */
-/* 標題與導航系統 */
+/* 璅????芰頂蝯?*/
 /* ================================== */
 
 
-/* 標題響應式顯示 */
+/* 璅??踵?撘＊蝷?*/
 .full-title {
   display: block;
 }
@@ -175,17 +175,38 @@ body {
   display: none;
 }
 
-/* 大型裝飾標題 - 薄荷綠 */
+/* 憭批?鋆ˇ璅? - ?蝬?*/
 .header h1 {
   font-size: 2.4em;
   font-weight: var(--font-light);
-  color: var(--accent-primary);
-  margin-bottom: var(--spacing-lg);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
   letter-spacing: var(--letter-spacing-wider);
   line-height: 1.2;
 }
 
-/* 副標題 - 小標題顏色 */
+/* Green underline below title without extra markup */
+.header .full-title::after,
+.header .mobile-title::after {
+  content: '';
+  display: block;
+  width: 180px;
+  height: 8px;
+  background: var(--accent-primary);
+  margin: var(--spacing-sm) auto var(--spacing-xl) auto;
+  border-radius: 4px;
+}
+
+/* Title underline bar inspired by Azabudai Hills */
+.title-underline {
+  width: 180px;
+  height: 8px;
+  background: var(--accent-primary);
+  border-radius: 4px;
+  margin: var(--spacing-sm) auto var(--spacing-xl) auto;
+}
+
+/* ?舀?憿?- 撠?憿???*/
 .header p {
   font-size: 1.1em;
   color: var(--text-secondary);
@@ -194,12 +215,12 @@ body {
   line-height: var(--line-height-loose);
 }
 
-/* 類似網站導航的標籤按鈕 */
+/* 頂部分頁（打者 / 投手） */
 .tab-buttons {
   display: flex;
   justify-content: center;
   gap: var(--spacing-2xl);
-  margin: var(--spacing-xl) 0 0 0;
+  margin: var(--spacing-lg) 0 0 0;
   padding: 0;
   padding-bottom: var(--spacing-lg);
   background: transparent;
@@ -207,25 +228,13 @@ body {
   position: relative;
 }
 
-/* 桌面版分頁標籤下方的漸層分隔線 */
+/* 以 body 狀態類別強制隱藏另一組，避免殘留 */
+.mode-pitcher .panel-batter { display: none !important; }
+.mode-batter .panel-pitcher { display: none !important; }
+
 @media (min-width: 769px) {
-  .tab-buttons::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: min(400px, 80%);
-    height: 1px;
-    background: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.08) 50%, transparent 100%);
-  }
-
-  /* 深色模式下的漸層分隔線 */
-  [data-theme="dark"] .tab-buttons::after {
-    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%);
-  }
+  .tab-buttons::after { display: none !important; }
 }
-
 .tab-btn {
   padding: var(--spacing-md) 0;
   border: none;
@@ -254,13 +263,25 @@ body {
   font-weight: var(--font-medium);
 }
 
+.header::after { display: none !important; }
+
+
+
+
+
+
+
+
+/* Remove legacy description under title */
+.header p { display: none !important; }
+
 /* ================================== */
-/* 頁面標題區域 */
+/* ?璅????*/
 /* ================================== */
 
 
 /* ================================== */
-/* 右上角按鈕區域 */
+/* ?喃?閫?????*/
 /* ================================== */
 
 .header-buttons {
@@ -360,7 +381,7 @@ body {
   transform: scale(0.95);
 }
 
-/* 移動端主題按鈕調整 */
+/* 蝘餃?蝡臭蜓憿??矽??*/
 @media (max-width: 768px) {
   .theme-toggle {
     top: var(--spacing-sm);
@@ -372,10 +393,10 @@ body {
 }
 
 /* ================================== */
-/* 表單與輸入系統 */
+/* 銵典?撓?亦頂蝯?*/
 /* ================================== */
 
-/* 漸層分隔線 - 連接頁首與表單 */
+/* 瞍詨惜??蝺?- ?????”??*/
 .gradient-divider {
   height: 1px;
   background: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.08) 50%, transparent 100%);
@@ -384,7 +405,7 @@ body {
   max-width: 700px;
 }
 
-/* 日式極簡計算器卡片 - 無邊框設計 */
+/* ?亙?璆萇陛閮??典??- ?⊿?獢身閮?*/
 .calculator-section {
   transition: all 0.3s ease;
   opacity: 1;
@@ -410,7 +431,7 @@ body {
   transform: translateY(20px);
 }
 
-/* 小標題樣式 */
+/* 撠?憿見撘?*/
 .section-title {
   font-size: 1.4em;
   font-weight: var(--font-normal);
@@ -420,7 +441,7 @@ body {
   line-height: var(--line-height-relaxed);
 }
 
-/* 兩欄式輸入佈局 - 左欄標籤，右欄輸入框 */
+/* ?拇?撘撓?乩?撅 - 撌行?璅惜嚗甈撓?交? */
 .input-row {
   display: flex;
   align-items: center;
@@ -429,7 +450,7 @@ body {
   min-height: 36px;
 }
 
-/* PC版對齊用隱形間距 */
+/* PC??朣?勗耦?? */
 .input-spacing {
   height: var(--spacing-md);
 }
@@ -450,7 +471,7 @@ body {
   flex: 1;
 }
 
-/* 簡潔輸入框設計 - 無邊框極簡 */
+/* 蝪⊥?頛詨獢身閮?- ?⊿?獢扔蝪?*/
 .input-field-column input {
   width: 100%;
   padding: var(--spacing-md) var(--spacing-md);
@@ -464,7 +485,7 @@ body {
   box-shadow: none;
 }
 
-/* 數字輸入框右對齊 */
+/* ?詨?頛詨獢撠? */
 .input-field-column input[type="number"] {
   text-align: right;
 }
@@ -481,10 +502,10 @@ body {
 }
 
 /* ================================== */
-/* 按鈕系統 */
+/* ??蝟餌絞 */
 /* ================================== */
 
-/* 極簡按鈕 - 無陰影設計 */
+/* 璆萇陛?? - ?⊿敶梯身閮?*/
 .button {
   width: 100%;
   padding: var(--spacing-sm) var(--spacing-lg);
@@ -513,7 +534,7 @@ body {
   box-shadow: none;
 }
 
-/* 按鈕組 */
+/* ??蝯?*/
 .button-group {
   display: flex;
   gap: var(--spacing-md);
@@ -525,7 +546,7 @@ body {
   flex: 1;
 }
 
-/* 次要按鈕 - 無邊框設計 */
+/* 甈∟??? - ?⊿?獢身閮?*/
 .secondary-button {
   background: var(--bg-tertiary);
   color: var(--text-primary);
@@ -539,7 +560,7 @@ body {
 }
 
 /* ================================== */
-/* 結果顯示系統 */
+/* 蝯?憿舐內蝟餌絞 */
 /* ================================== */
 
 .results {
@@ -580,10 +601,10 @@ body {
 }
 
 /* ================================== */
-/* 主題系統 */
+/* 銝駁?蝟餌絞 */
 /* ================================== */
 
-/* 齒輪狀主題按鈕 */
+/* 朣憚?銝駁??? */
 .theme-gear {
   position: absolute;
   right: var(--spacing-md);
@@ -609,7 +630,7 @@ body {
   box-shadow: var(--shadow-md);
 }
 
-/* 主題選擇模態視窗 */
+/* 銝駁??豢?璅⊥?閬? */
 .theme-modal-overlay {
   position: fixed;
   top: 0;
@@ -709,7 +730,7 @@ body {
 }
 
 /* ================================== */
-/* 響應式設計 */
+/* ?踵?撘身閮?*/
 /* ================================== */
 
 .main-content {
@@ -718,7 +739,7 @@ body {
   margin-top: var(--spacing-lg);
 }
 
-/* 桌面端佈局 */
+/* 獢蝡臭?撅 */
 .desktop-device .main-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -741,7 +762,7 @@ body {
   margin-top: calc(60px + var(--spacing-md)); /* Height of one input row + spacing */
 }
 
-/* 移動端佈局 */
+/* 蝘餃?蝡臭?撅 */
 .mobile-device .main-content {
   display: flex;
   justify-content: center;
@@ -758,7 +779,7 @@ body {
   display: none;
 }
 
-/* 移動端日式極簡響應式設計 */
+/* 蝘餃?蝡舀撘扔蝪⊿??閮剛? */
 @media (max-width: 768px) {
   body {
     padding: 0;
@@ -782,7 +803,7 @@ body {
     margin: var(--spacing-sm) 0;
   }
   
-  /* 標題響應式 */
+  /* 璅??踵?撘?*/
   .full-title {
     display: none;
   }
@@ -793,7 +814,7 @@ body {
     margin-bottom: var(--spacing-sm);
   }
   
-  /* 移動端輸入佈局調整為單欄 */
+  /* 蝘餃?蝡航撓?乩?撅隤踵?箏甈?*/
   .input-row {
     flex-direction: column;
     align-items: stretch;
@@ -823,7 +844,7 @@ body {
     margin-bottom: var(--spacing-sm);
   }
   
-  /* 縮小間距 */
+  /* 蝮桀??? */
   .tab-buttons {
     gap: var(--spacing-lg);
     margin: var(--spacing-md) 0 0 0;
@@ -835,12 +856,12 @@ body {
     padding: var(--spacing-sm) 0;
   }
   
-  /* 移動端移除漸層分隔線 */
+  /* 蝘餃?蝡舐宏?斗撓撅文??? */
   .tab-buttons::after {
     display: none;
   }
   
-  /* 主題齒輪移動端調整 */
+  /* 銝駁?朣憚蝘餃?蝡航矽??*/
   .theme-gear {
     width: 32px;
     height: 32px;
@@ -849,7 +870,7 @@ body {
     bottom: -6px;
   }
   
-  /* 主題模態移動端優化 */
+  /* 銝駁?璅⊥?蝘餃?蝡臬??*/
   .theme-modal {
     margin: var(--spacing-lg);
     min-width: auto;
