@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Tab Switching</title>
+</head>
+<body>
+    <script>
+        // Debug function to check what elements exist
+        function debugTabElements() {
+            console.log('=== DEBUG TAB ELEMENTS ===');
+
+            const batterTabs = document.querySelectorAll('.panel-batter');
+            const pitcherTabs = document.querySelectorAll('.panel-pitcher');
+
+            console.log('Batter panels found:', batterTabs.length);
+            batterTabs.forEach((el, i) => {
+                console.log(`  Batter ${i+1}: id="${el.id}", display="${el.style.display || 'default'}", classes="${el.className}"`);
+            });
+
+            console.log('Pitcher panels found:', pitcherTabs.length);
+            pitcherTabs.forEach((el, i) => {
+                console.log(`  Pitcher ${i+1}: id="${el.id}", display="${el.style.display || 'default'}", classes="${el.className}"`);
+            });
+
+            console.log('Current tab buttons:');
+            const bBtn = document.getElementById('tabBatter');
+            const pBtn = document.getElementById('tabPitcher');
+            console.log(`  Batter button: exists=${!!bBtn}, active=${bBtn?.classList.contains('active')}`);
+            console.log(`  Pitcher button: exists=${!!pBtn}, active=${pBtn?.classList.contains('active')}`);
+        }
+
+        // Copy of the showTopTab function for debugging
+        function debugShowTopTab(tab) {
+            console.log(`=== SWITCHING TO TAB: ${tab} ===`);
+
+            const batterTabs = document.querySelectorAll('.panel-batter');
+            const pitcherTabs = document.querySelectorAll('.panel-pitcher');
+            const bBtn = document.getElementById('tabBatter');
+            const pBtn = document.getElementById('tabPitcher');
+
+            console.log(`Found ${batterTabs.length} batter panels, ${pitcherTabs.length} pitcher panels`);
+
+            const show = (nodes, on) => {
+                nodes.forEach((n, i) => {
+                    if(n) {
+                        const oldDisplay = n.style.display;
+                        n.style.display = on ? 'block' : 'none';
+                        console.log(`  Panel ${i+1} (${n.id}): ${oldDisplay || 'default'} -> ${n.style.display}`);
+                    }
+                });
+            };
+
+            const setActive = (el, on) => {
+                if(!el) return;
+                if(on) el.classList.add('active');
+                else el.classList.remove('active');
+                console.log(`  Button ${el.id}: active=${on}`);
+            };
+
+            if (tab === 'pitcher') {
+                console.log('Hiding batter panels, showing pitcher panels');
+                show(batterTabs, false);
+                show(pitcherTabs, true);
+                setActive(bBtn, false);
+                setActive(pBtn, true);
+            } else {
+                console.log('Showing batter panels, hiding pitcher panels');
+                show(batterTabs, true);
+                show(pitcherTabs, false);
+                setActive(bBtn, true);
+                setActive(pBtn, false);
+            }
+
+            console.log('=== TAB SWITCH COMPLETE ===');
+        }
+
+        // Export functions to window for console access
+        window.debugTabElements = debugTabElements;
+        window.debugShowTopTab = debugShowTopTab;
+
+        console.log('Debug functions loaded. Use:');
+        console.log('- debugTabElements() to see current elements');
+        console.log('- debugShowTopTab("batter") or debugShowTopTab("pitcher") to test switching');
+    </script>
+</body>
+</html>

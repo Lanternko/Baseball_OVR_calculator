@@ -751,7 +751,7 @@ body {
   display: none;
 }
 
-.desktop-device #attributesToStatsCalculator {
+.desktop-device.mode-batter #attributesToStatsCalculator {
   display: block !important;
   opacity: 1 !important;
   transform: translateY(0) !important;
