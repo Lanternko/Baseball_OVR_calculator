@@ -157,7 +157,7 @@ function updatePlayerCardContent(modal, playerData, statsData, mode = 'attribute
     }
     
     if (cardBack && playerData) {
-        const cardHtml = generatePlayerCardHTML(playerData);
+        const cardHtml = generatePlayerCardHTML(playerData, mode);
         cardBack.innerHTML = cardHtml;
     }
     
@@ -172,10 +172,10 @@ function updatePlayerCardContent(modal, playerData, statsData, mode = 'attribute
         if (desktopPlayerName) {
             desktopPlayerName.textContent = '球員能力值';
         }
-        
+
         // 右欄顯示球員卡（三圍） - ALWAYS use desktopCardColumn for player cards
         if (desktopCardColumn && playerData) {
-            const cardHtml = generatePlayerCardHTML(playerData);
+            const cardHtml = generatePlayerCardHTML(playerData, mode);
             desktopCardColumn.innerHTML = cardHtml;
         }
         
@@ -217,10 +217,10 @@ function updatePlayerCardContent(modal, playerData, statsData, mode = 'attribute
             }
             desktopStatsGrid.innerHTML = desktopStatsHtml;
         }
-        
+
         // 右欄顯示球員卡（三圍） - ALWAYS use desktopCardColumn for player cards
         if (desktopCardColumn && playerData) {
-            const cardHtml = generatePlayerCardHTML(playerData);
+            const cardHtml = generatePlayerCardHTML(playerData, mode);
             desktopCardColumn.innerHTML = cardHtml;
         }
     }
@@ -247,6 +247,7 @@ function calculateOVRFromAttributes(data) {
 // 統計數據標籤映射
 function getStatLabel(key) {
     const labels = {
+        // 打者統計
         'BA': '🏆 打擊率 (BA)',
         'OBP': '🎯 上壘率 (OBP)',
         'SLG': '🚀 長打率 (SLG)',
@@ -256,7 +257,13 @@ function getStatLabel(key) {
         'RBI': '🎯 RBI',
         'R': '🏃 得分',
         'SO': '❌ 三振',
-        'BB': '🚶 保送'
+        'BB': '🚶 保送',
+
+        // 投手統計
+        'K%': '🔥 三振率 (K%)',
+        'BB%': '🚶 保送率 (BB%)',
+        'BAA': '⚾ 被打擊率 (BAA)',
+        'SLGA': '💥 被長打率 (SLGA)'
     };
     return labels[key] || key;
 }
@@ -264,51 +271,97 @@ function getStatLabel(key) {
 // 格式化統計數值
 function formatStatValue(key, value) {
     if (typeof value === 'number') {
-        if (['BA', 'OBP', 'SLG', 'OPS', 'wOBA'].includes(key)) {
+        // 打者傳統統計：3位小數
+        if (['BA', 'OBP', 'SLG', 'OPS', 'wOBA', 'BAA', 'SLGA'].includes(key)) {
             return value.toFixed(3);
         }
+        // 投手百分比統計：轉換為百分比顯示
+        if (['K%', 'BB%'].includes(key)) {
+            return (value * 100).toFixed(1) + '%';
+        }
+        // 其他統計：整數
         return Math.round(value).toString();
     }
     return value.toString();
 }
 
 // 生成球員卡HTML
-function generatePlayerCardHTML(playerData) {
+function generatePlayerCardHTML(playerData, mode = 'batter') {
     const ovr = playerData.ovr || calculateOVRFromAttributes(playerData);
-    const hit = playerData.HIT || 75;
-    const pow = playerData.POW || 75;
-    const eye = playerData.EYE || 75;
-    
+
+    // 判斷是投手還是打者
+    const isPitcher = mode === 'pitcher' || (playerData.CONTROL !== undefined);
+
+    let attributesGridHTML = '';
+
+    if (isPitcher) {
+        // 投手：4個屬性
+        const control = playerData.CONTROL || 70;
+        const strikeout = playerData.STRIKEOUT || 70;
+        const stuff = playerData.STUFF || 70;
+        const suppression = playerData.SUPPRESSION || 70;
+
+        attributesGridHTML = `
+            <div class="attributes-grid pitcher-grid">
+                <div class="attribute-column">
+                    <div class="attr-label">CON</div>
+                    <div class="attr-value">${Math.round(control)}</div>
+                </div>
+                <div class="attribute-column">
+                    <div class="attr-label">K</div>
+                    <div class="attr-value">${Math.round(strikeout)}</div>
+                </div>
+                <div class="attribute-column">
+                    <div class="attr-label">STF</div>
+                    <div class="attr-value">${Math.round(stuff)}</div>
+                </div>
+                <div class="attribute-column">
+                    <div class="attr-label">SUP</div>
+                    <div class="attr-value">${Math.round(suppression)}</div>
+                </div>
+            </div>
+        `;
+    } else {
+        // 打者：3個屬性
+        const hit = playerData.HIT || 75;
+        const pow = playerData.POW || 75;
+        const eye = playerData.EYE || 75;
+
+        attributesGridHTML = `
+            <div class="attributes-grid batter-grid">
+                <div class="attribute-column">
+                    <div class="attr-label">HIT</div>
+                    <div class="attr-value">${Math.round(hit)}</div>
+                </div>
+                <div class="attribute-column">
+                    <div class="attr-label">POW</div>
+                    <div class="attr-value">${Math.round(pow)}</div>
+                </div>
+                <div class="attribute-column">
+                    <div class="attr-label">EYE</div>
+                    <div class="attr-value">${Math.round(eye)}</div>
+                </div>
+            </div>
+        `;
+    }
+
     return `
-        <div class="player-card ${getRarityClass(ovr)}">
+        <div class="player-card ${getRarityClass(ovr)} ${isPitcher ? 'pitcher-card' : 'batter-card'}">
             <div class="card-background"></div>
             <div class="card-shine"></div>
-            
+
             <div class="card-header">
                 <div class="rarity-label">${getRarityLabel(ovr)}</div>
                 <div class="player-name">${playerData.name || '無名球員'}</div>
             </div>
-            
+
             <div class="ovr-section">
                 <div class="ovr-number">${Math.round(ovr)}</div>
                 <div class="ovr-label">OVERALL</div>
             </div>
-            
+
             <div class="attributes-section">
-                <div class="attributes-grid">
-                    <div class="attribute-column">
-                        <div class="attr-label">HIT</div>
-                        <div class="attr-value">${Math.round(hit)}</div>
-                    </div>
-                    <div class="attribute-column">
-                        <div class="attr-label">POW</div>
-                        <div class="attr-value">${Math.round(pow)}</div>
-                    </div>
-                    <div class="attribute-column">
-                        <div class="attr-label">EYE</div>
-                        <div class="attr-value">${Math.round(eye)}</div>
-                    </div>
-                </div>
+                ${attributesGridHTML}
             </div>
         </div>
     `;

@@ -363,8 +363,19 @@ function calculateAndShowPitcherCard(prefix='') {
   const s = pitcherAttrsToStats(attrs);
   const obp = (s.BB + s.BA*(1 - s.BB));
   const ops = obp + s.SLG;
-  const playerData = { name, ovr, HIT: Math.round(attrs.CONTROL), POW: Math.round(attrs.STRIKEOUT), EYE: Math.round(attrs.STUFF) };
-  const statsData = { 'BA': s.BA, 'OBP': obp, 'SLG': s.SLG, 'OPS': ops };
+  const playerData = {
+    name, ovr,
+    CONTROL: Math.round(attrs.CONTROL),
+    STRIKEOUT: Math.round(attrs.STRIKEOUT),
+    STUFF: Math.round(attrs.STUFF),
+    SUPPRESSION: Math.round(attrs.SUPPRESSION)
+  };
+  const statsData = {
+    'K%': s.K,           // 三振率
+    'BB%': s.BB,         // 保送率
+    'BAA': s.BA,         // 被打擊率
+    'SLGA': s.SLG        // 被長打率
+  };
   if (window.showPlayerCardModalNew) window.showPlayerCardModalNew(playerData, statsData, 'pitcher');
 }
 window.useDefaultPitcherValues = useDefaultPitcherValues;
@@ -423,15 +434,16 @@ function calculateAndShowPitcherCard() {
     const playerData = {
         name: name,
         ovr: ovr,
-        HIT: Math.round(attrs.CONTROL),
-        POW: Math.round(attrs.STRIKEOUT),
-        EYE: Math.round(attrs.STUFF)
+        CONTROL: Math.round(attrs.CONTROL),
+        STRIKEOUT: Math.round(attrs.STRIKEOUT),
+        STUFF: Math.round(attrs.STUFF),
+        SUPPRESSION: Math.round(attrs.SUPPRESSION)
     };
     const statsData = {
-        'BA': s.BA,
-        'OBP': obp,
-        'SLG': s.SLG,
-        'OPS': ops
+        'K%': s.K,           // 三振率
+        'BB%': s.BB,         // 保送率
+        'BAA': s.BA,         // 被打擊率
+        'SLGA': s.SLG        // 被長打率
     };
 
     if (window.showPlayerCardModalNew) {

@@ -211,6 +211,22 @@
     text-align: center;
 }
 
+/* 投手專用：4欄佈局 */
+.attributes-grid.pitcher-grid {
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 12px;
+}
+
+/* 投手卡片調整：適應4個屬性 */
+.pitcher-card .attr-label {
+    font-size: 10px;
+    letter-spacing: 0.5px;
+}
+
+.pitcher-card .attr-value {
+    font-size: 20px;
+}
+
 .attribute-column {
     display: flex;
     flex-direction: column;
@@ -264,4 +280,29 @@
 @keyframes card-shine {
     0% { transform: rotate(45deg) translateX(-100%); }
     100% { transform: rotate(45deg) translateX(100%); }
+}
+
+/* 移動端響應式設計 */
+@media (max-width: 768px) {
+    /* 投手卡片在移動端使用2x2佈局 */
+    .attributes-grid.pitcher-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        grid-template-areas:
+            "control strikeout"
+            "stuff suppression";
+    }
+
+    .pitcher-card .attr-label {
+        font-size: 11px;
+    }
+
+    .pitcher-card .attr-value {
+        font-size: 18px;
+    }
+
+    .player-card.pitcher-card {
+        width: 260px;
+        min-height: 400px;
+    }
 }
