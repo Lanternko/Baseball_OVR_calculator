@@ -337,16 +337,28 @@ function calculateAndShowPitcherCard(prefix='') {
     const Kp = parseFloat(document.getElementById(id('Kp'))?.value);
     const BA = parseFloat(document.getElementById(id('BA'))?.value);
     const SLG = parseFloat(document.getElementById(id('SLG'))?.value);
-    const s = v => (isNaN(v)?0:v);
+    const s = v => (isNaN(v) ? null : v);
     if (typeof reverseInterpolate !== 'function' || typeof PITCHER_CONTROL_TABLE === 'undefined') {
       alert('常數或工具未載入，請確認 constants.js');
       return;
     }
+
+    // Auto-fill default values if inputs are empty
+    const defaultBB = 0.085;   // Yamamoto's BB%
+    const defaultKp = 0.225;   // Yamamoto's K%
+    const defaultBA = 0.242;   // Yamamoto's BAA
+    const defaultSLG = 0.385;  // Yamamoto's SLGA
+
+    const finalBB = s(BB) !== null ? s(BB) : defaultBB;
+    const finalKp = s(Kp) !== null ? s(Kp) : defaultKp;
+    const finalBA = s(BA) !== null ? s(BA) : defaultBA;
+    const finalSLG = s(SLG) !== null ? s(SLG) : defaultSLG;
+
     attrs = {
-      CONTROL: reverseInterpolate(s(BB), PITCHER_CONTROL_TABLE),
-      STRIKEOUT: reverseInterpolate(s(Kp), PITCHER_STRIKEOUT_TABLE),
-      STUFF: reverseInterpolate(s(BA), PITCHER_STUFF_TABLE),
-      SUPPRESSION: reverseInterpolate(s(SLG), PITCHER_SUPPRESSION_TABLE)
+      CONTROL: reverseInterpolate(finalBB, PITCHER_CONTROL_TABLE),
+      STRIKEOUT: reverseInterpolate(finalKp, PITCHER_STRIKEOUT_TABLE),
+      STUFF: reverseInterpolate(finalBA, PITCHER_STUFF_TABLE),
+      SUPPRESSION: reverseInterpolate(finalSLG, PITCHER_SUPPRESSION_TABLE)
     };
   } else {
     // p2：輸入為屬性（既有邏輯）
@@ -354,8 +366,12 @@ function calculateAndShowPitcherCard(prefix='') {
     const STRIKEOUT = parseFloat(document.getElementById(id('K'))?.value);
     const STUFF = parseFloat(document.getElementById(id('STUFF'))?.value);
     const SUPPRESSION = parseFloat(document.getElementById(id('SUPP'))?.value);
-    const safe = v => (isNaN(v)?70:Math.max(0,Math.min(500,v)));
-    attrs = { CONTROL: safe(CONTROL), STRIKEOUT: safe(STRIKEOUT), STUFF: safe(STUFF), SUPPRESSION: safe(SUPPRESSION) };
+    // Auto-fill default attribute values if inputs are empty
+    const safeCONTROL = isNaN(CONTROL) ? 70 : Math.max(0,Math.min(500,CONTROL));
+    const safeSTRIKEOUT = isNaN(STRIKEOUT) ? 85 : Math.max(0,Math.min(500,STRIKEOUT));
+    const safeSTUFF = isNaN(STUFF) ? 85 : Math.max(0,Math.min(500,STUFF));
+    const safeSUPPRESSION = isNaN(SUPPRESSION) ? 70 : Math.max(0,Math.min(500,SUPPRESSION));
+    attrs = { CONTROL: safeCONTROL, STRIKEOUT: safeSTRIKEOUT, STUFF: safeSTUFF, SUPPRESSION: safeSUPPRESSION };
   }
 
   if (typeof computePitcherOVR !== 'function' || typeof pitcherAttrsToStats !== 'function') { alert('constants.js 未載入'); return; }
@@ -392,64 +408,5 @@ window.useDefaultPitcherStatDefaults = useDefaultPitcherStatDefaults;
 
 
 // ===== 投手頁：預設值與卡片顯示 =====
-function useDefaultPitcherValues() {
-    const set = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.value = val;
-        }
-    };
-    set('pitcherName', '投手範例');
-    set('inputCTRL', 70);
-    set('inputK', 85);
-    set('inputSTUFF', 85);
-    set('inputSUPP', 70);
-}
-
-function calculateAndShowPitcherCard() {
-    const name = (document.getElementById('pitcherName')?.value || '投手');
-    const CONTROL = parseFloat(document.getElementById('inputCTRL')?.value);
-    const STRIKEOUT = parseFloat(document.getElementById('inputK')?.value);
-    const STUFF = parseFloat(document.getElementById('inputSTUFF')?.value);
-    const SUPPRESSION = parseFloat(document.getElementById('inputSUPP')?.value);
-
-    const safe = v => (isNaN(v) ? 70 : Math.max(0, Math.min(500, v)));
-    const attrs = {
-        CONTROL: safe(CONTROL),
-        STRIKEOUT: safe(STRIKEOUT),
-        STUFF: safe(STUFF),
-        SUPPRESSION: safe(SUPPRESSION)
-    };
-
-    if (typeof computePitcherOVR !== 'function' || typeof pitcherAttrsToStats !== 'function') {
-        alert('常數或轉換尚未載入，請確認 constants.js');
-        return;
-    }
-
-    const ovr = computePitcherOVR(attrs);
-    const s = pitcherAttrsToStats(attrs); // {BB,K,BA,SLG}
-    const obp = (s.BB + s.BA * (1 - s.BB));
-    const ops = obp + s.SLG;
-
-    const playerData = {
-        name: name,
-        ovr: ovr,
-        CONTROL: Math.round(attrs.CONTROL),
-        STRIKEOUT: Math.round(attrs.STRIKEOUT),
-        STUFF: Math.round(attrs.STUFF),
-        SUPPRESSION: Math.round(attrs.SUPPRESSION)
-    };
-    const statsData = {
-        'K%': s.K,           // 三振率
-        'BB%': s.BB,         // 保送率
-        'BAA': s.BA,         // 被打擊率
-        'SLGA': s.SLG        // 被長打率
-    };
-
-    if (window.showPlayerCardModalNew) {
-        window.showPlayerCardModalNew(playerData, statsData, 'pitcher');
-    }
-}
-
 window.useDefaultPitcherValues = useDefaultPitcherValues;
 window.calculateAndShowPitcherCard = calculateAndShowPitcherCard;
