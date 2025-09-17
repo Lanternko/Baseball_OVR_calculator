@@ -323,8 +323,8 @@ window.addEventListener('resize', function(){
 function useDefaultPitcherValues(prefix='') {
   const id = k => (prefix? `${prefix}${k}` : k);
   const set = (k,val)=>{ const el=document.getElementById(id(k)); if(el){ el.value=val; } };
-  set('Name','投手範例');
-  set('CTRL',70); set('K',85); set('STUFF',85); set('SUPP',70);
+  set('Name','山本由伸');
+  set('CTRL',70); set('K',87); set('STUFF',109); set('SUPP',110);
 }
 function calculateAndShowPitcherCard(prefix='') {
   const id = k => (prefix? `${prefix}${k}` : k);
@@ -343,11 +343,11 @@ function calculateAndShowPitcherCard(prefix='') {
       return;
     }
 
-    // Auto-fill default values if inputs are empty
-    const defaultBB = 0.085;   // Yamamoto's BB%
-    const defaultKp = 0.225;   // Yamamoto's K%
-    const defaultBA = 0.242;   // Yamamoto's BAA
-    const defaultSLG = 0.385;  // Yamamoto's SLGA
+    // Auto-fill default values if inputs are empty (Yamamoto 2025 season stats)
+    const defaultBB = 0.08;    // Yamamoto's 2025 BB%: 8.0%
+    const defaultKp = 0.293;   // Yamamoto's 2025 K%: 29.3%
+    const defaultBA = 0.186;   // Yamamoto's 2025 BAA: .186
+    const defaultSLG = 0.293;  // Yamamoto's 2025 SLGA: .293
 
     const finalBB = s(BB) !== null ? s(BB) : defaultBB;
     const finalKp = s(Kp) !== null ? s(Kp) : defaultKp;
@@ -366,15 +366,18 @@ function calculateAndShowPitcherCard(prefix='') {
     const STRIKEOUT = parseFloat(document.getElementById(id('K'))?.value);
     const STUFF = parseFloat(document.getElementById(id('STUFF'))?.value);
     const SUPPRESSION = parseFloat(document.getElementById(id('SUPP'))?.value);
+
     // Auto-fill default attribute values if inputs are empty
     const safeCONTROL = isNaN(CONTROL) ? 70 : Math.max(0,Math.min(500,CONTROL));
     const safeSTRIKEOUT = isNaN(STRIKEOUT) ? 85 : Math.max(0,Math.min(500,STRIKEOUT));
     const safeSTUFF = isNaN(STUFF) ? 85 : Math.max(0,Math.min(500,STUFF));
     const safeSUPPRESSION = isNaN(SUPPRESSION) ? 70 : Math.max(0,Math.min(500,SUPPRESSION));
+
     attrs = { CONTROL: safeCONTROL, STRIKEOUT: safeSTRIKEOUT, STUFF: safeSTUFF, SUPPRESSION: safeSUPPRESSION };
   }
 
   if (typeof computePitcherOVR !== 'function' || typeof pitcherAttrsToStats !== 'function') { alert('constants.js 未載入'); return; }
+
   const ovr = computePitcherOVR(attrs);
   const s = pitcherAttrsToStats(attrs);
   const obp = (s.BB + s.BA*(1 - s.BB));
@@ -401,8 +404,8 @@ window.calculateAndShowPitcherCard = calculateAndShowPitcherCard;
 function useDefaultPitcherStatDefaults(prefix='p1'){
   const id = k => (prefix? `${prefix}${k}` : k);
   const set=(k,v)=>{ const el=document.getElementById(id(k)); if(el){ el.value=v; } };
-  set('Name','投手範例');
-  set('BB',0.085); set('Kp',0.225); set('BA',0.242); set('SLG',0.385);
+  set('Name','山本由伸');
+  set('BB',0.08); set('Kp',0.293); set('BA',0.186); set('SLG',0.293);
 }
 window.useDefaultPitcherStatDefaults = useDefaultPitcherStatDefaults;
 
